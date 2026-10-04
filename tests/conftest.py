@@ -7,7 +7,7 @@ import pytest
 
 from evolution_sim.config import SimulationConfig
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 
 
 @pytest.fixture
@@ -28,3 +28,4 @@ def tiny_config() -> SimulationConfig:
         ),
         metrics=replace(base.metrics, sample_interval=1),
     )
+
