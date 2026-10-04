@@ -97,4 +97,3 @@ def test_unknown_fields_are_rejected_instead_of_silently_ignored() -> None:
 
     with pytest.raises(ConfigError, match=r"world\.teleport"):
         SimulationConfig.from_dict(data)
-

@@ -74,4 +74,3 @@ def test_unknown_crossover_mode_is_rejected() -> None:
         assert "splice" in str(exc)
     else:
         raise AssertionError("Unsupported crossover mode was accepted")
-

@@ -74,4 +74,3 @@ def test_config_can_be_replaced_for_genetic_experiments() -> None:
     changed = replace(CONFIG.genome, mutation_probability=0.0)
     assert changed.mutation_probability == 0.0
     assert CONFIG.genome.mutation_probability == 0.08
-

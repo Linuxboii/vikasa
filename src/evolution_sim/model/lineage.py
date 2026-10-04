@@ -93,4 +93,3 @@ class LineageStore:
                 birth_tick=int(record["birth_tick"]),
             )
         return store
-

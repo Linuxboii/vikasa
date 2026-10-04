@@ -38,4 +38,3 @@ def mutate(genome: Genome, config: GenomeConfig, rng: np.random.Generator) -> Ge
     noise = rng.normal(0.0, config.mutation_sigma, len(TRAITS)) * spans
     values[mask] += noise[mask]
     return Genome.clamped(values, config)
-

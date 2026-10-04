@@ -186,9 +186,7 @@ class SimulationConfig:
         )
         if mutation_probability > 1:
             raise ConfigError("genome.mutation_probability must not exceed 1")
-        mutation_sigma = _number(
-            genome_data["mutation_sigma"], "genome.mutation_sigma", minimum=0
-        )
+        mutation_sigma = _number(genome_data["mutation_sigma"], "genome.mutation_sigma", minimum=0)
         crossover = genome_data["crossover"]
         if crossover not in {"uniform", "arithmetic"}:
             raise ConfigError("genome.crossover must be 'uniform' or 'arithmetic'")
@@ -248,9 +246,7 @@ class SimulationConfig:
         initial_population = _integer(data["initial_population"], "initial_population")
         if initial_population > reproduction.population_cap:
             raise ConfigError("initial_population must not exceed reproduction.population_cap")
-        wander = _number(
-            data["wander_change_probability"], "wander_change_probability", minimum=0
-        )
+        wander = _number(data["wander_change_probability"], "wander_change_probability", minimum=0)
         if wander > 1:
             raise ConfigError("wander_change_probability must not exceed 1")
 
@@ -272,4 +268,3 @@ class SimulationConfig:
             name: [bounds.minimum, bounds.maximum] for name, bounds in self.genome.traits.items()
         }
         return data
-

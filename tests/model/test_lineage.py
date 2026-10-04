@@ -44,4 +44,3 @@ def test_records_round_trip_without_losing_ticks() -> None:
 
     assert restored.to_records() == source.to_records()
     assert restored.birth_tick(5) == 30
-
