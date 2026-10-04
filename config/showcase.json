@@ -1,0 +1,23 @@
+{
+  "world": {"width": 1200, "height": 760, "boundary": "collision"},
+  "genome": {
+    "traits": {
+      "size": [2.5, 8.0],
+      "speed": [0.5, 4.0],
+      "perception": [25.0, 150.0],
+      "metabolism": [0.65, 1.5],
+      "reproduction_threshold": [70.0, 150.0],
+      "fertility": [0.15, 0.55]
+    },
+    "mutation_probability": 0.1,
+    "mutation_sigma": 0.075,
+    "crossover": "arithmetic"
+  },
+  "energy": {"initial": 105.0, "basal_cost": 0.023, "movement_cost": 0.017, "maximum": 230.0},
+  "reproduction": {"minimum_age": 180, "cooldown": 120, "mate_radius": 62.0, "offspring_energy": 32.0, "population_cap": 600},
+  "resources": {"initial_count": 260, "spawn_rate": 0.48, "maximum_count": 520, "energy_value": 30.0},
+  "metrics": {"sample_interval": 10, "diversity_sample": 128},
+  "initial_population": 100,
+  "maximum_age": 7200,
+  "wander_change_probability": 0.03
+}

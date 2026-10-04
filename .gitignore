@@ -1,0 +1,15 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.superpowers/
+dist/
+build/
+*.egg-info/
+exports/
+screenshots/
+tmp/
+
