@@ -6,6 +6,7 @@ import math
 
 import numpy as np
 
+from evolution_sim.analytics.metrics import MetricsRecorder
 from evolution_sim.config import SimulationConfig
 from evolution_sim.model.entities import Creature, Resource
 from evolution_sim.model.genetics import crossover, mutate
@@ -43,6 +44,7 @@ class SimulationEngine:
         self.total_births = 0
         self.total_deaths = 0
         self.reproduction_skipped_at_cap = 0
+        self.metrics = MetricsRecorder()
         self._initialize_world()
 
     @property
@@ -104,6 +106,8 @@ class SimulationEngine:
         self._resolve_reproduction()
         self._resolve_deaths()
         self.tick += 1
+        if self.tick % self.config.metrics.sample_interval == 0:
+            self.metrics.record(self)
 
     def _regenerate_resources(self) -> None:
         self.spawn_accumulator += (
