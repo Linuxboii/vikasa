@@ -47,6 +47,12 @@ def build_parser() -> argparse.ArgumentParser:
     ui = commands.add_parser("ui", help="Launch the interactive laboratory")
     ui.add_argument("--config", type=Path, default=Path("config/default.json"))
     ui.add_argument("--seed", type=int, default=2026)
+
+    shortcut = commands.add_parser("shortcut", help="Install a desktop shortcut")
+    shortcut.add_argument("--desktop", type=Path)
+    shortcut.add_argument("--name", default="Vikasa")
+    shortcut.add_argument("--config", type=Path, default=Path("config/showcase.json"))
+    shortcut.add_argument("--seed", type=int, default=2026)
     return parser
 
 
@@ -91,7 +97,18 @@ def main(argv: Sequence[str] | None = None) -> int:
 
             EvolutionApp(SimulationConfig.from_json(args.config), seed=args.seed).run()
             return 0
-    except (ConfigError, ScenarioError, OSError, ValueError) as exc:
+        if args.command == "shortcut":
+            from evolution_sim.shortcut import install_desktop_shortcut
+
+            shortcut = install_desktop_shortcut(
+                desktop=args.desktop,
+                name=args.name,
+                config=args.config,
+                seed=args.seed,
+            )
+            print(f"Desktop shortcut installed: {shortcut}")
+            return 0
+    except (ConfigError, ScenarioError, OSError, RuntimeError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
     return 2

@@ -32,7 +32,14 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\vikasa.exe ui --config config/showcase.json --seed 2026
 ```
 
-The first screen summarizes the seed and experiment. Press `Enter` to begin.
+The first screen is a full configuration laboratory. Choose a preset or tune eight ecology,
+genetics, population, lifespan, and seed controls, then press `Enter` to launch.
+
+Create or refresh the native Windows desktop shortcut at any time with one command:
+
+```powershell
+.\.venv\Scripts\vikasa.exe shortcut
+```
 
 ## Quick start on macOS or Linux
 
@@ -57,6 +64,12 @@ Launch the default or showcase configuration:
 .\.venv\Scripts\vikasa.exe ui --config config/showcase.json --seed 2026
 ```
 
+The launch laboratory includes Balanced, Bloom, Scarcity, and Hypermutation presets. Every
+parameter can then be adjusted with the mouse or arrow keys. Press `C` during a simulation to
+reopen the laboratory, change the world, and begin a fresh run with the displayed seed.
+
+![Vikasa world customization laboratory](docs/images/setup.png)
+
 The visual encoding is scientific, not decorative:
 
 - Organism radius corresponds to the size gene.
@@ -75,6 +88,7 @@ The visual encoding is scientific, not decorative:
 | `Space` | Pause or resume |
 | `1` through `5` | Select 1, 2, 4, 8, or 16 deterministic ticks per rendered frame |
 | `R` | Restart with the same configuration and seed |
+| `C` | Reopen the configuration laboratory and customize a fresh run |
 | `P` | Toggle the selected organism's perception overlay |
 | `T` | Toggle movement trails |
 | `Ctrl+S` | Save `exports/checkpoints/latest.json` atomically |

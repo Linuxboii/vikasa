@@ -238,6 +238,7 @@ class LaboratoryRenderer:
                 ("Space", "Pause / resume"),
                 ("1-5", "Simulation speed"),
                 ("R", "Restart same seed"),
+                ("C", "Customize & restart"),
                 ("P", "Perception overlay"),
                 ("T", "Movement trails"),
                 ("Ctrl+S", "Save checkpoint"),

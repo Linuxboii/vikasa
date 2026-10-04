@@ -14,6 +14,7 @@ from evolution_sim.io.checkpoints import load_checkpoint, save_checkpoint
 from evolution_sim.io.export import export_experiment
 from evolution_sim.simulation.engine import SimulationEngine
 from evolution_sim.ui import theme
+from evolution_sim.ui.customization import PARAMETERS, PRESETS, CustomizationPanel
 from evolution_sim.ui.layout import MINIMUM_SIZE, compute_layout
 from evolution_sim.ui.renderer import LaboratoryRenderer, hit_test_creature
 
@@ -54,6 +55,7 @@ class SimulationController:
             "r": "restart",
             "p": "perception",
             "t": "trails",
+            "c": "customize",
             "e": "export",
             "?": "help",
             "escape": "help",
@@ -94,6 +96,8 @@ class EvolutionApp:
         self.active_tab = "Controls"
         self.message = "Enter starts the experiment" if show_setup else ""
         self.default_checkpoint = Path("exports/checkpoints/latest.json")
+        self.customizer = CustomizationPanel(config, seed)
+        self.setup_from_running = False
 
     def save(self, path: str | Path | None = None) -> Path:
         target = Path(path) if path is not None else self.default_checkpoint
@@ -109,6 +113,7 @@ class EvolutionApp:
         self.seed = restored.seed
         self.controller.engine = restored
         self.selected_id = None
+        self.customizer = CustomizationPanel(self.config, self.seed)
         self.message = f"Loaded {target.name}"
 
     def export(self, path: str | Path | None = None) -> Path:
@@ -138,6 +143,11 @@ class EvolutionApp:
             self.show_perception = not self.show_perception
         elif action == "trails":
             self.show_trails = not self.show_trails
+        elif action == "customize":
+            self.customizer = CustomizationPanel(self.config, self.seed)
+            self.setup_from_running = True
+            self.show_setup = True
+            self.message = "Tune the world, then apply and restart"
         elif action == "help":
             self.show_help = not self.show_help
         elif action == "save":
@@ -150,6 +160,88 @@ class EvolutionApp:
         elif action == "export":
             self.export()
 
+    def _apply_customization(self) -> None:
+        self.config = self.customizer.config
+        self.seed = self.customizer.seed
+        speed_index = self.controller.speed_index
+        self.engine = SimulationEngine(self.config, seed=self.seed)
+        self.controller = SimulationController(self.engine, speed_index=speed_index)
+        self.selected_id = None
+        self.show_setup = False
+        self.setup_from_running = False
+        self.message = f"World applied · seed {self.seed}"
+
+    def _setup_geometry(self) -> dict[str, object]:
+        window = self.layout.window
+        box = pygame.Rect(0, 0, min(1060, window.width - 40), min(680, window.height - 40))
+        box.center = window.center
+        presets: list[pygame.Rect] = []
+        preset_width = (box.width - 78) // len(PRESETS)
+        for index in range(len(PRESETS)):
+            presets.append(
+                pygame.Rect(
+                    box.left + 24 + index * (preset_width + 10), box.top + 108, preset_width, 42
+                )
+            )
+        rows: list[tuple[pygame.Rect, pygame.Rect, pygame.Rect]] = []
+        for index in range(len(PARAMETERS)):
+            top = box.top + 182 + index * 47
+            row = pygame.Rect(box.left + 26, top, min(650, box.width - 350), 39)
+            minus = pygame.Rect(row.right - 112, top + 4, 32, 31)
+            plus = pygame.Rect(row.right - 36, top + 4, 32, 31)
+            rows.append((row, minus, plus))
+        launch = pygame.Rect(box.right - 302, box.bottom - 76, 272, 46)
+        trails = pygame.Rect(box.right - 302, box.top + 340, 130, 40)
+        perception = pygame.Rect(box.right - 162, box.top + 340, 132, 40)
+        return {
+            "box": box,
+            "presets": presets,
+            "rows": rows,
+            "launch": launch,
+            "trails": trails,
+            "perception": perception,
+        }
+
+    def _setup_key(self, event: pygame.event.Event) -> None:
+        if event.key in {pygame.K_RETURN, pygame.K_SPACE}:
+            self._apply_customization()
+        elif event.key == pygame.K_ESCAPE and self.setup_from_running:
+            self.show_setup = False
+            self.setup_from_running = False
+            self.message = "Customization cancelled"
+        elif event.key == pygame.K_UP:
+            self.customizer.move_selection(-1)
+        elif event.key == pygame.K_DOWN:
+            self.customizer.move_selection(1)
+        elif event.key == pygame.K_LEFT:
+            self.customizer.adjust(-1)
+        elif event.key == pygame.K_RIGHT:
+            self.customizer.adjust(1)
+        elif pygame.K_1 <= event.key <= pygame.K_4:
+            self.customizer.apply_preset(tuple(PRESETS)[event.key - pygame.K_1])
+        elif event.key == pygame.K_t:
+            self.show_trails = not self.show_trails
+        elif event.key == pygame.K_p:
+            self.show_perception = not self.show_perception
+
+    def _setup_click(self, point: tuple[int, int]) -> None:
+        geometry = self._setup_geometry()
+        for name, rect in zip(PRESETS, geometry["presets"], strict=True):
+            if rect.collidepoint(point):
+                self.customizer.apply_preset(name)
+                return
+        for index, (_row, minus, plus) in enumerate(geometry["rows"]):
+            if minus.collidepoint(point) or plus.collidepoint(point):
+                self.customizer.selected_index = index
+                self.customizer.adjust(-1 if minus.collidepoint(point) else 1)
+                return
+        if geometry["trails"].collidepoint(point):
+            self.show_trails = not self.show_trails
+        elif geometry["perception"].collidepoint(point):
+            self.show_perception = not self.show_perception
+        elif geometry["launch"].collidepoint(point):
+            self._apply_customization()
+
     def _events(self) -> None:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -159,15 +251,17 @@ class EvolutionApp:
                 self.surface = pygame.display.set_mode(size, pygame.RESIZABLE)
                 self.layout = compute_layout(*size)
             elif event.type == pygame.KEYDOWN:
-                if self.show_setup and event.key in {pygame.K_RETURN, pygame.K_SPACE}:
-                    self.show_setup = False
-                    self.message = ""
+                if self.show_setup:
+                    self._setup_key(event)
                     continue
                 ctrl = bool(event.mod & pygame.KMOD_CTRL)
                 key = "?" if event.key == pygame.K_QUESTION else pygame.key.name(event.key)
                 self._action(self.controller.action_for_key(key, ctrl=ctrl))
             elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 point = event.pos
+                if self.show_setup:
+                    self._setup_click(point)
+                    continue
                 tabs = ("Controls", "Inspector", "Events")
                 inner = self.layout.sidebar.inflate(-18, -18)
                 tabs_rect = pygame.Rect(inner.left, inner.top + 32, inner.width, 32)
@@ -185,28 +279,115 @@ class EvolutionApp:
 
     def _setup_overlay(self) -> None:
         overlay = pygame.Surface(self.layout.window.size, pygame.SRCALPHA)
-        overlay.fill((2, 8, 14, 205))
+        overlay.fill((2, 8, 14, 225))
         self.surface.blit(overlay, (0, 0))
-        box = pygame.Rect(0, 0, 650, 340)
-        box.center = self.layout.window.center
+        geometry = self._setup_geometry()
+        box = geometry["box"]
         pygame.draw.rect(self.surface, theme.TISSUE, box, border_radius=14)
         pygame.draw.rect(self.surface, theme.HAIRLINE, box, 1, border_radius=14)
         fonts = self.renderer.fonts
-        title = fonts.display.render("Begin an evolution run", True, theme.INK)
-        self.surface.blit(title, (box.left + 34, box.top + 32))
-        body = [
-            f"Seed {self.seed} · {self.config.initial_population} founders",
-            (
-                f"Food {self.config.resources.initial_count} · "
-                f"mutation {self.config.genome.mutation_probability:.0%}"
-            ),
-            "Observe equilibrium, then apply pressure through a scenario or Events view.",
-        ]
-        for index, line in enumerate(body):
-            image = fonts.body.render(line, True, theme.MUTED)
-            self.surface.blit(image, (box.left + 36, box.top + 98 + index * 42))
-        prompt = fonts.title.render("Press Enter to start", True, theme.ION)
-        self.surface.blit(prompt, prompt.get_rect(center=(box.centerx, box.bottom - 52)))
+        title = fonts.display.render("CREATE A LIVING WORLD", True, theme.INK)
+        self.surface.blit(title, (box.left + 26, box.top + 24))
+        subtitle = fonts.small.render(
+            "Choose a field preset, then tune ecology and genetics before launch.",
+            True,
+            theme.MUTED,
+        )
+        self.surface.blit(subtitle, (box.left + 28, box.top + 66))
+
+        for name, rect in zip(PRESETS, geometry["presets"], strict=True):
+            active = name == self.customizer.active_preset
+            pygame.draw.rect(
+                self.surface,
+                theme.TISSUE_RAISED if active else theme.MIDNIGHT,
+                rect,
+                border_radius=8,
+            )
+            pygame.draw.rect(
+                self.surface,
+                theme.ION if active else theme.HAIRLINE,
+                rect,
+                1,
+                border_radius=8,
+            )
+            label = fonts.small.render(name, True, theme.ION if active else theme.INK)
+            self.surface.blit(label, label.get_rect(center=rect.center))
+
+        rows = geometry["rows"]
+        for index, (parameter, (row, minus, plus)) in enumerate(zip(PARAMETERS, rows, strict=True)):
+            selected = index == self.customizer.selected_index
+            if selected:
+                pygame.draw.rect(self.surface, theme.TISSUE_RAISED, row, border_radius=7)
+                pygame.draw.rect(self.surface, theme.ION, row, 1, border_radius=7)
+            label = fonts.small.render(
+                parameter.label, True, theme.INK if selected else theme.MUTED
+            )
+            self.surface.blit(label, (row.left + 10, row.top + 10))
+            track = pygame.Rect(
+                row.left + 186, row.centery - 2, max(50, minus.left - row.left - 200), 4
+            )
+            pygame.draw.rect(self.surface, theme.HAIRLINE, track, border_radius=2)
+            fill = track.copy()
+            fill.width = max(3, round(track.width * self.customizer.progress_for(index)))
+            pygame.draw.rect(self.surface, theme.ION, fill, border_radius=2)
+            for button, symbol in ((minus, "-"), (plus, "+")):
+                pygame.draw.rect(self.surface, theme.MIDNIGHT, button, border_radius=6)
+                pygame.draw.rect(self.surface, theme.HAIRLINE, button, 1, border_radius=6)
+                glyph = fonts.body.render(symbol, True, theme.INK)
+                self.surface.blit(glyph, glyph.get_rect(center=button.center))
+            value = fonts.small.render(self.customizer.value_label_for(index), True, theme.ION)
+            value_center = ((minus.right + plus.left) // 2, row.centery)
+            self.surface.blit(value, value.get_rect(center=value_center))
+
+        side = pygame.Rect(box.right - 320, box.top + 182, 290, 140)
+        pygame.draw.rect(self.surface, theme.MIDNIGHT, side, border_radius=10)
+        pygame.draw.rect(self.surface, theme.HAIRLINE, side, 1, border_radius=10)
+        heading = fonts.title.render("Launch profile", True, theme.INK)
+        self.surface.blit(heading, (side.left + 18, side.top + 16))
+        summary = (
+            f"{self.customizer.config.initial_population:,} founders  ·  "
+            f"{self.customizer.config.resources.initial_count:,} food",
+            f"{self.customizer.config.genome.mutation_probability:.0%} mutation  ·  "
+            f"seed {self.customizer.seed:,}",
+            f"ceiling {self.customizer.config.reproduction.population_cap:,}  ·  "
+            f"life {self.customizer.config.maximum_age:,}",
+        )
+        for index, line in enumerate(summary):
+            image = fonts.small.render(line, True, theme.MUTED)
+            self.surface.blit(image, (side.left + 18, side.top + 54 + index * 24))
+
+        for rect, label, enabled in (
+            (geometry["trails"], "Trails", self.show_trails),
+            (geometry["perception"], "Senses", self.show_perception),
+        ):
+            pygame.draw.rect(
+                self.surface,
+                theme.TISSUE_RAISED if enabled else theme.MIDNIGHT,
+                rect,
+                border_radius=8,
+            )
+            pygame.draw.rect(
+                self.surface,
+                theme.ION if enabled else theme.HAIRLINE,
+                rect,
+                1,
+                border_radius=8,
+            )
+            image = fonts.small.render(f"{'●' if enabled else '○'} {label}", True, theme.INK)
+            self.surface.blit(image, image.get_rect(center=rect.center))
+
+        instructions = (
+            "Up/Down select  ·  Left/Right tune  ·  1-4 presets",
+            "T trails  ·  P senses  ·  C reopen anytime",
+        )
+        for index, line in enumerate(instructions):
+            image = fonts.tiny.render(line, True, theme.MUTED)
+            self.surface.blit(image, (box.right - 302, box.top + 402 + index * 24))
+
+        launch = geometry["launch"]
+        pygame.draw.rect(self.surface, theme.ION, launch, border_radius=9)
+        prompt = fonts.title.render("APPLY & LAUNCH  ·  ENTER", True, theme.MIDNIGHT)
+        self.surface.blit(prompt, prompt.get_rect(center=launch.center))
 
     def run(
         self,

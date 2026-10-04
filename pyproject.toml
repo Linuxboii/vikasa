@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vikasa"
-version = "1.0.0"
+version = "1.1.0"
 description = "A deterministic artificial-life laboratory for observable evolution"
 readme = "README.md"
 requires-python = ">=3.12"
