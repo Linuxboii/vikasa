@@ -134,4 +134,3 @@ def run_stress(
         remaining -= chunk
     elapsed = time.perf_counter() - started
     return StressReport(engine.tick, elapsed, len(engine.creatures), errors)
-

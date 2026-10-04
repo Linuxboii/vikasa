@@ -28,4 +28,3 @@ def tiny_config() -> SimulationConfig:
         ),
         metrics=replace(base.metrics, sample_interval=1),
     )
-

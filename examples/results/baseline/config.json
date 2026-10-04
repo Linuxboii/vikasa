@@ -1,0 +1,67 @@
+{
+  "config": {
+    "energy": {
+      "basal_cost": 0.025,
+      "initial": 95.0,
+      "maximum": 220.0,
+      "movement_cost": 0.018
+    },
+    "genome": {
+      "crossover": "arithmetic",
+      "mutation_probability": 0.08,
+      "mutation_sigma": 0.06,
+      "traits": {
+        "fertility": [
+          0.15,
+          0.55
+        ],
+        "metabolism": [
+          0.65,
+          1.5
+        ],
+        "perception": [
+          25.0,
+          150.0
+        ],
+        "reproduction_threshold": [
+          70.0,
+          150.0
+        ],
+        "size": [
+          2.5,
+          8.0
+        ],
+        "speed": [
+          0.5,
+          4.0
+        ]
+      }
+    },
+    "initial_population": 100,
+    "maximum_age": 9000,
+    "metrics": {
+      "diversity_sample": 128,
+      "sample_interval": 20
+    },
+    "reproduction": {
+      "cooldown": 160,
+      "mate_radius": 55.0,
+      "minimum_age": 240,
+      "offspring_energy": 34.0,
+      "population_cap": 800
+    },
+    "resources": {
+      "energy_value": 28.0,
+      "initial_count": 220,
+      "maximum_count": 500,
+      "spawn_rate": 0.35
+    },
+    "wander_change_probability": 0.025,
+    "world": {
+      "boundary": "collision",
+      "height": 760,
+      "width": 1200
+    }
+  },
+  "seed": 1101
+}

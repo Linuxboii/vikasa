@@ -53,6 +53,8 @@ class SpatialHash:
             raise ValueError("position must contain two finite values")
         if not math.isfinite(radius) or radius < 0:
             raise ValueError("radius must be finite and non-negative")
+        if not self._positions:
+            return []
         minimum = self._cell(center - radius)
         maximum = self._cell(center + radius)
         radius_sq = radius * radius

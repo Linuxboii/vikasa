@@ -140,4 +140,3 @@ def test_trait_distribution_returns_current_values(tiny_config) -> None:
 
     bounds = engine.config.genome.traits["fertility"]
     assert values == [bounds.minimum, bounds.maximum]
-

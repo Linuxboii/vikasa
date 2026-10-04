@@ -15,11 +15,7 @@ from evolution_sim.model.genome import TRAITS, Trait
 
 def analytical_fitness(creature: Creature) -> float:
     """Return a reporting score; the engine never reads this value."""
-    return (
-        creature.offspring_count * 100.0
-        + creature.age * 0.01
-        + creature.food_acquired * 0.5
-    )
+    return creature.offspring_count * 100.0 + creature.age * 0.01 + creature.food_acquired * 0.5
 
 
 @dataclass(frozen=True, slots=True)
@@ -125,9 +121,7 @@ class MetricsRecorder:
         if len(creatures) > maximum:
             indexes = np.linspace(0, len(creatures) - 1, maximum, dtype=int)
             creatures = [creatures[index] for index in indexes]
-        minimum = np.array(
-            [engine.config.genome.traits[trait.value].minimum for trait in TRAITS]
-        )
+        minimum = np.array([engine.config.genome.traits[trait.value].minimum for trait in TRAITS])
         span = np.array(
             [
                 engine.config.genome.traits[trait.value].maximum
@@ -161,9 +155,7 @@ class MetricsRecorder:
         name = trait.value if isinstance(trait, Trait) else trait
         if name not in {item.value for item in TRAITS}:
             raise ValueError(f"Unknown trait: {name}")
-        return [
-            engine.creatures[key].genome[Trait(name)] for key in sorted(engine.creatures)
-        ]
+        return [engine.creatures[key].genome[Trait(name)] for key in sorted(engine.creatures)]
 
     def summary(self) -> dict[str, Any]:
         if not self.samples:
@@ -173,4 +165,3 @@ class MetricsRecorder:
             "peak_population": max(sample.population for sample in self.samples),
             "final": self.samples[-1].to_row(),
         }
-

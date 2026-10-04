@@ -27,4 +27,3 @@ def test_engine_survives_100000_ticks_without_state_corruption(tiny_config) -> N
     assert report.ticks_completed == 100_000
     assert report.invariant_errors == []
     assert report.elapsed_seconds > 0
-

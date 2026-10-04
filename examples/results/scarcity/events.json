@@ -1,0 +1,20 @@
+{
+  "history": [
+    {
+      "duration": 560,
+      "intensity": 0.22,
+      "kind": "drought",
+      "label": "Sustained drought",
+      "start_tick": 200
+    }
+  ],
+  "scheduled": [
+    {
+      "duration": 560,
+      "intensity": 0.22,
+      "kind": "drought",
+      "label": "Sustained drought",
+      "start_tick": 200
+    }
+  ]
+}

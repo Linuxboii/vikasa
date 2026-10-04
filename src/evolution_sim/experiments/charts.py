@@ -105,4 +105,3 @@ def export_charts(engine: SimulationEngine, directory: str | Path) -> tuple[Path
         axis.set_ylabel("Creatures", color=TEXT)
     distributions_path = _save(figure, root / "distributions.png")
     return population_path, traits_path, vital_path, distributions_path
-
