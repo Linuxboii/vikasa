@@ -102,7 +102,7 @@ def export_experiment(engine: SimulationEngine, directory: str | Path) -> Export
     _write_json(
         root / "summary.json",
         {
-            "format": "evolution-simulator-export",
+            "format": "vikasa-export",
             "version": 1,
             "seed": engine.seed,
             "tick": engine.tick,

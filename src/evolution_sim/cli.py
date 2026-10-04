@@ -19,8 +19,8 @@ from evolution_sim.experiments.scenarios import ScenarioError
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="evolution-simulator",
-        description="Explore, measure, and reproduce evolution in a 2D artificial-life laboratory.",
+        prog="vikasa",
+        description="Vikasa: observe evolution in a deterministic artificial-life laboratory.",
     )
     commands = parser.add_subparsers(dest="command", required=True)
 

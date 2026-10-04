@@ -75,7 +75,7 @@ class EvolutionApp:
         show_setup: bool = True,
     ) -> None:
         pygame.init()
-        pygame.display.set_caption("EVO / Observatory")
+        pygame.display.set_caption("Vikasa / Observatory")
         requested = (max(size[0], MINIMUM_SIZE[0]), max(size[1], MINIMUM_SIZE[1]))
         self.surface = pygame.display.set_mode(requested, pygame.RESIZABLE)
         self.layout = compute_layout(*requested)

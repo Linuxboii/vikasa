@@ -42,7 +42,7 @@ def test_example_result_is_audited_and_self_describing(name: str) -> None:
     summary_path = ROOT / "examples" / "results" / name / "summary.json"
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
 
-    assert summary["format"] == "evolution-simulator-export"
+    assert summary["format"] == "vikasa-export"
     assert summary["tick"] > 0
     assert summary["invariant_errors"] == []
     assert (summary_path.parent / "population.png").stat().st_size > 1_000

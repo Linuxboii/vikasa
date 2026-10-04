@@ -52,15 +52,15 @@ def test_checkpoint_write_is_atomic_and_leaves_no_temporary_file(tiny_config, tm
 
     assert path.exists()
     assert not (tmp_path / "atomic.json.tmp").exists()
-    assert json.loads(path.read_text(encoding="utf-8"))["format"] == "evolution-simulator"
+    assert json.loads(path.read_text(encoding="utf-8"))["format"] == "vikasa"
 
 
 @pytest.mark.parametrize(
     "payload",
     [
         "not-json",
-        '{"format":"evolution-simulator","version":999}',
-        '{"format":"evolution-simulator","version":1,"tick":NaN}',
+        '{"format":"vikasa","version":999}',
+        '{"format":"vikasa","version":1,"tick":NaN}',
     ],
 )
 def test_corrupt_incompatible_and_nonfinite_checkpoints_are_rejected(

@@ -1,4 +1,4 @@
-"""Evolution Simulator - a deterministic artificial-life laboratory."""
+"""Vikasa - a deterministic artificial-life laboratory."""
 
 from evolution_sim.config import SimulationConfig
 
