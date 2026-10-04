@@ -36,6 +36,22 @@ def test_headless_app_renders_scripted_frames_and_screenshot(tiny_config, tmp_pa
     pygame.quit()
 
 
+def test_setup_lab_renders_and_applies_customized_world(tiny_config, tmp_path) -> None:
+    app = EvolutionApp(tiny_config, seed=33, size=(1200, 760), show_setup=True)
+    screenshot = tmp_path / "setup-lab.png"
+    app.customizer.apply_preset("Hypermutation")
+
+    frames = app.run(max_frames=1, screenshot_path=screenshot)
+    app._apply_customization()
+
+    assert frames == 1
+    assert screenshot.stat().st_size > 5_000
+    assert app.seed == 404
+    assert app.config.genome.mutation_probability == 0.3
+    assert app.engine.config == app.config
+    pygame.quit()
+
+
 def test_save_and_load_actions_round_trip_in_app(tiny_config, tmp_path) -> None:
     app = EvolutionApp(tiny_config, seed=81, size=(1200, 760), show_setup=False)
     app.engine.step(5)

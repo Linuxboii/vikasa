@@ -37,5 +37,6 @@ def test_keyboard_actions_are_named_by_user_outcome(tiny_config) -> None:
     assert controller.action_for_key("s", ctrl=True) == "save"
     assert controller.action_for_key("o", ctrl=True) == "load"
     assert controller.action_for_key("e", ctrl=False) == "export"
+    assert controller.action_for_key("c", ctrl=False) == "customize"
     assert controller.action_for_key("?", ctrl=False) == "help"
     assert controller.action_for_key("4", ctrl=False) == "speed_4"
