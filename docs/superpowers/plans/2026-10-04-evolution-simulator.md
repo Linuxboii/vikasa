@@ -1,0 +1,197 @@
+# Evolution Simulator Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Deliver a complete, deterministic artificial-life simulator with interactive Pygame laboratory UI, headless experiments, persistence, analytics, exports, tests, example results, and end-to-end documentation.
+
+**Architecture:** A headless-first fixed-tick simulation package owns all scientific state and exposes immutable snapshots. UI, analytics, persistence, and experiment orchestration depend on explicit engine interfaces and cannot determine evolutionary outcomes.
+
+**Tech Stack:** Python 3.12+, NumPy, pygame-ce, pandas, Matplotlib, pytest, pytest-cov, Hypothesis, Ruff.
+
+**Spec:** `docs/superpowers/specs/2026-10-04-evolution-simulator-design.md`
+
+## Global Constraints
+
+- Support Python 3.12 or newer and Windows first without platform-specific simulation logic.
+- Use `numpy.random.Generator(PCG64)` as the only simulation randomness source.
+- Keep simulation, genetics, analytics, persistence, experiments, and UI in separate modules.
+- Run the same engine step in interactive and headless modes.
+- Store checkpoints and exports as versioned JSON/CSV and use atomic checkpoint writes.
+- Maintain six bounded inheritable traits that visibly affect survival or reproduction.
+- Preserve deterministic ordering by stable entity IDs.
+- Keep the simulation usable at 100 creatures and safe under zero food, extreme mutation, extinction, and population-cap pressure.
+
+## Review Focus
+
+- NaN/Infinity in config or checkpoint input must be rejected before entering simulation state; covered in Task 1 and Task 6.
+- Fractional food spawn rates must be deterministic across save/load; covered in Task 4 and Task 6.
+- Multiple creatures reaching one food item in the same tick must resolve by distance then stable ID; covered in Task 4.
+- Extinction and population cap must remain exportable and must not crash or allocate without bound; covered in Tasks 4 and 7.
+- UI speed/pause controls must change scheduling only and preserve identical engine state for identical step counts; covered in Task 8.
+
+---
+
+### Task 1: Project foundation and validated configuration
+
+**Files:**
+- Create: `pyproject.toml`, `.gitignore`, `src/evolution_sim/__init__.py`, `src/evolution_sim/config.py`
+- Create: `config/default.json`, `config/showcase.json`
+- Test: `tests/test_config.py`
+
+**Interfaces:**
+- Produces: `SimulationConfig.from_json(path)`, `SimulationConfig.from_dict(data)`, `SimulationConfig.to_dict()`, `ConfigError`.
+- Produces frozen sections `WorldConfig`, `GenomeConfig`, `EnergyConfig`, `ReproductionConfig`, `ResourceConfig`, `MetricsConfig`.
+
+- [ ] Write failing tests that load defaults, reject NaN/Infinity, reject inverted gene bounds, reject negative rates, and round-trip to a dictionary.
+- [ ] Run `python -m pytest tests/test_config.py -q` and verify the failures are caused by missing configuration types.
+- [ ] Add package metadata, runtime/dev dependencies, Ruff/Pytest configuration, typed frozen dataclasses, dotted-path validation messages, and two valid JSON presets.
+- [ ] Run `python -m pytest tests/test_config.py -q` and `python -m ruff check src tests`.
+- [ ] Commit foundation changes.
+
+### Task 2: Genome, genetics, and vector math
+
+**Files:**
+- Create: `src/evolution_sim/model/genome.py`, `src/evolution_sim/model/genetics.py`, `src/evolution_sim/model/math2d.py`, `src/evolution_sim/model/__init__.py`
+- Test: `tests/model/test_genome.py`, `tests/model/test_genetics.py`, `tests/model/test_math2d.py`
+
+**Interfaces:**
+- Consumes: `GenomeConfig`.
+- Produces: `Trait` enum, immutable `Genome`, `random_genome(config, rng)`, `crossover(a, b, mode, rng)`, `mutate(genome, config, rng)`, `unit_vector`, `distance_sq`, `reflect_bounds`.
+
+- [ ] Write failing tests for stable six-trait order, bounds, uniform/arithmetic crossover, zero/full mutation, clamping, seeded repeatability, zero-vector normalization, and boundary reflection.
+- [ ] Run the three test modules and verify expected missing-import failures.
+- [ ] Implement minimal immutable genome/genetic/vector functions with no global RNG.
+- [ ] Run focused tests, then the full suite.
+- [ ] Commit genetics changes.
+
+### Task 3: Entities, lineage, and spatial index
+
+**Files:**
+- Create: `src/evolution_sim/model/entities.py`, `src/evolution_sim/model/lineage.py`, `src/evolution_sim/model/spatial.py`
+- Test: `tests/model/test_entities.py`, `tests/model/test_lineage.py`, `tests/model/test_spatial.py`
+
+**Interfaces:**
+- Consumes: `Genome`, NumPy vectors.
+- Produces: `Creature`, `Resource`, `LineageStore`, `SpatialHash.insert(id, position)`, `SpatialHash.query_radius(position, radius)`.
+
+- [ ] Write failing tests for entity identity/state validation, lineage bidirectional consistency, ancestor/descendant queries, empty queries, cell-edge neighbors, and stable query ordering.
+- [ ] Run focused tests and confirm missing types fail.
+- [ ] Implement dataclasses, lineage edge storage, and uniform-grid indexing.
+- [ ] Run focused and full tests; assert no test depends on iteration order of a set.
+- [ ] Commit model changes.
+
+### Task 4: Environment and deterministic simulation engine
+
+**Files:**
+- Create: `src/evolution_sim/simulation/environment.py`, `src/evolution_sim/simulation/engine.py`, `src/evolution_sim/simulation/snapshots.py`, `src/evolution_sim/simulation/__init__.py`
+- Test: `tests/simulation/test_environment.py`, `tests/simulation/test_engine.py`, `tests/simulation/test_reproducibility.py`
+
+**Interfaces:**
+- Consumes: config, model entities/genetics/spatial/lineage.
+- Produces: `EnvironmentEvent`, `EnvironmentState`, `SimulationEngine(config, seed)`, `step(count=1)`, `snapshot()`, `audit_invariants()`, `WorldSnapshot`.
+
+- [ ] Write failing tests for event timing, fractional food accumulator, target/wander movement, movement/basal cost, deterministic food contention, death-before-future-action, reproduction eligibility, crossover/mutation offspring, population cap, extinction, seeded replay, and finite-state audits.
+- [ ] Run focused tests and confirm they fail because engine behavior is absent.
+- [ ] Implement the fixed tick order, boundary collisions, food zones/events, deterministic conflict resolution, and immutable snapshots.
+- [ ] Run focused tests and the full suite; compare canonical snapshots from two seeded engines after equal tick counts.
+- [ ] Commit engine changes.
+
+### Task 5: Metrics and analytical fitness
+
+**Files:**
+- Create: `src/evolution_sim/analytics/metrics.py`, `src/evolution_sim/analytics/__init__.py`
+- Test: `tests/analytics/test_metrics.py`
+
+**Interfaces:**
+- Consumes: `WorldSnapshot`, live creatures, tick birth/death counters.
+- Produces: `MetricsRecorder.record(engine)`, `MetricSample`, `rows()`, `summary()`, `trait_distribution()`, `fitness(creature)`.
+
+- [ ] Write failing tests for population/birth/death counts, all trait moments, moving averages, diversity, correlation fallback for small samples, and analytical fitness that does not affect survival.
+- [ ] Run the focused test and confirm missing recorder failures.
+- [ ] Implement numerically stable metrics with deterministic bounded diversity sampling.
+- [ ] Run focused and full tests.
+- [ ] Commit analytics changes.
+
+### Task 6: Checkpoints and experiment exports
+
+**Files:**
+- Create: `src/evolution_sim/io/checkpoints.py`, `src/evolution_sim/io/export.py`, `src/evolution_sim/io/__init__.py`
+- Test: `tests/io/test_checkpoints.py`, `tests/io/test_export.py`
+
+**Interfaces:**
+- Consumes: `SimulationEngine`, `MetricsRecorder`, configuration and lineage.
+- Produces: `save_checkpoint(engine, path)`, `load_checkpoint(path) -> SimulationEngine`, `export_experiment(engine, directory) -> ExportManifest`.
+
+- [ ] Write failing tests for exact checkpoint continuation, RNG and fractional-spawn restoration, atomic replacement, corrupt/incompatible/NaN rollback, and exported CSV values matching recorder rows.
+- [ ] Run focused tests and verify failures reflect missing persistence.
+- [ ] Implement versioned canonical serialization, validation-before-construction, atomic writes, CSV/JSON artifacts, and manifest hashing.
+- [ ] Run focused and full tests.
+- [ ] Commit persistence changes.
+
+### Task 7: Headless CLI, scenarios, charts, and stress runner
+
+**Files:**
+- Create: `src/evolution_sim/cli.py`, `src/evolution_sim/experiments/runner.py`, `src/evolution_sim/experiments/scenarios.py`, `src/evolution_sim/experiments/charts.py`, `src/evolution_sim/experiments/__init__.py`, `main.py`
+- Create: `experiments/baseline.json`, `experiments/scarcity.json`, `experiments/mutation_low.json`, `experiments/mutation_high.json`, `experiments/environmental_shift.json`
+- Test: `tests/experiments/test_runner.py`, `tests/test_cli.py`, `tests/simulation/test_stress.py`
+
+**Interfaces:**
+- Consumes: engine, recorder, export APIs.
+- Produces: CLI commands `ui`, `run`, `batch`, `stress`, `validate`; `run_experiment(spec)`, PNG chart exporters.
+
+- [ ] Write failing tests for CLI validation, baseline run artifacts, extinction export, replicate directory names, deterministic canonical summary, chart files, and 100,000-tick invariant checks under the `slow` marker.
+- [ ] Run non-slow focused tests and verify missing command failures.
+- [ ] Implement argparse commands, progress summaries, scenario event schedules, batch comparisons, Matplotlib Agg charts, and invariant-audited stress mode.
+- [ ] Run focused, full non-slow, then slow stress tests.
+- [ ] Commit experiment tooling.
+
+### Task 8: Interactive laboratory UI
+
+**Files:**
+- Create: `src/evolution_sim/ui/theme.py`, `src/evolution_sim/ui/layout.py`, `src/evolution_sim/ui/widgets.py`, `src/evolution_sim/ui/charts.py`, `src/evolution_sim/ui/renderer.py`, `src/evolution_sim/ui/app.py`, `src/evolution_sim/ui/__init__.py`
+- Test: `tests/ui/test_layout.py`, `tests/ui/test_controls.py`, `tests/ui/test_smoke.py`
+
+**Interfaces:**
+- Consumes: engine snapshots and explicit engine commands only.
+- Produces: `EvolutionApp(config, seed)`, `run(max_frames=None)`, responsive `Layout`, controller action mapping, rendered world/panels/overlays.
+
+- [ ] Write failing tests for minimum/reference layouts, organism hit-testing, tab and shortcut actions, pause/speed rule independence, headless SDL startup, and scripted save/export actions.
+- [ ] Run UI tests with `SDL_VIDEODRIVER=dummy` and verify missing UI failures.
+- [ ] Implement the setup overlay, status rail, world renderer, trait encodings, inspector, controls/events/traits/lineage tabs, live chart strip, tooltips, help, shortcuts, and resizable layout.
+- [ ] Run UI tests, full suite, and a scripted headless smoke run.
+- [ ] Capture reference/minimum-size screenshots and inspect them for clipping, contrast, hierarchy, and state clarity.
+- [ ] Commit UI changes.
+
+### Task 9: Demonstration package and complete documentation
+
+**Files:**
+- Create: `README.md`, `docs/SCIENTIFIC_MODEL.md`, `docs/EXPERIMENTS.md`, `docs/ARCHITECTURE.md`, `docs/DEMO_SCRIPT.md`, `LICENSE`
+- Create: `examples/results/**` generated experiment artifacts and `docs/images/**` screenshots.
+- Test: `tests/test_documentation.py`
+
+**Interfaces:**
+- Consumes: all supported CLI, UI, configuration, and export behavior.
+- Produces: user/developer operating manual and reproducible showcase assets.
+
+- [ ] Write failing documentation tests that verify every referenced local command/path exists and every JSON example validates.
+- [ ] Run the documentation test and confirm missing artifacts fail.
+- [ ] Run baseline, scarcity, mutation comparison, and environmental-shift presets; store compact representative CSV/JSON/PNG outputs.
+- [ ] Write README with quick start, controls, theory/equations, configuration, architecture, experiments, persistence, exports, tests, performance, troubleshooting, and project map; write focused supporting docs and demo script.
+- [ ] Run documentation and full test suites.
+- [ ] Commit docs and examples.
+
+### Task 10: Release verification and local v1.0
+
+**Files:**
+- Modify only files required to correct verification findings.
+
+**Interfaces:**
+- Produces: verified local release candidate and `v1.0.0` Git tag when local identity permits.
+
+- [ ] Run `python -m ruff format --check .` and `python -m ruff check .`.
+- [ ] Run `python -m pytest -m "not slow" --cov=evolution_sim --cov-report=term-missing` and record exact pass/failure counts.
+- [ ] Run the 100,000-tick slow stress test and verify all invariants.
+- [ ] Run deterministic replay twice and compare canonical summary hashes.
+- [ ] Launch scripted headless UI smoke and manually inspect final screenshots.
+- [ ] Audit every PRD Definition-of-Done item against a command, test, file, or screenshot; fix any gap and rerun affected verification.
+- [ ] Run final full verification, commit release state, and create annotated local tag `v1.0.0` when Git identity is configured.
