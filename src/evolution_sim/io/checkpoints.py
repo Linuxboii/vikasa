@@ -19,7 +19,7 @@ from evolution_sim.model.lineage import LineageStore
 from evolution_sim.simulation.engine import SimulationEngine
 from evolution_sim.simulation.environment import EnvironmentState
 
-FORMAT = "evolution-simulator"
+FORMAT = "vikasa"
 VERSION = 1
 
 
@@ -142,7 +142,7 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
             raise CheckpointError("Checkpoint root must be an object")
         _validate_finite(payload)
         if payload.get("format") != FORMAT:
-            raise CheckpointError("Not an Evolution Simulator checkpoint")
+            raise CheckpointError("Not a Vikasa checkpoint")
         if payload.get("version") != VERSION:
             raise CheckpointError(
                 f"Unsupported checkpoint version {payload.get('version')}; expected {VERSION}"

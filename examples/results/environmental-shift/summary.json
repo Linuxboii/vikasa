@@ -43,7 +43,7 @@
     "total_births": 165,
     "total_deaths": 61
   },
-  "format": "evolution-simulator-export",
+  "format": "vikasa-export",
   "invariant_errors": [],
   "peak_population": 205,
   "population": 204,

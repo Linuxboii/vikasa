@@ -89,7 +89,7 @@ class LaboratoryRenderer:
         panel(surface, layout.top_bar)
         text(
             surface,
-            "EVO / OBSERVATORY",
+            "VIKASA / OBSERVATORY",
             self.fonts.display,
             theme.INK,
             (layout.top_bar.left + 18, layout.top_bar.top + 11),
@@ -101,7 +101,7 @@ class LaboratoryRenderer:
             theme.MUTED,
             (layout.top_bar.left + 20, layout.top_bar.top + 42),
         )
-        start = layout.top_bar.left + 330
+        start = layout.top_bar.left + 390
         metrics = [
             ("tick", f"{engine.tick:,}", theme.INK),
             ("population", f"{len(engine.creatures):,}", theme.ION),
@@ -227,7 +227,7 @@ class LaboratoryRenderer:
     ) -> None:
         panel(surface, rect)
         inner = rect.inflate(-18, -18)
-        text(surface, "Laboratory", self.fonts.title, theme.INK, inner.topleft)
+        text(surface, "Vikasa Lab", self.fonts.title, theme.INK, inner.topleft)
         tabs_rect = pygame.Rect(inner.left, inner.top + 32, inner.width, 32)
         segmented_tabs(
             surface, self.fonts, tabs_rect, ("Controls", "Inspector", "Events"), active_tab

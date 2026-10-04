@@ -1,8 +1,8 @@
-# EVO / Observatory
+# Vikasa
 
-![Evolution Simulator laboratory](docs/images/laboratory.png)
+![Vikasa artificial-life laboratory](docs/images/laboratory.png)
 
-EVO / Observatory is a deterministic artificial-life laboratory. Autonomous organisms search for limited food, spend energy to move and survive, reproduce with crossover and mutation, age, die, and leave inspectable lineages. The same scientific engine powers the live Pygame interface and faster-than-real-time headless experiments.
+Vikasa is a deterministic artificial-life laboratory. Its name comes from the Sanskrit word for development or unfolding: autonomous organisms search for limited food, spend energy to move and survive, reproduce with crossover and mutation, age, die, and leave inspectable lineages. The same scientific engine powers the live Pygame interface and faster-than-real-time headless experiments.
 
 The project makes evolution visible rather than hiding it behind one genetic-algorithm score. Natural survival and reproduction create selection pressure; analytics explain what happened without deciding who survives.
 
@@ -25,11 +25,11 @@ The project makes evolution visible rather than hiding it behind one genetic-alg
 Requirements: Windows 10/11 and Python 3.12 or newer.
 
 ```powershell
-cd C:\path\to\evolution-simulator
+cd C:\path\to\vikasa
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -e ".[dev]"
-.\.venv\Scripts\python.exe main.py ui --config config/showcase.json --seed 2026
+.\.venv\Scripts\vikasa.exe ui --config config/showcase.json --seed 2026
 ```
 
 The first screen summarizes the seed and experiment. Press `Enter` to begin.
@@ -37,11 +37,11 @@ The first screen summarizes the seed and experiment. Press `Enter` to begin.
 ## Quick start on macOS or Linux
 
 ```bash
-cd /path/to/evolution-simulator
+cd /path/to/vikasa
 python3.12 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -e '.[dev]'
-.venv/bin/python main.py ui --config config/showcase.json --seed 2026
+.venv/bin/vikasa ui --config config/showcase.json --seed 2026
 ```
 
 Pygame-ce is the maintained Pygame-compatible runtime used by this project. No network service, database, or GPU is required.
@@ -53,8 +53,8 @@ Pygame-ce is the maintained Pygame-compatible runtime used by this project. No n
 Launch the default or showcase configuration:
 
 ```powershell
-.\.venv\Scripts\python.exe main.py ui --config config/default.json --seed 2026
-.\.venv\Scripts\python.exe main.py ui --config config/showcase.json --seed 2026
+.\.venv\Scripts\vikasa.exe ui --config config/default.json --seed 2026
+.\.venv\Scripts\vikasa.exe ui --config config/showcase.json --seed 2026
 ```
 
 The visual encoding is scientific, not decorative:
@@ -90,13 +90,13 @@ Simulation speed changes how many identical fixed ticks run per frame. It never 
 Validate a configuration:
 
 ```powershell
-.\.venv\Scripts\python.exe main.py validate --config config/default.json
+.\.venv\Scripts\vikasa.exe validate --config config/default.json
 ```
 
 Run one scenario:
 
 ```powershell
-.\.venv\Scripts\python.exe main.py run `
+.\.venv\Scripts\vikasa.exe run `
   --scenario experiments/scarcity.json `
   --output exports/scarcity `
   --seed 2202 `
@@ -106,7 +106,7 @@ Run one scenario:
 Run controlled replicates. Replicate seeds are the base seed plus the zero-based replicate index:
 
 ```powershell
-.\.venv\Scripts\python.exe main.py batch `
+.\.venv\Scripts\vikasa.exe batch `
   --scenario experiments/mutation_high.json `
   --output exports/mutation-high-batch `
   --replicates 5 `
@@ -116,7 +116,7 @@ Run controlled replicates. Replicate seeds are the base seed plus the zero-based
 Run the required long-duration invariant audit:
 
 ```powershell
-.\.venv\Scripts\python.exe main.py stress `
+.\.venv\Scripts\vikasa.exe stress `
   --config config/default.json `
   --ticks 100000 `
   --seed 2026
@@ -374,7 +374,7 @@ Performance depends on population, food count, sampling interval, and scenario p
 Activation is optional. Run the environment's interpreter directly:
 
 ```powershell
-.\.venv\Scripts\python.exe main.py --help
+.\.venv\Scripts\vikasa.exe --help
 ```
 
 ### The Pygame window does not open
