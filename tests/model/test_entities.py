@@ -62,4 +62,3 @@ def test_resource_requires_finite_positive_energy() -> None:
 
     with pytest.raises(ValueError, match="energy"):
         Resource(4, np.array([8.0, 9.0]), 0.0)
-

@@ -67,4 +67,3 @@ class Resource:
             raise ValueError("energy must be finite and positive")
         if not math.isfinite(self.radius) or self.radius <= 0:
             raise ValueError("radius must be finite and positive")
-

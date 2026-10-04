@@ -37,4 +37,3 @@ def test_rebuild_replaces_old_positions() -> None:
 
     index.rebuild({2: np.array([2.0, 2.0])})
     assert index.query_radius(np.zeros(2), 10.0) == [2]
-

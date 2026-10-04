@@ -80,4 +80,3 @@ def random_genome(config: GenomeConfig, rng: np.random.Generator) -> Genome:
     maximum = np.array([config.traits[trait.value].maximum for trait in TRAITS])
     values = rng.uniform(minimum, maximum)
     return Genome(tuple(float(value) for value in values))  # type: ignore[arg-type]
-
