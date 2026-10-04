@@ -31,6 +31,21 @@ def test_multiple_event_types_compose_and_history_records_once() -> None:
     assert len(state.history) == 2
 
 
+def test_active_events_reports_only_events_in_the_current_tick_window() -> None:
+    state = EnvironmentState()
+    drought = EnvironmentEvent("drought", 3, 2, 0.2)
+    future_heat = EnvironmentEvent("heat", 8, 2, 1.5)
+    state.schedule(drought)
+    state.schedule(future_heat)
+
+    state.update(2)
+    assert state.active_events == ()
+    state.update(3)
+    assert state.active_events == (drought,)
+    state.update(5)
+    assert state.active_events == ()
+
+
 def test_invalid_event_is_rejected() -> None:
     try:
         EnvironmentEvent("meteor", 0, 3, 1.0)

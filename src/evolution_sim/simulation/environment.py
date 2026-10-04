@@ -60,12 +60,14 @@ class EnvironmentState:
         self.history: list[dict[str, Any]] = []
         self.food_multiplier = 1.0
         self.metabolic_multiplier = 1.0
+        self.current_tick = -1
 
     def schedule(self, event: EnvironmentEvent) -> None:
         self.events.append(event)
         self.events.sort(key=lambda item: (item.start_tick, item.kind, item.label))
 
     def update(self, tick: int) -> None:
+        self.current_tick = tick
         self.food_multiplier = 1.0
         self.metabolic_multiplier = 1.0
         recorded = {
@@ -86,11 +88,7 @@ class EnvironmentState:
 
     @property
     def active_events(self) -> tuple[EnvironmentEvent, ...]:
-        return tuple(
-            event
-            for event in self.events
-            if (self.food_multiplier != 1.0 or self.metabolic_multiplier != 1.0)
-        )
+        return tuple(event for event in self.events if event.active_at(self.current_tick))
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -98,6 +96,7 @@ class EnvironmentState:
             "history": list(self.history),
             "food_multiplier": self.food_multiplier,
             "metabolic_multiplier": self.metabolic_multiplier,
+            "current_tick": self.current_tick,
         }
 
     @classmethod
@@ -107,4 +106,5 @@ class EnvironmentState:
         state.history = [dict(item) for item in data.get("history", [])]
         state.food_multiplier = float(data.get("food_multiplier", 1.0))
         state.metabolic_multiplier = float(data.get("metabolic_multiplier", 1.0))
+        state.current_tick = int(data.get("current_tick", -1))
         return state
