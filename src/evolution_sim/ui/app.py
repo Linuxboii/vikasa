@@ -9,6 +9,7 @@ from pathlib import Path
 import pygame
 
 from evolution_sim.config import SimulationConfig
+from evolution_sim.experiments.charts import export_charts
 from evolution_sim.io.checkpoints import load_checkpoint, save_checkpoint
 from evolution_sim.io.export import export_experiment
 from evolution_sim.simulation.engine import SimulationEngine
@@ -21,7 +22,7 @@ from evolution_sim.ui.renderer import LaboratoryRenderer, hit_test_creature
 class SimulationController:
     engine: SimulationEngine
     paused: bool = False
-    speed_index: int = 1
+    speed_index: int = 0
 
     SPEED_STEPS = (1, 2, 4, 8, 16)
 
@@ -117,6 +118,7 @@ class EvolutionApp:
             else Path("exports") / datetime.now().strftime("session-%Y%m%d-%H%M%S")
         )
         export_experiment(self.engine, target)
+        export_charts(self.engine, target)
         self.message = f"Exported {target.name}"
         return target
 

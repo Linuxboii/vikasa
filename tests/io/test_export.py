@@ -58,4 +58,3 @@ def test_summary_is_canonical_for_equal_seeded_runs(tiny_config, tmp_path) -> No
     parsed = json.loads(first_summary)
     assert parsed["seed"] == 88
     assert parsed["tick"] == 25
-

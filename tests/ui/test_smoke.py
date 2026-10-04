@@ -48,3 +48,21 @@ def test_save_and_load_actions_round_trip_in_app(tiny_config, tmp_path) -> None:
 
     assert app.engine.snapshot() == expected
     pygame.quit()
+
+
+def test_export_action_writes_data_and_chart_artifacts(tiny_config, tmp_path) -> None:
+    app = EvolutionApp(tiny_config, seed=91, size=(1200, 760), show_setup=False)
+    app.engine.step(5)
+    target = tmp_path / "ui-export"
+
+    exported = app.export(target)
+
+    assert exported == target
+    assert (target / "config.json").exists()
+    assert (target / "summary.json").exists()
+    assert (target / "metrics.csv").exists()
+    assert (target / "population.png").exists()
+    assert (target / "traits.png").exists()
+    assert (target / "births_deaths.png").exists()
+    assert (target / "distributions.png").exists()
+    pygame.quit()

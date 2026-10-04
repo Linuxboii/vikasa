@@ -75,4 +75,3 @@ def test_equal_scenario_runs_have_identical_canonical_summaries(tmp_path) -> Non
     assert (first.manifest.root / "summary.json").read_bytes() == (
         second.manifest.root / "summary.json"
     ).read_bytes()
-

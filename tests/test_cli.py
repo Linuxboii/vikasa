@@ -42,4 +42,3 @@ def test_run_command_creates_summary(tmp_path) -> None:
     assert result == 0
     assert (tmp_path / "cli-run" / "summary.json").exists()
     assert (tmp_path / "cli-run" / "population.png").exists()
-

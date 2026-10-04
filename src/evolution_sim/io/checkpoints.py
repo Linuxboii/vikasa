@@ -78,12 +78,8 @@ def checkpoint_payload(engine: SimulationEngine) -> dict[str, Any]:
         "seed": engine.seed,
         "tick": engine.tick,
         "rng_state": engine.rng.bit_generator.state,
-        "creatures": [
-            _creature_to_dict(engine.creatures[key]) for key in sorted(engine.creatures)
-        ],
-        "resources": [
-            _resource_to_dict(engine.resources[key]) for key in sorted(engine.resources)
-        ],
+        "creatures": [_creature_to_dict(engine.creatures[key]) for key in sorted(engine.creatures)],
+        "resources": [_resource_to_dict(engine.resources[key]) for key in sorted(engine.resources)],
         "lineage": engine.lineage.to_records(),
         "environment": engine.environment.to_dict(),
         "metrics": [asdict(sample) for sample in engine.metrics.samples],
@@ -187,4 +183,3 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
         raise
     except (OSError, json.JSONDecodeError, KeyError, TypeError, ValueError, ConfigError) as exc:
         raise CheckpointError(f"Could not load checkpoint {source}: {exc}") from exc
-

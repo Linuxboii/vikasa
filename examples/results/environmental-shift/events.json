@@ -1,0 +1,48 @@
+{
+  "history": [
+    {
+      "duration": 360,
+      "intensity": 0.2,
+      "kind": "drought",
+      "label": "Resource crash",
+      "start_tick": 180
+    },
+    {
+      "duration": 220,
+      "intensity": 1.55,
+      "kind": "heat",
+      "label": "Heat stress",
+      "start_tick": 320
+    },
+    {
+      "duration": 200,
+      "intensity": 2.0,
+      "kind": "abundance",
+      "label": "Recovery bloom",
+      "start_tick": 650
+    }
+  ],
+  "scheduled": [
+    {
+      "duration": 360,
+      "intensity": 0.2,
+      "kind": "drought",
+      "label": "Resource crash",
+      "start_tick": 180
+    },
+    {
+      "duration": 220,
+      "intensity": 1.55,
+      "kind": "heat",
+      "label": "Heat stress",
+      "start_tick": 320
+    },
+    {
+      "duration": 200,
+      "intensity": 2.0,
+      "kind": "abundance",
+      "label": "Recovery bloom",
+      "start_tick": 650
+    }
+  ]
+}

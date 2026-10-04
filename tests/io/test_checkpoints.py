@@ -75,4 +75,3 @@ def test_corrupt_incompatible_and_nonfinite_checkpoints_are_rejected(
         load_checkpoint(path)
 
     assert engine.snapshot() == before
-

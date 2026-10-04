@@ -101,8 +101,9 @@ class SimulationEngine:
         self.tick_deaths = 0
         self.environment.update(self.tick)
         self._regenerate_resources()
-        self._move_creatures()
-        self._resolve_consumption()
+        resource_index = self._resource_index()
+        self._move_creatures(resource_index)
+        self._resolve_consumption(resource_index)
         self._resolve_reproduction()
         self._resolve_deaths()
         self.tick += 1
@@ -120,13 +121,13 @@ class SimulationEngine:
             self._spawn_resource()
 
     def _resource_index(self) -> SpatialHash:
-        cell_size = max(8.0, min(bounds.maximum for bounds in self.config.genome.traits.values()))
+        maximum_perception = self.config.genome.traits["perception"].maximum
+        cell_size = max(24.0, maximum_perception / 2.0)
         index = SpatialHash(cell_size)
         index.rebuild({key: item.position for key, item in self.resources.items()})
         return index
 
-    def _move_creatures(self) -> None:
-        resource_index = self._resource_index()
+    def _move_creatures(self, resource_index: SpatialHash) -> None:
         for creature_id in sorted(self.creatures):
             creature = self.creatures[creature_id]
             creature.age += 1
@@ -185,11 +186,10 @@ class SimulationEngine:
             if len(creature.trail) > 18:
                 del creature.trail[:-18]
 
-    def _resolve_consumption(self) -> None:
+    def _resolve_consumption(self, resource_index: SpatialHash) -> None:
         if not self.resources:
             return
         contenders: dict[int, list[tuple[float, int]]] = {}
-        resource_index = self._resource_index()
         maximum_resource_radius = max(resource.radius for resource in self.resources.values())
         for creature_id in sorted(self.creatures):
             creature = self.creatures[creature_id]
