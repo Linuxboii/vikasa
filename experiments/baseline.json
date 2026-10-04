@@ -1,0 +1,10 @@
+{
+  "name": "baseline",
+  "description": "Stable food supply reveals equilibrium and natural trait drift.",
+  "config": "../config/default.json",
+  "seed": 1101,
+  "ticks": 6000,
+  "overrides": {},
+  "events": []
+}
+

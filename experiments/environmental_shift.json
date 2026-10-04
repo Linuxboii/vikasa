@@ -1,0 +1,14 @@
+{
+  "name": "environmental-shift",
+  "description": "A stable population experiences drought, heat, and recovery.",
+  "config": "../config/showcase.json",
+  "seed": 4404,
+  "ticks": 8000,
+  "overrides": {},
+  "events": [
+    {"kind": "drought", "start_tick": 2200, "duration": 2600, "intensity": 0.2, "label": "Resource crash"},
+    {"kind": "heat", "start_tick": 3000, "duration": 1400, "intensity": 1.55, "label": "Heat stress"},
+    {"kind": "abundance", "start_tick": 5200, "duration": 1600, "intensity": 2.0, "label": "Recovery bloom"}
+  ]
+}
+
