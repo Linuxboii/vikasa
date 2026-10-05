@@ -15,6 +15,11 @@ from evolution_sim.model.lineage import LineageStore
 from evolution_sim.model.math2d import distance_sq, reflect_bounds, unit_vector
 from evolution_sim.model.spatial import SpatialHash
 from evolution_sim.model.temperament import Temperament
+from evolution_sim.simulation.behavior import (
+    ActionName,
+    BehaviorController,
+    BehaviorPerception,
+)
 from evolution_sim.simulation.culture import CultureLedger
 from evolution_sim.simulation.environment import EnvironmentState
 from evolution_sim.simulation.snapshots import (
@@ -22,6 +27,10 @@ from evolution_sim.simulation.snapshots import (
     ResourceSnapshot,
     WorldSnapshot,
 )
+
+HOME_MIGRATION_PERSISTENCE_TICKS = 24
+HOME_MIGRATION_RATE = 0.005
+CARE_PARENT_RESERVE = 0.35
 
 
 class SimulationEngine:
@@ -51,6 +60,11 @@ class SimulationEngine:
         self.total_deaths = 0
         self.reproduction_skipped_at_cap = 0
         self.metrics = MetricsRecorder()
+        self.behavior_controller = BehaviorController(config)
+        self._behavior_resource_index: SpatialHash | None = None
+        self._behavior_creature_index: SpatialHash | None = None
+        self._behavior_eligible_ids: set[int] | None = None
+        self._tick_perceptions: dict[int, BehaviorPerception] = {}
         self._initialize_world()
 
     @property
@@ -84,6 +98,10 @@ class SimulationEngine:
             genome=genome,
             wander_angle=angle,
             temperament=Temperament.random(self.rng),
+            home_radius=min(
+                float(self.rng.uniform(18.0, 36.0)),
+                min(self.config.world.width, self.config.world.height) / 2.0,
+            ),
         )
 
     def _spawn_resource(self) -> None:
@@ -144,106 +162,239 @@ class SimulationEngine:
         return index
 
     def _move_creatures(self, resource_index: SpatialHash) -> None:
-        creature_index = SpatialHash(
+        self._behavior_resource_index = resource_index
+        self._behavior_creature_index = SpatialHash(
             max(24.0, self.config.genome.traits["perception"].maximum / 2.0)
         )
-        creature_index.rebuild({key: item.position for key, item in self.creatures.items()})
+        self._behavior_creature_index.rebuild(
+            {key: item.position for key, item in self.creatures.items()}
+        )
+        self._tick_perceptions.clear()
         for creature_id in sorted(self.creatures):
-            creature = self.creatures[creature_id]
-            creature.age += 1
-            perception = creature.genome[Trait.PERCEPTION]
-            nearby = resource_index.query_radius(creature.position, perception)
-            social_targets: list[int] = []
-            if creature.alpha and creature.satisfaction >= 0.35:
-                social_targets = [
-                    other_id
-                    for other_id in creature_index.query_radius(creature.position, perception)
-                    if other_id != creature_id
-                ]
-            seeking_trouble = bool(social_targets) and self.rng.random() < min(
-                0.45,
-                0.04 + 0.32 * creature.satisfaction * creature.temperament.aggression,
-            )
-            if seeking_trouble:
-                target_id = min(
-                    social_targets,
-                    key=lambda item: (distance_sq(creature.position, self.creatures[item].position), item),
+            self.creatures[creature_id].age += 1
+        self._behavior_eligible_ids = {
+            key for key, creature in self.creatures.items() if self._eligible(creature)
+        }
+        # Every decision sees the same tick's positions; no earlier creature has moved.
+        for creature_id in sorted(self.creatures):
+            self._choose_behavior(creature_id)
+        for creature_id in sorted(self.creatures):
+            self._execute_behavior(creature_id)
+        self._behavior_resource_index = self._behavior_creature_index = None
+        self._behavior_eligible_ids = None
+        self._tick_perceptions.clear()
+
+    def _behavior_perception(self, creature_id: int) -> BehaviorPerception:
+        creature = self.creatures[creature_id]
+        resource_index = self._behavior_resource_index or self._resource_index()
+        creature_index = self._behavior_creature_index
+        if creature_index is None:
+            creature_index = SpatialHash(max(24.0, creature.genome[Trait.PERCEPTION] / 2.0))
+            creature_index.rebuild({key: item.position for key, item in self.creatures.items()})
+        radius = creature.genome[Trait.PERCEPTION]
+        eligible = self._behavior_eligible_ids
+        if eligible is None:
+            eligible = {key for key, item in self.creatures.items() if self._eligible(item)}
+        neighbors = [
+            self.creatures[key]
+            for key in creature_index.query_radius(creature.position, radius)
+            if key != creature_id and self.creatures[key].alive
+        ]
+        # Reuse the neighborhood when it includes the care radius.
+        care_neighbors = (
+            neighbors
+            if self.config.behavior.care_radius <= radius
+            else [
+                self.creatures[key]
+                for key in creature_index.query_radius(
+                    creature.position, self.config.behavior.care_radius
                 )
-                direction = unit_vector(self.creatures[target_id].position - creature.position)
-            elif nearby:
-                target_id = min(
-                    nearby,
-                    key=lambda item: (
-                        distance_sq(creature.position, self.resources[item].position),
-                        item,
-                    ),
+            ]
+        )
+        dependents = tuple(
+            child
+            for child in care_neighbors
+            if child.alive
+            and child.parents is not None
+            and creature_id in child.parents
+            and child.age < self.config.behavior.dependent_age_ticks
+            and distance_sq(creature.position, child.position)
+            <= self.config.behavior.care_radius**2
+        )
+        return BehaviorPerception(
+            food=tuple(
+                self.resources[key]
+                for key in resource_index.query_radius(creature.position, radius)
+                if key in self.resources
+            ),
+            threats=tuple(
+                other
+                for other in neighbors
+                if other.temperament.aggression >= 0.5
+                and not (other.parents is not None and creature_id in other.parents)
+                and not (creature.parents is not None and other.id in creature.parents)
+            ),
+            eligible_mates=tuple(
+                other
+                for other in neighbors
+                if creature_id in eligible
+                and other.id in eligible
+                and not (other.parents is not None and creature_id in other.parents)
+                and not (creature.parents is not None and other.id in creature.parents)
+            ),
+            dependent_offspring=dependents,
+            local_hazard=min(1.0, max(0.0, self.environment.health_pressure)),
+            terrain_cost=min(1.0, max(0.0, (self.environment.movement_multiplier - 1.0) / 3.0)),
+        )
+
+    def _choose_behavior(self, creature_id: int) -> None:
+        creature = self.creatures[creature_id]
+        perception = self._behavior_perception(creature_id)
+        self._tick_perceptions[creature_id] = perception
+        decision = self.behavior_controller.decide(
+            creature, perception, self.config.energy.maximum, self.tick, self.rng
+        )
+        creature.behavior_state = decision.state
+        outside = distance_sq(creature.position, creature.home_center) > creature.home_radius**2
+        if not outside or decision.state.action is not ActionName.FORAGE:
+            creature.home_migration_ticks = 0
+            return
+        # Only locally perceived food supplies evidence of a better outside habitat.
+        outside_reward = max(
+            (
+                self.behavior_controller.food_reward(creature, food, self.config.energy.maximum)
+                for food in perception.food
+                if distance_sq(food.position, creature.home_center) > creature.home_radius**2
+            ),
+            default=0.0,
+        )
+        home_reward = max(
+            (
+                self.behavior_controller.food_reward(creature, food, self.config.energy.maximum)
+                for food in perception.food
+                if distance_sq(food.position, creature.home_center) <= creature.home_radius**2
+            ),
+            default=0.0,
+        )
+        if (
+            outside
+            and decision.state.action is ActionName.FORAGE
+            and outside_reward - home_reward > self.config.behavior.territory_migration_margin
+        ):
+            creature.home_migration_ticks += 1
+            if creature.home_migration_ticks >= HOME_MIGRATION_PERSISTENCE_TICKS:
+                creature.home_center += HOME_MIGRATION_RATE * (
+                    creature.position - creature.home_center
                 )
-                direction = unit_vector(self.resources[target_id].position - creature.position)
+        else:
+            creature.home_migration_ticks = 0
+
+    def _execute_behavior(self, creature_id: int) -> None:
+        creature = self.creatures[creature_id]
+        state = creature.behavior_state
+        target = None if state.target_position is None else np.asarray(state.target_position)
+        if state.target_kind == "creature" and state.target_id in self.creatures:
+            target = self.creatures[state.target_id].position
+        if state.action is ActionName.REST:
+            direction = np.zeros(2)
+        elif state.action is ActionName.FLEE:
+            if target is not None and state.target_kind == "creature":
+                direction = unit_vector(creature.position - target)
             else:
-                if self.rng.random() < self.config.wander_change_probability:
-                    creature.wander_angle += float(self.rng.normal(0.0, 0.65))
+                direction = unit_vector(creature.home_center - creature.position)
+            if float(np.linalg.norm(direction)) == 0.0:
                 direction = np.array(
                     [math.cos(creature.wander_angle), math.sin(creature.wander_angle)]
                 )
-            max_speed = creature.genome[Trait.SPEED]
-            desired_velocity = direction * max_speed
-            creature.velocity += 0.3 * (desired_velocity - creature.velocity)
-            velocity_length = float(np.linalg.norm(creature.velocity))
-            if velocity_length > max_speed:
-                creature.velocity = unit_vector(creature.velocity) * max_speed
-            distance = float(np.linalg.norm(creature.velocity))
-            creature.position += creature.velocity
-            if self.config.world.boundary == "collision":
-                creature.position, creature.velocity = reflect_bounds(
-                    creature.position,
-                    creature.velocity,
-                    width=float(self.config.world.width),
-                    height=float(self.config.world.height),
-                )
+        elif target is not None:
+            delta = target - creature.position
+            if state.action is ActionName.CARE and float(np.linalg.norm(delta)) <= 4.0:
+                direction = np.zeros(2)
             else:
-                creature.position %= np.array(
-                    [float(self.config.world.width), float(self.config.world.height)]
+                direction = unit_vector(delta)
+        else:
+            if self.rng.random() < self.config.wander_change_probability:
+                creature.wander_angle += float(self.rng.normal(0.0, 0.65))
+            direction = np.array([math.cos(creature.wander_angle), math.sin(creature.wander_angle)])
+        max_speed = creature.genome[Trait.SPEED]
+        speed_factor = {
+            ActionName.REST: 0.0,
+            ActionName.CARE: 0.4,
+            ActionName.PATROL: 0.6,
+            ActionName.EXPLORE: 0.65,
+        }.get(state.action, 1.0)
+        desired_velocity = direction * max_speed * speed_factor
+        steering = 0.8 if state.action is ActionName.REST else 0.3
+        creature.velocity += steering * (desired_velocity - creature.velocity)
+        if float(np.linalg.norm(creature.velocity)) > max_speed:
+            creature.velocity = unit_vector(creature.velocity) * max_speed
+        distance = float(np.linalg.norm(creature.velocity))
+        creature.position += creature.velocity
+        if self.config.world.boundary == "collision":
+            creature.position, creature.velocity = reflect_bounds(
+                creature.position,
+                creature.velocity,
+                width=float(self.config.world.width),
+                height=float(self.config.world.height),
+            )
+        else:
+            creature.position %= np.array([self.config.world.width, self.config.world.height])
+        size, metabolism = creature.genome[Trait.SIZE], creature.genome[Trait.METABOLISM]
+        basal = (
+            self.config.energy.basal_cost
+            * (1.0 + size / 8.0)
+            / metabolism
+            * self.environment.metabolic_multiplier
+            * self.environment.seasonal_metabolic_multiplier
+            * (1.0 + creature.injury * 0.35)
+            * (1.0 + self.environment.health_pressure * 0.25)
+        )
+        movement = (
+            self.config.energy.movement_cost
+            * distance
+            * (0.5 + size / 8.0)
+            * (0.5 + max_speed / 4.0)
+            * self.environment.movement_multiplier
+        )
+        creature.energy -= basal + movement
+        if state.action is ActionName.CARE and state.target_id in self.creatures:
+            child = self.creatures[state.target_id]
+            if (
+                child.alive
+                and child.parents is not None
+                and creature.id in child.parents
+                and child.age < self.config.behavior.dependent_age_ticks
+                and distance_sq(creature.position, child.position)
+                <= self.config.behavior.care_radius**2
+            ):
+                transfer = min(
+                    self.config.behavior.care_energy_rate,
+                    max(0.0, creature.energy - CARE_PARENT_RESERVE * self.config.energy.maximum),
+                    max(0.0, self.config.energy.maximum - child.energy),
                 )
-            size = creature.genome[Trait.SIZE]
-            metabolism = creature.genome[Trait.METABOLISM]
-            basal = (
-                self.config.energy.basal_cost
-                * (1.0 + size / 8.0)
-                / metabolism
-                * self.environment.metabolic_multiplier
-                * self.environment.seasonal_metabolic_multiplier
-                * (1.0 + creature.injury * 0.35)
-                * (1.0 + self.environment.health_pressure * 0.25)
+                creature.energy -= transfer
+                child.energy += transfer
+                child.hunger = min(1.0, max(0.0, 1.0 - child.energy / self.config.energy.maximum))
+        if self.environment.health_pressure > 0.0:
+            creature.injury = min(
+                1.0,
+                creature.injury
+                + self.environment.health_pressure
+                * (1.0 - creature.temperament.resilience)
+                * 0.003,
             )
-            movement = (
-                self.config.energy.movement_cost
-                * distance
-                * (0.5 + size / 8.0)
-                * (0.5 + max_speed / 4.0)
-                * self.environment.movement_multiplier
-            )
-            creature.energy -= basal + movement
-            if self.environment.health_pressure > 0.0:
-                creature.injury = min(
-                    1.0,
-                    creature.injury
-                    + self.environment.health_pressure
-                    * (1.0 - creature.temperament.resilience)
-                    * 0.003,
-                )
-            else:
-                creature.injury = max(0.0, creature.injury - 0.0015)
-            creature.hunger = min(
-                1.0, max(0.0, 1.0 - creature.energy / self.config.energy.maximum)
-            )
-            creature.starvation_ticks = (
-                creature.starvation_ticks + 1
-                if creature.energy <= 0.0
-                else max(0, creature.starvation_ticks - 1)
-            )
-            creature.trail.append((float(creature.position[0]), float(creature.position[1])))
-            if len(creature.trail) > 18:
-                del creature.trail[:-18]
+        else:
+            recovery = 0.003 if state.action is ActionName.REST else 0.0015
+            creature.injury = max(0.0, creature.injury - recovery)
+        creature.hunger = min(1.0, max(0.0, 1.0 - creature.energy / self.config.energy.maximum))
+        creature.starvation_ticks = (
+            creature.starvation_ticks + 1
+            if creature.energy <= 0.0
+            else max(0, creature.starvation_ticks - 1)
+        )
+        creature.trail.append((float(creature.position[0]), float(creature.position[1])))
+        if len(creature.trail) > 18:
+            del creature.trail[:-18]
 
     def _resolve_fights(self) -> None:
         if len(self.creatures) < 2:
@@ -265,23 +416,31 @@ class SimulationEngine:
                 if distance_sq(first.position, second.position) > reach * reach:
                     continue
                 pressure = max(first.hunger, second.hunger)
-                is_challenge = first.alpha or second.alpha
+                is_challenge = any(
+                    actor.behavior_state.action is ActionName.CHALLENGE
+                    and actor.behavior_state.target_id == rival.id
+                    for actor, rival in ((first, second), (second, first))
+                )
                 if pressure < 0.48 and not is_challenge:
                     continue
                 aggression = (first.temperament.aggression + second.temperament.aggression) / 2.0
-                alpha_drive = 1.0 + 0.5 * int(first.alpha) + 0.5 * int(second.alpha)
-                risk = min(0.09, 0.004 * (0.25 + pressure) * (0.3 + aggression) * alpha_drive)
+                if aggression <= 0 or any(
+                    actor.behavior_state.action is ActionName.FLEE for actor in (first, second)
+                ):
+                    continue
+                risk = min(
+                    0.09,
+                    0.004 * (0.25 + pressure) * (0.3 + aggression) * (1.5 if is_challenge else 1.0),
+                )
                 if self.rng.random() >= risk:
                     continue
 
-                first_score = (
-                    first.genome[Trait.SIZE] * (0.6 + first.temperament.aggression)
-                    + 0.45 * max(0.0, first.energy / max_energy)
-                )
-                second_score = (
-                    second.genome[Trait.SIZE] * (0.6 + second.temperament.aggression)
-                    + 0.45 * max(0.0, second.energy / max_energy)
-                )
+                first_score = first.genome[Trait.SIZE] * (
+                    0.6 + first.temperament.aggression
+                ) + 0.45 * max(0.0, first.energy / max_energy)
+                second_score = second.genome[Trait.SIZE] * (
+                    0.6 + second.temperament.aggression
+                ) + 0.45 * max(0.0, second.energy / max_energy)
                 first_defense = first.genome[Trait.SIZE] * (0.7 + first.temperament.resilience)
                 second_defense = second.genome[Trait.SIZE] * (0.7 + second.temperament.resilience)
                 first_win_probability = (first_score + second_defense) / (
@@ -353,15 +512,14 @@ class SimulationEngine:
             winner = self.creatures[winner_id]
             winner.food_acquired += resource.energy
             winner.energy = min(self.config.energy.maximum, winner.energy + resource.energy)
-            winner.hunger = min(
-                1.0, max(0.0, 1.0 - winner.energy / self.config.energy.maximum)
-            )
+            winner.hunger = min(1.0, max(0.0, 1.0 - winner.energy / self.config.energy.maximum))
 
     def _eligible(self, creature: Creature) -> bool:
         fertility = creature.genome[Trait.FERTILITY]
         cooldown = max(1, round(self.config.reproduction.cooldown * (1.0 - 0.5 * fertility)))
         return (
-            creature.age >= self.config.reproduction.minimum_age
+            creature.alive
+            and creature.age >= self.config.reproduction.minimum_age
             and creature.energy >= creature.genome[Trait.REPRODUCTION_THRESHOLD]
             and self.tick - creature.last_reproduction_tick >= cooldown
         )
@@ -370,7 +528,7 @@ class SimulationEngine:
         eligible = {
             creature_id
             for creature_id, creature in self.creatures.items()
-            if self._eligible(creature)
+            if self._eligible(creature) and creature.behavior_state.action is ActionName.SEEK_MATE
         }
         if len(eligible) < 2:
             return
@@ -387,7 +545,11 @@ class SimulationEngine:
                 for candidate in index.query_radius(
                     first.position, self.config.reproduction.mate_radius
                 )
-                if candidate in eligible and candidate != first_id and candidate not in paired
+                if candidate in eligible
+                and candidate != first_id
+                and candidate not in paired
+                and first.behavior_state.target_id == candidate
+                and self.creatures[candidate].behavior_state.target_id == first_id
             ]
             if not candidates:
                 continue
@@ -423,6 +585,16 @@ class SimulationEngine:
                 birth_tick=self.tick,
                 wander_angle=float(self.rng.uniform(0.0, math.tau)),
                 temperament=Temperament.inherited(first.temperament, second.temperament, self.rng),
+                home_center=child_position,
+                home_radius=min(
+                    max(
+                        0.001,
+                        (first.home_radius + second.home_radius)
+                        / 2.0
+                        * float(self.rng.uniform(0.9, 1.1)),
+                    ),
+                    min(self.config.world.width, self.config.world.height) / 2.0,
+                ),
             )
             contribution = self.config.reproduction.offspring_energy / 2.0
             first.energy -= contribution
@@ -547,6 +719,14 @@ class SimulationEngine:
                 errors.append(f"creature {key} has non-finite motion state")
             if not math.isfinite(creature.energy):
                 errors.append(f"creature {key} has non-finite energy")
+            if not np.isfinite(creature.home_center).all() or not (
+                0 <= creature.home_center[0] <= width and 0 <= creature.home_center[1] <= height
+            ):
+                errors.append(f"creature {key} has invalid home center")
+            if not (0 < creature.home_radius <= min(width, height) / 2.0):
+                errors.append(f"creature {key} has invalid home radius")
+            if creature.home_migration_ticks < 0:
+                errors.append(f"creature {key} has invalid migration counter")
             if not (0 <= creature.position[0] <= width and 0 <= creature.position[1] <= height):
                 errors.append(f"creature {key} is outside world bounds")
             for trait, value in creature.genome.to_mapping().items():

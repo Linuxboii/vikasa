@@ -6,6 +6,8 @@ import numpy as np
 
 from evolution_sim.model.entities import Creature, Resource
 from evolution_sim.model.genome import Genome
+from evolution_sim.model.temperament import Temperament
+from evolution_sim.simulation.behavior import ActionName, BehaviorState
 from evolution_sim.simulation.engine import SimulationEngine
 from evolution_sim.simulation.environment import EnvironmentEvent
 
@@ -156,3 +158,159 @@ def test_maximum_age_death_is_counted_and_removed(tiny_config) -> None:
     assert creature_id not in engine.creatures
     assert engine.tick_deaths == 1
     assert engine.total_deaths == 1
+
+
+def controlled_engine(config, seed=17):
+    config = replace(
+        config,
+        initial_population=1,
+        resources=replace(config.resources, initial_count=0, spawn_rate=0.0),
+    )
+    engine = SimulationEngine(config, seed=seed)
+    engine.creatures = {
+        1: Creature(
+            1,
+            np.array([80.0, 60.0]),
+            np.zeros(2),
+            300,
+            200.0,
+            middle_genome(config),
+            temperament=Temperament(),
+        )
+    }
+    engine.next_creature_id = 2
+    return engine
+
+
+def test_forage_action_reaches_and_consumes_perceived_food(tiny_config):
+    engine = controlled_engine(tiny_config)
+    creature = engine.creatures[1]
+    creature.energy = 20.0
+    engine.resources = {1: Resource(1, np.array([85.0, 60.0]), 28.0)}
+    engine.step()
+    assert creature.behavior_state.action is ActionName.FORAGE
+    assert creature.food_acquired == 28.0
+    assert engine.resources == {}
+    assert engine.audit_invariants() == []
+
+
+def test_flee_action_increases_distance_from_stronger_aggressive_threat(tiny_config):
+    engine = controlled_engine(tiny_config)
+    creature = engine.creatures[1]
+    threat = Creature(
+        2,
+        np.array([84.0, 60.0]),
+        np.zeros(2),
+        300,
+        220.0,
+        middle_genome(tiny_config, size=8.0),
+        temperament=Temperament(aggression=1.0),
+    )
+    engine.creatures[2] = threat
+    before = np.linalg.norm(creature.position - threat.position)
+    engine._choose_behavior(1)
+    engine._execute_behavior(1)
+    assert creature.behavior_state.action is ActionName.FLEE
+    assert np.linalg.norm(creature.position - threat.position) > before
+
+
+def test_rest_consumes_less_energy_than_explore(tiny_config):
+    engines = [controlled_engine(tiny_config) for _ in range(2)]
+    for engine, action in zip(engines, (ActionName.REST, ActionName.EXPLORE), strict=True):
+        engine.creatures[1].velocity[:] = [2.0, 0.0]
+        engine.creatures[1].behavior_state = BehaviorState(action=action)
+        engine._execute_behavior(1)
+    assert engines[0].creatures[1].energy > engines[1].creatures[1].energy
+    assert np.linalg.norm(engines[0].creatures[1].velocity) < np.linalg.norm(
+        engines[1].creatures[1].velocity
+    )
+
+
+def test_care_transfers_bounded_energy_to_dependent_with_parent_reserve(tiny_config):
+    engine = controlled_engine(tiny_config)
+    child = Creature(
+        2, np.array([82.0, 60.0]), np.zeros(2), 5, 10.0, middle_genome(tiny_config), parents=(1, 99)
+    )
+    engine.creatures[2] = child
+    parent = engine.creatures[1]
+    engine._choose_behavior(1)
+    engine._execute_behavior(1)
+    assert parent.behavior_state.action is ActionName.CARE
+    assert child.energy == 10.25
+    assert parent.energy >= 0.35 * tiny_config.energy.maximum
+    assert parent.offspring_count == 0
+    parent.energy = 0.35 * tiny_config.energy.maximum
+    before = child.energy
+    engine._execute_behavior(1)
+    assert child.energy == before
+    child.parents = (8, 99)
+    parent.energy = 200.0
+    engine._execute_behavior(1)
+    assert child.energy == before
+
+
+def test_proximity_without_mutual_mating_selection_does_not_birth(tiny_config):
+    engine = controlled_engine(tiny_config)
+    engine.creatures[2] = Creature(
+        2, np.array([82.0, 60.0]), np.zeros(2), 300, 200.0, middle_genome(tiny_config)
+    )
+    engine._resolve_reproduction()
+    assert len(engine.creatures) == 2
+    engine._choose_behavior(1)
+    engine._choose_behavior(2)
+    engine.creatures[2].age = 0
+    engine._resolve_reproduction()
+    assert len(engine.creatures) == 2
+
+
+def test_founder_and_offspring_home_radius_is_clamped_in_small_world(tiny_config):
+    config = replace(tiny_config, world=replace(tiny_config.world, width=20, height=10))
+    engine = SimulationEngine(config, seed=5)
+    assert all(0 < creature.home_radius <= 5.0 for creature in engine.creatures.values())
+    for creature in engine.creatures.values():
+        creature.age = 300
+        creature.energy = 220.0
+        creature.position[:] = [10.0, 5.0]
+        creature.temperament = Temperament(aggression=0.0)
+    engine.step()
+    assert engine.tick_births > 0
+    assert all(0 < creature.home_radius <= 5.0 for creature in engine.creatures.values())
+
+
+def test_migration_requires_sustained_outside_reward_and_resets_on_loss(tiny_config):
+    engine = controlled_engine(tiny_config)
+    creature = engine.creatures[1]
+    creature.home_center[:] = [10.0, 60.0]
+    creature.home_radius = 10.0
+    creature.energy = 20.0
+    engine.resources = {1: Resource(1, np.array([85.0, 60.0]), 28.0)}
+    for _ in range(23):
+        engine._choose_behavior(1)
+    assert creature.home_migration_ticks == 23
+    assert creature.home_center.tolist() == [10.0, 60.0]
+    engine._choose_behavior(1)
+    assert creature.home_center[0] == 10.35
+    engine.resources.clear()
+    engine._choose_behavior(1)
+    assert creature.home_migration_ticks == 0
+
+
+def test_alpha_status_alone_does_not_trigger_a_contest(tiny_config):
+    engine = controlled_engine(tiny_config)
+    engine.creatures[2] = Creature(
+        2,
+        np.array([81.0, 60.0]),
+        np.zeros(2),
+        300,
+        220.0,
+        middle_genome(tiny_config),
+        temperament=Temperament(aggression=0.0),
+    )
+    for creature in engine.creatures.values():
+        creature.alpha = True
+        creature.hunger = 0.0
+    rng_state = engine.rng.bit_generator.state
+    for _ in range(100):
+        engine._resolve_fights()
+    assert engine.combat_events == []
+    assert engine.rng.bit_generator.state == rng_state
