@@ -324,10 +324,35 @@ class BehaviorController:
             creature, perception, maximum_energy, tick, food_rewards, threat_pressures
         )
         survival, _, mating, care, danger, territory = drives.values
+        patrol_target = creature.behavior_state.target_position
+        if (
+            creature.behavior_state.action is not ActionName.PATROL
+            or creature.behavior_state.target_kind != "home"
+            or patrol_target is None
+            or distance_sq(creature.position, patrol_target) <= 1.0
+        ):
+            # Keep a patrol waypoint until reached, then sample a new point near
+            # the range edge. Clipping to world bounds can only shorten its radius.
+            angle = float(rng.uniform(0.0, math.tau))
+            radius = creature.home_radius * float(rng.uniform(0.9, 1.0))
+            patrol_target = (
+                float(
+                    min(
+                        max(0.0, creature.home_center[0] + radius * math.cos(angle)),
+                        self.config.world.width,
+                    )
+                ),
+                float(
+                    min(
+                        max(0.0, creature.home_center[1] + radius * math.sin(angle)),
+                        self.config.world.height,
+                    )
+                ),
+            )
         targets: dict[ActionName, tuple[str | None, int | None, tuple[float, float] | None]] = {
             ActionName.EXPLORE: (None, None, None),
             ActionName.REST: (None, None, None),
-            ActionName.PATROL: ("home", None, tuple(float(v) for v in creature.home_center)),
+            ActionName.PATROL: ("home", None, patrol_target),
         }
         rewards = {
             ActionName.EXPLORE: 0.25 * (1.0 - survival),

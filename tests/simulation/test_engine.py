@@ -226,6 +226,32 @@ def test_rest_consumes_less_energy_than_explore(tiny_config):
     )
 
 
+def test_patrol_from_home_samples_and_walks_bounded_waypoints(tiny_config):
+    engine = controlled_engine(tiny_config, seed=37)
+    creature = engine.creatures[1]
+    creature.home_center[:] = creature.position
+    creature.home_radius = 18.0
+    creature.behavior_state = BehaviorState(
+        action=ActionName.PATROL,
+        target_kind="home",
+        target_position=tuple(creature.position),
+    )
+    start = creature.position.copy()
+
+    for _ in range(12):
+        engine._choose_behavior(creature.id)
+        assert creature.behavior_state.action is ActionName.PATROL
+        target = np.asarray(creature.behavior_state.target_position)
+        assert 0.0 < np.linalg.norm(target - creature.home_center) <= creature.home_radius
+        assert np.all(target >= 0.0)
+        assert target[0] <= tiny_config.world.width
+        assert target[1] <= tiny_config.world.height
+        engine._execute_behavior(creature.id)
+        assert np.linalg.norm(creature.position - creature.home_center) <= creature.home_radius
+
+    assert np.linalg.norm(creature.position - start) > 0.0
+
+
 def test_care_transfers_bounded_energy_to_dependent_with_parent_reserve(tiny_config):
     engine = controlled_engine(tiny_config)
     child = Creature(
