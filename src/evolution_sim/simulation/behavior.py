@@ -349,6 +349,24 @@ class BehaviorController:
                     )
                 ),
             )
+            if distance_sq(patrol_target, creature.home_center) == 0.0:
+                # At a world edge, clipping an outward sample can collapse it
+                # onto the home center. Choose the longest feasible inward
+                # axis so patrol still has somewhere to go without leaving the
+                # world or the home range.
+                width, height = self.config.world.width, self.config.world.height
+                cx, cy = (float(value) for value in creature.home_center)
+                feasible = (
+                    (min(creature.home_radius, width - cx), (1.0, 0.0)),
+                    (min(creature.home_radius, cx), (-1.0, 0.0)),
+                    (min(creature.home_radius, height - cy), (0.0, 1.0)),
+                    (min(creature.home_radius, cy), (0.0, -1.0)),
+                )
+                distance, inward = max(feasible, key=lambda option: option[0])
+                patrol_target = (
+                    cx + inward[0] * distance,
+                    cy + inward[1] * distance,
+                )
         targets: dict[ActionName, tuple[str | None, int | None, tuple[float, float] | None]] = {
             ActionName.EXPLORE: (None, None, None),
             ActionName.REST: (None, None, None),
