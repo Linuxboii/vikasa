@@ -162,9 +162,19 @@ def save_checkpoint(engine: SimulationEngine, path: str | Path) -> Path:
     return target
 
 
-def _restore_creature(data: dict[str, Any]) -> Creature:
+def _restore_creature(data: dict[str, Any], *, strict_v3: bool = False) -> Creature:
     parents = data.get("parents")
     state = data.get("behavior_state", {})
+    if strict_v3:
+        if not isinstance(state, dict):
+            raise CheckpointError("behavior_state must be an object")
+        for field in ("action", "started_tick", "target_kind", "target_id",
+                      "target_position", "drives", "utility_breakdown", "reason"):
+            if field not in state:
+                raise CheckpointError(f"Missing required v3 field behavior_state.{field}")
+        for field in ("home_center", "home_radius", "home_migration_ticks"):
+            if field not in data:
+                raise CheckpointError(f"Missing required v3 field {field}")
     if parents is not None:
         if not isinstance(parents, list) or len(parents) != 2:
             raise CheckpointError("parents must be null or a pair of JSON integer IDs")
@@ -206,7 +216,11 @@ def _restore_creature(data: dict[str, Any]) -> Creature:
         ritual_ticks=int(data.get("ritual_ticks", 0)),
         behavior_state=BehaviorState(
             action=ActionName(state.get("action", "explore")),
-            started_tick=int(state.get("started_tick", 0)),
+            started_tick=(
+                _json_integer(state["started_tick"], "behavior_state.started_tick")
+                if strict_v3
+                else int(state.get("started_tick", 0))
+            ),
             target_kind=state.get("target_kind"),
             target_id=target_id,
             target_position=(
@@ -221,9 +235,16 @@ def _restore_creature(data: dict[str, Any]) -> Creature:
             },
             reason=state.get("reason", "Exploring nearby"),
         ),
-        home_center=np.asarray(data.get("home_center", data["position"]), dtype=float),
-        home_radius=float(data.get("home_radius", 24.0)),
-        home_migration_ticks=int(data.get("home_migration_ticks", 0)),
+        home_center=np.asarray(
+            data["home_center"] if strict_v3 else data.get("home_center", data["position"]),
+            dtype=float,
+        ),
+        home_radius=float(data["home_radius"] if strict_v3 else data.get("home_radius", 24.0)),
+        home_migration_ticks=(
+            _json_integer(data["home_migration_ticks"], "home_migration_ticks")
+            if strict_v3
+            else int(data.get("home_migration_ticks", 0))
+        ),
     )
     creature.trail = [(float(point[0]), float(point[1])) for point in data.get("trail", [])]
     return creature
@@ -239,6 +260,8 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
         if payload.get("format") != FORMAT:
             raise CheckpointError("Not a Vikasa checkpoint")
         version = payload.get("version")
+        if isinstance(version, bool) or not isinstance(version, int):
+            raise CheckpointError("Checkpoint version must be a JSON integer")
         if version not in {1, 2, VERSION}:
             raise CheckpointError(
                 f"Unsupported checkpoint version {version}; expected 1, 2, or {VERSION}"
@@ -295,7 +318,10 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
         engine = SimulationEngine(config, seed=int(payload["seed"]))
         engine.tick = int(payload["tick"])
         engine.rng.bit_generator.state = payload["rng_state"]
-        creatures = [_restore_creature(item) for item in payload["creatures"]]
+        creatures = [
+            _restore_creature(item, strict_v3=version == VERSION)
+            for item in payload["creatures"]
+        ]
         resources = [
             Resource(
                 id=_json_integer(item["id"], "resource ID"),
