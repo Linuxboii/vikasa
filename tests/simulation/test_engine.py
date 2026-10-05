@@ -252,6 +252,41 @@ def test_patrol_from_home_samples_and_walks_bounded_waypoints(tiny_config):
     assert np.linalg.norm(creature.position - start) > 0.0
 
 
+def test_patrol_at_world_corner_falls_back_to_feasible_inward_waypoint(tiny_config):
+    engine = controlled_engine(tiny_config, seed=37)
+    creature = engine.creatures[1]
+    creature.position[:] = [0.0, 0.0]
+    creature.home_center[:] = [0.0, 0.0]
+    creature.home_radius = 18.0
+    creature.behavior_state = BehaviorState(
+        action=ActionName.PATROL,
+        target_kind="home",
+        target_position=(0.0, 0.0),
+    )
+
+    class SouthWestRng:
+        def uniform(self, low, high):
+            if low == 0.0 and high > 6.0:
+                return 3.75
+            return low + 0.95 * (high - low)
+
+    engine.rng = SouthWestRng()
+    engine._choose_behavior(creature.id)
+    target = np.asarray(creature.behavior_state.target_position)
+    assert 0.0 < np.linalg.norm(target - creature.home_center) <= creature.home_radius
+    assert np.all(target >= 0.0)
+    assert target[0] <= tiny_config.world.width
+    assert target[1] <= tiny_config.world.height
+
+    start = creature.position.copy()
+    for _ in range(12):
+        engine._execute_behavior(creature.id)
+        assert np.all(creature.position >= 0.0)
+        assert creature.position[0] <= tiny_config.world.width
+        assert creature.position[1] <= tiny_config.world.height
+    assert np.linalg.norm(creature.position - start) > 0.0
+
+
 def test_care_transfers_bounded_energy_to_dependent_with_parent_reserve(tiny_config):
     engine = controlled_engine(tiny_config)
     child = Creature(
