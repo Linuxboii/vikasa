@@ -192,6 +192,68 @@ def test_checkpoint_rejects_stale_id_counters(
 
 @pytest.mark.parametrize(
     "field,value",
+    [
+        ("parents", [4.5, 5]),
+        ("parents", [4, True]),
+        ("belief_id", 4.5),
+        ("belief_id", True),
+        ("behavior_state.target_id", 4.5),
+        ("behavior_state.target_id", False),
+    ],
+)
+def test_checkpoint_rejects_non_integer_reference_ids(
+    tiny_config, tmp_path, field: str, value: object
+) -> None:
+    path = tmp_path / "bad-reference.json"
+    save_checkpoint(SimulationEngine(tiny_config, seed=48), path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    creature = payload["creatures"][0]
+    if field.startswith("behavior_state."):
+        creature["behavior_state"][field.split(".", 1)[1]] = value
+    else:
+        creature[field] = value
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(CheckpointError, match="JSON integer"):
+        load_checkpoint(path)
+
+
+def test_checkpoint_preserves_null_and_unresolved_reference_ids(tiny_config, tmp_path) -> None:
+    engine = SimulationEngine(tiny_config, seed=49)
+    creature = engine.creatures[min(engine.creatures)]
+    creature.parents = None
+    creature.belief_id = None
+    creature.behavior_state = replace(
+        creature.behavior_state,
+        target_kind=None,
+        target_id=None,
+    )
+    path = tmp_path / "null-references.json"
+    save_checkpoint(engine, path)
+
+    restored = load_checkpoint(path)
+    loaded = restored.creatures[creature.id]
+    assert loaded.parents is None
+    assert loaded.belief_id is None
+    assert loaded.behavior_state.target_id is None
+
+    creature.parents = (9001, 9002)
+    creature.belief_id = 9003
+    creature.behavior_state = replace(
+        creature.behavior_state,
+        target_kind="creature",
+        target_id=9004,
+    )
+    save_checkpoint(engine, path)
+    restored = load_checkpoint(path)
+    loaded = restored.creatures[creature.id]
+    assert loaded.parents == (9001, 9002)
+    assert loaded.belief_id == 9003
+    assert loaded.behavior_state.target_id == 9004
+
+
+@pytest.mark.parametrize(
+    "field,value",
     [("home_center", [-1.0, 0.0]), ("home_center", [0.0, 10000.0]),
      ("home_radius", 0.0), ("home_radius", 10000.0)],
 )
