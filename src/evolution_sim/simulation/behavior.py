@@ -105,7 +105,10 @@ class BehaviorState:
             raise ValueError("target_kind must name food, creature, home, or position")
         if self.target_position is not None:
             position = tuple(self.target_position)
-            if len(position) != 2 or any(not math.isfinite(v) for v in position):
+            if len(position) != 2 or any(
+                isinstance(v, bool) or not isinstance(v, (int, float)) or not math.isfinite(v)
+                for v in position
+            ):
                 raise ValueError("target_position must contain two finite numbers")
             object.__setattr__(self, "target_position", position)
         if not isinstance(self.drives, InstinctVector):

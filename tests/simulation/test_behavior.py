@@ -72,3 +72,9 @@ def test_decision_copies_scores_and_state_copies_utility_breakdown() -> None:
 def test_state_rejects_corrupt_targets_and_ticks(kwargs: dict) -> None:
     with pytest.raises(ValueError):
         BehaviorState(**kwargs)
+
+
+@pytest.mark.parametrize("coordinate", [True, False, "1.0", None, {}, [], complex(1, 2)])
+def test_state_rejects_malformed_target_coordinate_types(coordinate: object) -> None:
+    with pytest.raises(ValueError, match="target_position"):
+        BehaviorState(target_position=(1.0, coordinate))
