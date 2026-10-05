@@ -64,6 +64,7 @@ class Creature:
     behavior_state: BehaviorState = field(default_factory=_default_behavior)
     home_center: Vector | None = None
     home_radius: float = 24.0
+    home_migration_ticks: int = 0
 
     def __post_init__(self) -> None:
         if not isinstance(self.id, int) or self.id < 0:
@@ -75,6 +76,12 @@ class Creature:
         )
         if not math.isfinite(self.home_radius) or self.home_radius <= 0:
             raise ValueError("home_radius must be finite and positive")
+        if (
+            isinstance(self.home_migration_ticks, bool)
+            or not isinstance(self.home_migration_ticks, int)
+            or self.home_migration_ticks < 0
+        ):
+            raise ValueError("home_migration_ticks must be a non-negative integer")
         from evolution_sim.simulation.behavior import BehaviorState
 
         if not isinstance(self.behavior_state, BehaviorState):

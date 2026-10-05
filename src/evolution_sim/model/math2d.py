@@ -17,8 +17,23 @@ def unit_vector(vector: Vector) -> Vector:
 
 
 def distance_sq(first: Vector, second: Vector) -> float:
-    delta = np.asarray(first, dtype=np.float64) - np.asarray(second, dtype=np.float64)
-    return float(np.dot(delta, delta))
+    """Squared distance for exactly two coordinates, without temporary delta arrays.
+
+    Numeric lists/tuples remain accepted. Non-finite coordinates propagate as before;
+    callers that require finite points validate them at their entity/index boundary.
+    Scalars and other dimensions are rejected explicitly rather than broadcasting.
+    """
+    # Entity/index points already have float64 dtype; avoid dispatching asarray on
+    # the hot path. Cast coordinates before subtracting to preserve integer safety.
+    if not isinstance(first, np.ndarray):
+        first = np.asarray(first, dtype=np.float64)
+    if not isinstance(second, np.ndarray):
+        second = np.asarray(second, dtype=np.float64)
+    if first.shape != (2,) or second.shape != (2,):
+        raise ValueError("distance points must each contain two coordinates")
+    dx = float(first[0]) - float(second[0])
+    dy = float(first[1]) - float(second[1])
+    return dx * dx + dy * dy
 
 
 def reflect_bounds(
