@@ -41,6 +41,13 @@ def _json_integer(value: Any, field: str) -> int:
     return value
 
 
+def _nullable_json_integer(value: Any, field: str) -> int | None:
+    """Validate an optional identity reference without coercing JSON values."""
+    if value is None:
+        return None
+    return _json_integer(value, field)
+
+
 def _validate_finite(value: Any, path: str = "root") -> None:
     if isinstance(value, float) and not math.isfinite(value):
         raise CheckpointError(f"{path} contains a non-finite value")
@@ -158,6 +165,17 @@ def save_checkpoint(engine: SimulationEngine, path: str | Path) -> Path:
 def _restore_creature(data: dict[str, Any]) -> Creature:
     parents = data.get("parents")
     state = data.get("behavior_state", {})
+    if parents is not None:
+        if not isinstance(parents, list) or len(parents) != 2:
+            raise CheckpointError("parents must be null or a pair of JSON integer IDs")
+        parent_ids = (
+            _json_integer(parents[0], "parent ID"),
+            _json_integer(parents[1], "parent ID"),
+        )
+    else:
+        parent_ids = None
+    belief_id = _nullable_json_integer(data.get("belief_id"), "belief_id")
+    target_id = _nullable_json_integer(state.get("target_id"), "behavior_state.target_id")
     creature = Creature(
         id=_json_integer(data["id"], "creature ID"),
         position=np.asarray(data["position"], dtype=float),
@@ -165,7 +183,7 @@ def _restore_creature(data: dict[str, Any]) -> Creature:
         age=int(data["age"]),
         energy=float(data["energy"]),
         genome=Genome(tuple(float(item) for item in data["genome"])),  # type: ignore[arg-type]
-        parents=(int(parents[0]), int(parents[1])) if parents else None,
+        parents=parent_ids,
         offspring_count=int(data["offspring_count"]),
         food_acquired=float(data["food_acquired"]),
         birth_tick=int(data["birth_tick"]),
@@ -184,13 +202,13 @@ def _restore_creature(data: dict[str, Any]) -> Creature:
         injury=float(data.get("injury", 0.0)),
         starvation_ticks=int(data.get("starvation_ticks", 0)),
         death_cause=data.get("death_cause"),
-        belief_id=(int(data["belief_id"]) if data.get("belief_id") is not None else None),
+        belief_id=belief_id,
         ritual_ticks=int(data.get("ritual_ticks", 0)),
         behavior_state=BehaviorState(
             action=ActionName(state.get("action", "explore")),
             started_tick=int(state.get("started_tick", 0)),
             target_kind=state.get("target_kind"),
-            target_id=state.get("target_id"),
+            target_id=target_id,
             target_position=(
                 tuple(float(v) for v in state["target_position"])
                 if state.get("target_position") is not None
