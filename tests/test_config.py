@@ -97,3 +97,64 @@ def test_unknown_fields_are_rejected_instead_of_silently_ignored() -> None:
 
     with pytest.raises(ConfigError, match=r"world\.teleport"):
         SimulationConfig.from_dict(data)
+
+
+def test_legacy_configuration_gets_round_trippable_behavior_defaults() -> None:
+    config = SimulationConfig.from_dict(minimal_config())
+    assert config.behavior.hysteresis_margin >= 0
+    assert SimulationConfig.from_dict(config.to_dict()) == config
+
+
+def test_legacy_configuration_with_small_energy_cap_loads() -> None:
+    data = minimal_config()
+    data["energy"]["initial"] = data["energy"]["maximum"] = 0.01
+    config = SimulationConfig.from_dict(data)
+    assert config.behavior.care_energy_rate == 0.01
+
+
+def test_behavior_defaults_are_explicit_in_serialized_configuration() -> None:
+    config = SimulationConfig.from_dict(minimal_config())
+    assert config.to_dict()["behavior"] == {
+        "hysteresis_margin": 0.08,
+        "softmax_temperature": 0.08,
+        "dependent_age_ticks": 240,
+        "care_radius": 24.0,
+        "care_energy_rate": 0.25,
+        "danger_preempt_threshold": 0.75,
+        "territory_migration_margin": 0.15,
+    }
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("hysteresis_margin", -0.1),
+        ("hysteresis_margin", 1.1),
+        ("softmax_temperature", 0),
+        ("softmax_temperature", 1.1),
+        ("dependent_age_ticks", -1),
+        ("dependent_age_ticks", 1.5),
+        ("care_radius", -1),
+        ("care_radius", 800),
+        ("care_energy_rate", -1),
+        ("care_energy_rate", 221),
+        ("danger_preempt_threshold", -0.1),
+        ("danger_preempt_threshold", 1.1),
+        ("territory_migration_margin", -0.1),
+        ("territory_migration_margin", 1.1),
+        ("care_radius", math.inf),
+        ("hysteresis_margin", math.nan),
+    ],
+)
+def test_behavior_configuration_rejects_invalid_settings(field: str, value: float) -> None:
+    data = minimal_config()
+    data["behavior"] = {field: value}
+    with pytest.raises(ConfigError, match=rf"behavior\.{field}"):
+        SimulationConfig.from_dict(data)
+
+
+def test_behavior_configuration_rejects_unknown_fields() -> None:
+    data = minimal_config()
+    data["behavior"] = {"telepathy": True}
+    with pytest.raises(ConfigError, match=r"behavior\.telepathy"):
+        SimulationConfig.from_dict(data)

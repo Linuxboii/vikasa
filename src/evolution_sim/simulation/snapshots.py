@@ -26,6 +26,17 @@ class CreatureSnapshot:
     injury: float = 0.0
     temperament: tuple[float, float, float] = (0.25, 0.5, 0.5)
     belief_id: int | None = None
+    behavior: str = "explore"
+    behavior_reason: str = "Exploring nearby"
+    behavior_started_tick: int = 0
+    drives: tuple[float, ...] = (0.0,) * 6
+    behavior_scores: tuple[tuple[str, float], ...] = ()
+    target_kind: str | None = None
+    target_id: int | None = None
+    target_position: tuple[float, float] | None = None
+    home_center: tuple[float, float] = (0.0, 0.0)
+    home_radius: float = 24.0
+    dependent_ids: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
