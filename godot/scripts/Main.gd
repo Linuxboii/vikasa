@@ -2,7 +2,7 @@ extends Node3D
 
 const API := "http://127.0.0.1:8765"
 const SCALE := 0.1
-const CreatureView := preload("res://scripts/CreatureVisual.gd")
+const CreatureViewScript := preload("res://scripts/CreatureView.gd")
 const HabitatView := preload("res://scripts/Habitat.gd")
 
 var camera: Camera3D
@@ -330,13 +330,13 @@ func _sync_creatures(items: Array) -> void:
 		var key := int(data.id)
 		seen[key] = true
 		if not creature_views.has(key):
-			var view := CreatureView.new()
+			var view := CreatureViewScript.new()
 			view.name = "Creature_%d" % key
 			view.configure(data, SCALE, world_width, world_height)
 			creatures_root.add_child(view)
 			creature_views[key] = view
-		var creature_view: CreatureVisual = creature_views[key]
-		creature_view.update_state(data, SCALE, get_process_delta_time(), world_width, world_height)
+		var creature_view: CreatureView = creature_views[key]
+		creature_view.update_state(data, get_process_delta_time())
 		creature_view.set_selected(key == selected_creature_id)
 	for key in creature_views.keys():
 		if not seen.has(key):
