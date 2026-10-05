@@ -661,6 +661,15 @@ class SimulationEngine:
             )
 
     def snapshot(self) -> WorldSnapshot:
+        dependent_ids: dict[int, list[int]] = {}
+        for child in self.creatures.values():
+            if (
+                child.alive
+                and child.parents is not None
+                and child.age < self.config.behavior.dependent_age_ticks
+            ):
+                for parent_id in child.parents:
+                    dependent_ids.setdefault(parent_id, []).append(child.id)
         creatures = tuple(
             CreatureSnapshot(
                 id=item.id,
@@ -682,6 +691,20 @@ class SimulationEngine:
                 injury=item.injury,
                 temperament=item.temperament.as_tuple(),
                 belief_id=item.belief_id,
+                behavior=item.behavior_state.action.value,
+                behavior_reason=item.behavior_state.reason,
+                behavior_started_tick=item.behavior_state.started_tick,
+                drives=item.behavior_state.drives.values,
+                behavior_scores=tuple(
+                    (action.value, float(score))
+                    for action, score in item.behavior_state.utility_breakdown.items()
+                ),
+                target_kind=item.behavior_state.target_kind,
+                target_id=item.behavior_state.target_id,
+                target_position=item.behavior_state.target_position,
+                home_center=tuple(float(value) for value in item.home_center),
+                home_radius=item.home_radius,
+                dependent_ids=tuple(sorted(dependent_ids.get(item.id, ()))),
             )
             for item in (self.creatures[key] for key in sorted(self.creatures))
         )

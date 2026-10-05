@@ -124,8 +124,10 @@ class GodotSimulationServer:
     def state(self) -> dict[str, Any]:
         with self.lock:
             engine = self.engine
+            snapshot_by_id = {item.id: item for item in engine.snapshot().creatures}
             creatures = []
             for item in (engine.creatures[key] for key in sorted(engine.creatures)):
+                view = snapshot_by_id[item.id]
                 creatures.append(
                     {
                         "id": item.id,
@@ -133,7 +135,9 @@ class GodotSimulationServer:
                         "velocity": [float(item.velocity[0]), float(item.velocity[1])],
                         "age": item.age,
                         "energy": round(item.energy, 3),
-                        "energy_ratio": max(0.0, min(1.0, item.energy / engine.config.energy.maximum)),
+                        "energy_ratio": max(
+                            0.0, min(1.0, item.energy / engine.config.energy.maximum)
+                        ),
                         "hunger": round(item.hunger, 3),
                         "satisfaction": round(item.satisfaction, 3),
                         "satisfaction_vector": {
@@ -158,6 +162,37 @@ class GodotSimulationServer:
                         "starvation_ticks": item.starvation_ticks,
                         "belief_id": item.belief_id,
                         "parents": list(item.parents) if item.parents else [],
+                        "behavior": view.behavior,
+                        "behavior_reason": view.behavior_reason[:240],
+                        "behavior_started_tick": view.behavior_started_tick,
+                        "drives": dict(
+                            zip(
+                                (
+                                    "survival",
+                                    "foraging",
+                                    "mating",
+                                    "offspring_care",
+                                    "danger_avoidance",
+                                    "territory",
+                                ),
+                                view.drives,
+                                strict=True,
+                            )
+                        ),
+                        "behavior_scores": {
+                            action: float(score) for action, score in view.behavior_scores
+                        },
+                        "target_kind": view.target_kind,
+                        "target_id": view.target_id,
+                        "target_position": (
+                            [float(value) for value in view.target_position]
+                            if view.target_position is not None else None
+                        ),
+                        "home_range": {
+                            "center": list(view.home_center),
+                            "radius": view.home_radius,
+                        },
+                        "dependent_ids": list(view.dependent_ids),
                     }
                 )
             resources = [
@@ -181,14 +216,11 @@ class GodotSimulationServer:
                         "founded_tick": item.founded_tick,
                         "followers": len(followers),
                         "ritual_count": item.ritual_count,
-                        "cohesion": round(
-                            len(followers) / max(1, len(engine.creatures)), 3
-                        ),
+                        "cohesion": round(len(followers) / max(1, len(engine.creatures)), 3),
                     }
                 )
-            mean_satisfaction = (
-                sum(item.satisfaction for item in engine.creatures.values())
-                / max(1, len(engine.creatures))
+            mean_satisfaction = sum(item.satisfaction for item in engine.creatures.values()) / max(
+                1, len(engine.creatures)
             )
             starving = sum(item.starvation_ticks > 0 for item in engine.creatures.values())
             events = [item.to_dict() for item in engine.environment.active_events]
@@ -287,7 +319,9 @@ class GodotSimulationServer:
 
                 resource = Resource(
                     self.engine.next_resource_id - 1,
-                    np.array([x * self.engine.config.world.width, y * self.engine.config.world.height]),
+                    np.array(
+                        [x * self.engine.config.world.width, y * self.engine.config.world.height]
+                    ),
                     energy,
                 )
                 self.engine.resources[resource.id] = resource
@@ -301,7 +335,12 @@ def _godot_binary(explicit: str | None) -> str:
     candidates.extend([shutil.which("godot4"), shutil.which("godot")])
     candidates.extend(
         [
-            str(Path(__file__).resolve().parents[2] / "tmp" / "godot-runtime" / "Godot_v4.7.2-stable_win64.exe"),
+            str(
+                Path(__file__).resolve().parents[2]
+                / "tmp"
+                / "godot-runtime"
+                / "Godot_v4.7.2-stable_win64.exe"
+            ),
             r"C:\Program Files\Godot\Godot_v4.4-stable_win64.exe",
             r"C:\Program Files\Godot\Godot_v4.5-stable_win64.exe",
         ]
@@ -347,10 +386,15 @@ def serve_bridge(config: SimulationConfig, *, seed: int, port: int = DEFAULT_POR
     finally:
         bridge.stop()
 
+
 def run_bridge():
     """Run the bridge server in a separate thread for testing purposes."""
     config = SimulationConfig()
-    bridge_thread = threading.Thread(target=serve_bridge, args=(config,), kwargs={"seed": 2026, "port": DEFAULT_PORT}, daemon=True)
+    bridge_thread = threading.Thread(
+        target=serve_bridge,
+        args=(config,),
+        kwargs={"seed": 2026, "port": DEFAULT_PORT},
+        daemon=True,
+    )
     bridge_thread.start()
     return bridge_thread
-
