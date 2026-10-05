@@ -140,3 +140,69 @@ def test_new_checkpoint_round_trips_behavior_target_and_continues_exactly(
     assert json.loads(path.read_text(encoding="utf-8"))["version"] == 3
     assert restored.snapshot() == engine.snapshot()
     assert restored.rng.bit_generator.state == engine.rng.bit_generator.state
+
+
+@pytest.mark.parametrize("field,value", [("id", 4.9), ("id", True)])
+@pytest.mark.parametrize("collection", ["creatures", "resources"])
+def test_checkpoint_rejects_non_integer_entity_ids(
+    tiny_config, tmp_path, field: str, value: object, collection: str
+) -> None:
+    engine = SimulationEngine(tiny_config, seed=44)
+    path = tmp_path / "bad-id.json"
+    save_checkpoint(engine, path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload[collection][0][field] = value
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(CheckpointError, match="JSON integer"):
+        load_checkpoint(path)
+
+
+@pytest.mark.parametrize("field,value", [("next_creature_id", 4.9), ("next_creature_id", True),
+                                          ("next_resource_id", 4.9), ("next_resource_id", False)])
+def test_checkpoint_rejects_non_integer_id_counters(
+    tiny_config, tmp_path, field: str, value: object
+) -> None:
+    path = tmp_path / "bad-counter.json"
+    save_checkpoint(SimulationEngine(tiny_config, seed=45), path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload[field] = value
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(CheckpointError, match="JSON integer"):
+        load_checkpoint(path)
+
+
+@pytest.mark.parametrize(
+    "counter,collection",
+    [("next_creature_id", "creatures"), ("next_resource_id", "resources")],
+)
+def test_checkpoint_rejects_stale_id_counters(
+    tiny_config, tmp_path, counter: str, collection: str
+) -> None:
+    path = tmp_path / "stale-counter.json"
+    save_checkpoint(SimulationEngine(tiny_config, seed=46), path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload[counter] = max(item["id"] for item in payload[collection])
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(CheckpointError, match="must exceed"):
+        load_checkpoint(path)
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [("home_center", [-1.0, 0.0]), ("home_center", [0.0, 10000.0]),
+     ("home_radius", 0.0), ("home_radius", 10000.0)],
+)
+def test_v3_checkpoint_rejects_invalid_persisted_home_bounds(
+    tiny_config, tmp_path, field: str, value: object
+) -> None:
+    path = tmp_path / "invalid-home-v3.json"
+    save_checkpoint(SimulationEngine(tiny_config, seed=47), path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["creatures"][0][field] = value
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(CheckpointError, match="home"):
+        load_checkpoint(path)
