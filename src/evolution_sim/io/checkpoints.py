@@ -17,12 +17,13 @@ from evolution_sim.model.entities import Creature, Resource
 from evolution_sim.model.genome import Genome
 from evolution_sim.model.lineage import LineageStore
 from evolution_sim.model.temperament import Temperament
+from evolution_sim.simulation.behavior import ActionName, BehaviorState, InstinctVector
+from evolution_sim.simulation.culture import CultureLedger
 from evolution_sim.simulation.engine import SimulationEngine
 from evolution_sim.simulation.environment import EnvironmentState
-from evolution_sim.simulation.culture import CultureLedger
 
 FORMAT = "vikasa"
-VERSION = 2
+VERSION = 3
 
 
 class CheckpointError(ValueError):
@@ -45,6 +46,7 @@ def _validate_finite(value: Any, path: str = "root") -> None:
 
 
 def _creature_to_dict(creature: Creature) -> dict[str, Any]:
+    behavior = creature.behavior_state
     return {
         "id": creature.id,
         "position": creature.position.tolist(),
@@ -72,6 +74,21 @@ def _creature_to_dict(creature: Creature) -> dict[str, Any]:
         "death_cause": creature.death_cause,
         "belief_id": creature.belief_id,
         "ritual_ticks": creature.ritual_ticks,
+        "behavior_state": {
+            "action": behavior.action.value,
+            "started_tick": behavior.started_tick,
+            "target_kind": behavior.target_kind,
+            "target_id": behavior.target_id,
+            "target_position": list(behavior.target_position) if behavior.target_position else None,
+            "drives": list(behavior.drives.values),
+            "utility_breakdown": {
+                key.value: value for key, value in behavior.utility_breakdown.items()
+            },
+            "reason": behavior.reason,
+        },
+        "home_center": creature.home_center.tolist(),
+        "home_radius": creature.home_radius,
+        "home_migration_ticks": creature.home_migration_ticks,
     }
 
 
@@ -133,6 +150,7 @@ def save_checkpoint(engine: SimulationEngine, path: str | Path) -> Path:
 
 def _restore_creature(data: dict[str, Any]) -> Creature:
     parents = data.get("parents")
+    state = data.get("behavior_state", {})
     creature = Creature(
         id=int(data["id"]),
         position=np.asarray(data["position"], dtype=float),
@@ -161,6 +179,26 @@ def _restore_creature(data: dict[str, Any]) -> Creature:
         death_cause=data.get("death_cause"),
         belief_id=(int(data["belief_id"]) if data.get("belief_id") is not None else None),
         ritual_ticks=int(data.get("ritual_ticks", 0)),
+        behavior_state=BehaviorState(
+            action=ActionName(state.get("action", "explore")),
+            started_tick=int(state.get("started_tick", 0)),
+            target_kind=state.get("target_kind"),
+            target_id=state.get("target_id"),
+            target_position=(
+                tuple(float(v) for v in state["target_position"])
+                if state.get("target_position") is not None
+                else None
+            ),
+            drives=InstinctVector(tuple(state.get("drives", (0.0,) * 6))),
+            utility_breakdown={
+                ActionName(key): float(value)
+                for key, value in state.get("utility_breakdown", {}).items()
+            },
+            reason=state.get("reason", "Exploring nearby"),
+        ),
+        home_center=np.asarray(data.get("home_center", data["position"]), dtype=float),
+        home_radius=float(data.get("home_radius", 24.0)),
+        home_migration_ticks=int(data.get("home_migration_ticks", 0)),
     )
     creature.trail = [(float(point[0]), float(point[1])) for point in data.get("trail", [])]
     return creature
@@ -176,18 +214,45 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
         if payload.get("format") != FORMAT:
             raise CheckpointError("Not a Vikasa checkpoint")
         version = payload.get("version")
-        if version not in {1, VERSION}:
+        if version not in {1, 2, VERSION}:
             raise CheckpointError(
-                f"Unsupported checkpoint version {version}; expected 1 or {VERSION}"
+                f"Unsupported checkpoint version {version}; expected 1, 2, or {VERSION}"
             )
-        if version == 1:
+        if version in {1, 2}:
             payload = dict(payload)
             payload["version"] = VERSION
+        if version == 1:
             payload.setdefault("culture", {})
             payload.setdefault("death_causes", {})
             payload.setdefault("combat_events", [])
             payload.setdefault("recent_events", [])
         config = SimulationConfig.from_dict(payload["config"])
+        max_home_radius = min(config.world.width, config.world.height) / 2.0
+        if max_home_radius <= 0:
+            raise CheckpointError("World dimensions cannot support a positive home range")
+        # Migrate legacy entities in-memory only. Loading never rewrites source bytes.
+        payload = dict(payload)
+        migrated_creatures = []
+        for raw in payload["creatures"]:
+            item = dict(raw)
+            position = item["position"]
+            center = item.get("home_center", position)
+            item["home_center"] = [
+                min(config.world.width, max(0.0, float(center[0]))),
+                min(config.world.height, max(0.0, float(center[1]))),
+            ]
+            if "home_radius" not in item:
+                migration_rng = np.random.default_rng(
+                    np.random.SeedSequence([int(payload["seed"]), int(item["id"]), 3])
+                )
+                item["home_radius"] = float(migration_rng.uniform(18.0, 36.0))
+            item["home_radius"] = min(
+                max_home_radius, max(1e-9, float(item["home_radius"]))
+            )
+            item.setdefault("home_migration_ticks", 0)
+            item.setdefault("behavior_state", {})
+            migrated_creatures.append(item)
+        payload["creatures"] = migrated_creatures
         engine = SimulationEngine(config, seed=int(payload["seed"]))
         engine.tick = int(payload["tick"])
         engine.rng.bit_generator.state = payload["rng_state"]
@@ -202,7 +267,11 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
             for item in payload["resources"]
         ]
         engine.creatures = {item.id: item for item in creatures}
+        if len(engine.creatures) != len(creatures):
+            raise CheckpointError("Checkpoint contains duplicate creature IDs")
         engine.resources = {item.id: item for item in resources}
+        if len(engine.resources) != len(resources):
+            raise CheckpointError("Checkpoint contains duplicate resource IDs")
         engine.lineage = LineageStore.from_records(payload["lineage"])
         engine.environment = EnvironmentState.from_dict(payload["environment"])
         engine.culture = CultureLedger.from_dict(payload.get("culture"))
