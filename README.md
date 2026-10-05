@@ -2,7 +2,7 @@
 
 ![Vikasa artificial-life laboratory](docs/images/laboratory.png)
 
-Vikasa is a deterministic artificial-life laboratory. Its name comes from the Sanskrit word for development or unfolding: autonomous organisms search for limited food, spend energy to move and survive, reproduce with crossover and mutation, age, die, and leave inspectable lineages. The same scientific engine powers the live Pygame interface and faster-than-real-time headless experiments.
+Vikasa is a deterministic artificial-life laboratory. Its name comes from the Sanskrit word for development or unfolding: autonomous organisms search for limited food, spend energy to move and survive, reproduce with crossover and mutation, age, die, and leave inspectable lineages. One Python engine powers the live Pygame interface, a new real-time Godot 3D field client, and faster-than-real-time headless experiments.
 
 The project makes evolution visible rather than hiding it behind one genetic-algorithm score. Natural survival and reproduction create selection pressure; analytics explain what happened without deciding who survives.
 
@@ -13,6 +13,11 @@ The project makes evolution visible rather than hiding it behind one genetic-alg
 - Seeded uniform/arithmetic crossover and Gaussian mutation.
 - Food sensing, steering, collision boundaries, metabolism, movement costs, aging, death, mating, and lineage.
 - Drought, abundance, and heat-pressure events with a visible timeline.
+- Hunger, injury, explicit starvation deaths, low-frequency contests, alpha behavior, and a four-part satisfaction vector.
+- Inherited aggression, resilience, and sociability adaptations alongside the stable six-gene body genome.
+- Seasonal rainfall and temperature pressure, storms, floods, wildfire, cold, and disease events.
+- Repeated shared experiences can spread into collective beliefs and rituals in long simulations.
+- Godot 4 Living Biome with a procedural 3D habitat, animated individual creatures, live species data, orbit/zoom, creature inspection, time controls, and field interventions.
 - Responsive Pygame laboratory with organism inspection, controls, trails, perception overlays, and live traces.
 - Headless single runs, deterministic batches, and invariant-audited stress runs.
 - Versioned atomic checkpoints that preserve the RNG and continue bit-for-bit.
@@ -40,6 +45,32 @@ Create or refresh the native Windows desktop shortcut at any time with one comma
 ```powershell
 .\.venv\Scripts\vikasa.exe shortcut
 ```
+
+### Godot 3D Living Biome
+
+The 3D client uses Godot 4 and connects to the Python engine over a loopback-only local bridge. No extra Python dependency is needed. Install the official standard Godot build, then launch from the repository root:
+
+```powershell
+.\.venv\Scripts\vikasa.exe godot --config config\showcase.json --seed 2026
+```
+
+If Godot is not on `PATH`, pass its executable with `--godot-path` or set
+`VIKASA_GODOT_BINARY`. To open the scene manually, first start the Python bridge and then open
+`godot/project.godot` in Godot:
+
+```powershell
+.\.venv\Scripts\vikasa.exe serve --config config\showcase.json --seed 2026
+```
+
+The Living Biome provides pause, resume, exact single stepping, four time rates, selectable
+creature profiles, and scheduled bloom, drought, heat, storm, and wildfire interventions. Right
+drag orbits the habitat; the mouse wheel zooms; the food-placement control lets you click a world
+location to add a resource patch. A selected creature exposes energy, hunger, injury, satisfaction
+components, inherited behavior traits, fights, family, and cultural affiliation.
+
+The client builds terrain, water, vegetation, resources, and biomorphic creatures from Godot
+procedural meshes; no model pack or paid asset is required. The `.godot/` editor cache and the
+portable local runtime under `tmp/` are ignored by Git.
 
 ## Quick start on macOS or Linux
 

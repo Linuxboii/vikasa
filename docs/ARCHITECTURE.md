@@ -16,6 +16,8 @@ environment + simulation engine + snapshots
 analytics          persistence/export
     ↓                  ↓
 experiments/CLI      Pygame UI
+                       ↓
+                    Godot 4 3D client
 ```
 
 `simulation.engine` imports analytics only to attach its observational recorder. Analytics accepts engine-like state but does not call `step` or write organism fields.
@@ -32,10 +34,14 @@ experiments/CLI      Pygame UI
 - `export_experiment`: portable evidence package.
 - `ExperimentSpec`: reusable scenario plus nested overrides.
 - `EvolutionApp`: user event loop; delegates steps to `SimulationController`.
+- `GodotSimulationServer`: owns the same `SimulationEngine`, advances it at a bounded real-time rate, and exposes local `/state` plus validated `/command` operations to `godot/`.
+- `godot/scripts/Main.gd`: presentation, selection, camera, controls, and 3D scene; it never calculates survival, combat, inheritance, or cultural outcomes.
 
 ## Deterministic spatial search
 
 The uniform grid maps IDs to cells and retains positions for exact radius filtering. Queries always return sorted IDs. Food uses a cell width of half maximum perception (minimum 24 units), which avoids scanning thousands of empty micro-cells while preserving exact distance results. The index is built once per tick and shared by movement and consumption.
+
+Fights and belief transmission use a separate creature-position hash. The bridge binds to `127.0.0.1`, caps request sizes, validates every command, and accepts no remote host configuration. Godot polls immutable JSON presentation data; commands are applied by the Python engine between locked ticks.
 
 ## Persistence transaction
 

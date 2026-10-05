@@ -9,6 +9,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from evolution_sim.model.genome import Genome
+from evolution_sim.model.temperament import Temperament
 
 Vector = NDArray[np.float64]
 
@@ -36,6 +37,19 @@ class Creature:
     wander_angle: float = 0.0
     alive: bool = True
     trail: list[tuple[float, float]] = field(default_factory=list, repr=False)
+    temperament: Temperament = field(default_factory=Temperament)
+    hunger: float = 0.0
+    satisfaction_vector: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
+    satisfaction: float = 0.0
+    fights_won: int = 0
+    fights_lost: int = 0
+    fight_wins_tick: int = 0
+    alpha: bool = False
+    injury: float = 0.0
+    starvation_ticks: int = 0
+    death_cause: str | None = None
+    belief_id: int | None = None
+    ritual_ticks: int = 0
 
     def __post_init__(self) -> None:
         if not isinstance(self.id, int) or self.id < 0:
@@ -46,6 +60,12 @@ class Creature:
             raise ValueError("age must be a non-negative integer")
         if not math.isfinite(self.energy):
             raise ValueError("energy must be finite")
+        if not math.isfinite(self.hunger) or not 0.0 <= self.hunger <= 1.0:
+            raise ValueError("hunger must be between zero and one")
+        if not math.isfinite(self.satisfaction) or not 0.0 <= self.satisfaction <= 1.0:
+            raise ValueError("satisfaction must be between zero and one")
+        if not math.isfinite(self.injury) or not 0.0 <= self.injury <= 1.0:
+            raise ValueError("injury must be between zero and one")
         if self.parents is not None and (
             len(self.parents) != 2 or any(parent < 0 for parent in self.parents)
         ):

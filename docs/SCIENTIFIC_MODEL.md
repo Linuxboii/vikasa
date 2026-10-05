@@ -6,7 +6,7 @@ The simulator is an explanatory model of variation, inheritance, selection, and 
 
 ## State
 
-An organism carries identity, 2D position/velocity, age, energy, genome, parents, birth tick, last reproduction tick, offspring count, and food acquired. A resource carries identity, position, radius, and energy value. Removed organisms remain represented in lineage edges and historical metrics.
+An organism carries identity, 2D position/velocity, age, energy, hunger, injury, a six-gene body genome, three inherited behavioral traits, parents, birth tick, last reproduction tick, offspring count, food acquired, fight outcomes, alpha status, satisfaction components, and cultural affiliation. A resource carries identity, position, radius, and energy value. Removed organisms remain represented in lineage edges and historical metrics.
 
 ## Genome and phenotype
 
@@ -31,11 +31,29 @@ Velocity approaches desired velocity by a fixed 0.3 steering factor and is cappe
 Basal and movement costs are:
 
 ```text
-basal = basal_cost × (1 + size/8) ÷ metabolism × environment_multiplier
-movement = movement_cost × distance × (0.5 + size/8) × (0.5 + speed/4)
+basal = basal_cost × (1 + size/8) ÷ metabolism
+        × event_metabolism × season_metabolism × injury_cost × health_pressure
+movement = movement_cost × distance × (0.5 + size/8) × (0.5 + speed/4) × weather_cost
 ```
 
 Food increases energy up to `energy.maximum`. Contention for a resource is resolved by squared distance and then stable organism ID. A resource can be consumed once.
+
+Hunger rises as energy falls. When reserves remain depleted, starvation accumulates rather than deleting an organism on the first negative-energy tick; a meal can still reverse the decline. Repeated adverse exposure and fight injuries add to the same survival burden. Temperature, seasonal food productivity, rain, and scheduled hazards change costs, resources, or health pressure.
+
+## Satisfaction and conflict
+
+Satisfaction is an inspectable vector with four normalized components:
+
+```text
+[energy security, offspring history, food acquired, fights won]
+score = 0.34 energy + 0.18 offspring + 0.22 food + 0.26 fights
+```
+
+Offspring, food, and victories use saturating curves, so one additional event matters less after a long successful history. Nearby creatures only consider conflict under hunger pressure or an existing alpha challenge. Each encounter has a low baseline chance, moderated by aggression and hunger; size, reserves, and resilience affect the winner. Injuries raise later energy cost. A badly weakened loser has a nonzero fatality risk. A victor retains alpha status, and sufficiently satisfied alphas sometimes steer toward nearby rivals. This is a coarse behavioral model, not a claim that one formula represents real animal aggression.
+
+## Shared traditions
+
+The cultural ledger records repeated shared cues—season turns, drought, heat, storms, or victories. After a cue has recurred and several living creatures have observed it, the seeded simulation may found a named belief group. Contact spreads membership according to inherited sociability; gatherings recur and enter the event chronicle. Names and practices come from a small cue vocabulary. This is an emergent collective ritual system, not a model of language, theology, reflective belief, or human religion.
 
 ## Reproduction
 
@@ -59,7 +77,7 @@ The result is clamped. Mutation therefore never violates the configured simulati
 
 ## Environment
 
-Events are deterministic functions of tick and configuration. Drought and abundance multiply food spawn rate; heat multiplies basal cost. `redistribute` is versioned and exported but does not alter equations in v1.0.
+Seasons advance every 96 ticks and change relative temperature, rainfall, food productivity, and metabolic demand. Scheduled drought and abundance events change food productivity; heat and cold add metabolic and health pressure; storms raise movement cost; floods reduce food and raise stress; wildfire reduces food and raises injury pressure; disease raises health pressure. These are deliberately coarse environmental signals, not detailed weather or pathogen models.
 
 Overlapping multipliers compose. An event is active in the half-open interval from start tick through the tick before its end.
 
@@ -85,8 +103,9 @@ Equal configuration, seed, event schedule, tick count, and version produce equiv
 
 - One seeded run is illustrative, not statistical evidence.
 - Analytical fitness is descriptive and scale-dependent.
-- The ecology has one resource type and no predation.
-- Genes are haploid quantitative values; there is no dominance, recombination map, or molecular DNA.
+- The ecology has one resource type and no predator species; conspecific fights model injury and occasional fatal outcomes.
+- The six body genes are quantitative values. Aggression, resilience, and sociability are inherited secondary traits; there is no dominance, recombination map, or molecular DNA.
+- Shared traditions arise from repeated cues and social contact, but the cultural model has no language, reflective theology, or human-like religious cognition.
 - Selection can be confounded by finite population drift and the initial random sample.
 - Compare treatments with matched seeds and multiple replicates, then report distributions rather than a preferred screenshot.
 
