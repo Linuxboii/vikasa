@@ -142,6 +142,72 @@ def test_new_checkpoint_round_trips_behavior_target_and_continues_exactly(
     assert restored.rng.bit_generator.state == engine.rng.bit_generator.state
 
 
+@pytest.mark.parametrize("version", [True, False, 1.0, 2.0, 3.0])
+def test_checkpoint_version_must_be_a_json_integer(tiny_config, tmp_path, version: object) -> None:
+    path = tmp_path / "bad-version.json"
+    save_checkpoint(SimulationEngine(tiny_config, seed=101), path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["version"] = version
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(CheckpointError, match="version must be a JSON integer"):
+        load_checkpoint(path)
+
+
+@pytest.mark.parametrize(
+    "field,nested",
+    [
+        ("behavior_state", None),
+        ("home_center", None),
+        ("home_radius", None),
+        ("home_migration_ticks", None),
+        ("action", "behavior_state"),
+        ("started_tick", "behavior_state"),
+        ("target_kind", "behavior_state"),
+        ("target_id", "behavior_state"),
+        ("target_position", "behavior_state"),
+        ("drives", "behavior_state"),
+        ("utility_breakdown", "behavior_state"),
+        ("reason", "behavior_state"),
+    ],
+)
+def test_v3_checkpoint_rejects_missing_behavior_and_home_state(
+    tiny_config, tmp_path, field: str, nested: str | None
+) -> None:
+    path = tmp_path / "truncated-v3.json"
+    save_checkpoint(SimulationEngine(tiny_config, seed=102), path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    creature = payload["creatures"][0]
+    (creature[nested] if nested else creature).pop(field)
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(CheckpointError, match="Missing required v3 field"):
+        load_checkpoint(path)
+
+
+@pytest.mark.parametrize(
+    "field,nested,value",
+    [
+        ("started_tick", "behavior_state", True),
+        ("started_tick", "behavior_state", 2.5),
+        ("home_migration_ticks", None, True),
+        ("home_migration_ticks", None, 2.5),
+    ],
+)
+def test_v3_checkpoint_rejects_non_integer_behavior_counters(
+    tiny_config, tmp_path, field: str, nested: str | None, value: object
+) -> None:
+    path = tmp_path / "bad-behavior-counter.json"
+    save_checkpoint(SimulationEngine(tiny_config, seed=103), path)
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    creature = payload["creatures"][0]
+    (creature[nested] if nested else creature)[field] = value
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(CheckpointError, match="JSON integer"):
+        load_checkpoint(path)
+
+
 @pytest.mark.parametrize("field,value", [("id", 4.9), ("id", True)])
 @pytest.mark.parametrize("collection", ["creatures", "resources"])
 def test_checkpoint_rejects_non_integer_entity_ids(
