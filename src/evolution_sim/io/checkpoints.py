@@ -34,6 +34,13 @@ def _reject_constant(value: str) -> None:
     raise CheckpointError(f"Non-finite JSON constant is not allowed: {value}")
 
 
+def _json_integer(value: Any, field: str) -> int:
+    """Require an actual JSON integer instead of silently coercing IDs."""
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise CheckpointError(f"{field} must be a JSON integer")
+    return value
+
+
 def _validate_finite(value: Any, path: str = "root") -> None:
     if isinstance(value, float) and not math.isfinite(value):
         raise CheckpointError(f"{path} contains a non-finite value")
@@ -152,7 +159,7 @@ def _restore_creature(data: dict[str, Any]) -> Creature:
     parents = data.get("parents")
     state = data.get("behavior_state", {})
     creature = Creature(
-        id=int(data["id"]),
+        id=_json_integer(data["id"], "creature ID"),
         position=np.asarray(data["position"], dtype=float),
         velocity=np.asarray(data["velocity"], dtype=float),
         age=int(data["age"]),
@@ -230,36 +237,50 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
         max_home_radius = min(config.world.width, config.world.height) / 2.0
         if max_home_radius <= 0:
             raise CheckpointError("World dimensions cannot support a positive home range")
-        # Migrate legacy entities in-memory only. Loading never rewrites source bytes.
+        # Migrate legacy entities in-memory only. Current schemas are strict:
+        # persisted home bounds are validated by the engine invariant audit.
         payload = dict(payload)
-        migrated_creatures = []
-        for raw in payload["creatures"]:
-            item = dict(raw)
-            position = item["position"]
-            center = item.get("home_center", position)
-            item["home_center"] = [
-                min(config.world.width, max(0.0, float(center[0]))),
-                min(config.world.height, max(0.0, float(center[1]))),
-            ]
-            if "home_radius" not in item:
-                migration_rng = np.random.default_rng(
-                    np.random.SeedSequence([int(payload["seed"]), int(item["id"]), 3])
+        if version in {1, 2}:
+            migrated_creatures = []
+            for raw in payload["creatures"]:
+                item = dict(raw)
+                position = item["position"]
+                center = item.get("home_center", position)
+                item["home_center"] = [
+                    min(config.world.width, max(0.0, float(center[0]))),
+                    min(config.world.height, max(0.0, float(center[1]))),
+                ]
+                if "home_radius" not in item:
+                    migration_rng = np.random.default_rng(
+                        np.random.SeedSequence([int(payload["seed"]), int(item["id"]), 3])
+                    )
+                    item["home_radius"] = float(migration_rng.uniform(18.0, 36.0))
+                item["home_radius"] = min(
+                    max_home_radius, max(1e-9, float(item["home_radius"]))
                 )
-                item["home_radius"] = float(migration_rng.uniform(18.0, 36.0))
-            item["home_radius"] = min(
-                max_home_radius, max(1e-9, float(item["home_radius"]))
-            )
-            item.setdefault("home_migration_ticks", 0)
-            item.setdefault("behavior_state", {})
-            migrated_creatures.append(item)
-        payload["creatures"] = migrated_creatures
+                item.setdefault("home_migration_ticks", 0)
+                item.setdefault("behavior_state", {})
+                migrated_creatures.append(item)
+            payload["creatures"] = migrated_creatures
+
+        creature_ids = [_json_integer(item["id"], "creature ID") for item in payload["creatures"]]
+        resource_ids = [_json_integer(item["id"], "resource ID") for item in payload["resources"]]
+        next_creature_id = _json_integer(payload["next_creature_id"], "next_creature_id")
+        next_resource_id = _json_integer(payload["next_resource_id"], "next_resource_id")
+        all_ids = (*creature_ids, *resource_ids, next_creature_id, next_resource_id)
+        if any(value < 0 for value in all_ids):
+            raise CheckpointError("Checkpoint IDs and ID counters must be non-negative")
+        if creature_ids and next_creature_id <= max(creature_ids):
+            raise CheckpointError("next_creature_id must exceed every saved creature ID")
+        if resource_ids and next_resource_id <= max(resource_ids):
+            raise CheckpointError("next_resource_id must exceed every saved resource ID")
         engine = SimulationEngine(config, seed=int(payload["seed"]))
         engine.tick = int(payload["tick"])
         engine.rng.bit_generator.state = payload["rng_state"]
         creatures = [_restore_creature(item) for item in payload["creatures"]]
         resources = [
             Resource(
-                id=int(item["id"]),
+                id=_json_integer(item["id"], "resource ID"),
                 position=np.asarray(item["position"], dtype=float),
                 energy=float(item["energy"]),
                 radius=float(item["radius"]),
@@ -282,8 +303,8 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
         engine.recent_events = [dict(item) for item in payload.get("recent_events", [])]
         engine.metrics = MetricsRecorder()
         engine.metrics.samples = [MetricSample(**item) for item in payload.get("metrics", [])]
-        engine.next_creature_id = int(payload["next_creature_id"])
-        engine.next_resource_id = int(payload["next_resource_id"])
+        engine.next_creature_id = next_creature_id
+        engine.next_resource_id = next_resource_id
         engine.spawn_accumulator = float(payload["spawn_accumulator"])
         engine.tick_births = int(payload["tick_births"])
         engine.tick_deaths = int(payload["tick_deaths"])
