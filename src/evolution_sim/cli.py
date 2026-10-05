@@ -53,6 +53,16 @@ def build_parser() -> argparse.ArgumentParser:
     shortcut.add_argument("--name", default="Vikasa")
     shortcut.add_argument("--config", type=Path, default=Path("config/showcase.json"))
     shortcut.add_argument("--seed", type=int, default=2026)
+
+    godot = commands.add_parser("godot", help="Launch the Living Biome 3D laboratory")
+    godot.add_argument("--config", type=Path, default=Path("config/showcase.json"))
+    godot.add_argument("--seed", type=int, default=2026)
+    godot.add_argument("--godot-path", type=str)
+
+    bridge = commands.add_parser("serve", help="Run the local simulation bridge for Godot")
+    bridge.add_argument("--config", type=Path, default=Path("config/showcase.json"))
+    bridge.add_argument("--seed", type=int, default=2026)
+    bridge.add_argument("--port", type=int, default=8765)
     return parser
 
 
@@ -107,6 +117,23 @@ def main(argv: Sequence[str] | None = None) -> int:
                 seed=args.seed,
             )
             print(f"Desktop shortcut installed: {shortcut}")
+            return 0
+        if args.command == "godot":
+            from evolution_sim.bridge import launch_godot
+
+            return launch_godot(
+                SimulationConfig.from_json(args.config),
+                seed=args.seed,
+                godot_path=args.godot_path,
+            )
+        if args.command == "serve":
+            if not 1 <= args.port <= 65_535:
+                raise ValueError("port must be between 1 and 65535")
+            from evolution_sim.bridge import serve_bridge
+
+            serve_bridge(
+                SimulationConfig.from_json(args.config), seed=args.seed, port=args.port
+            )
             return 0
     except (ConfigError, ScenarioError, OSError, RuntimeError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)

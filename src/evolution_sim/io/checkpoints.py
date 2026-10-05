@@ -16,11 +16,13 @@ from evolution_sim.config import ConfigError, SimulationConfig
 from evolution_sim.model.entities import Creature, Resource
 from evolution_sim.model.genome import Genome
 from evolution_sim.model.lineage import LineageStore
+from evolution_sim.model.temperament import Temperament
 from evolution_sim.simulation.engine import SimulationEngine
 from evolution_sim.simulation.environment import EnvironmentState
+from evolution_sim.simulation.culture import CultureLedger
 
 FORMAT = "vikasa"
-VERSION = 1
+VERSION = 2
 
 
 class CheckpointError(ValueError):
@@ -58,6 +60,18 @@ def _creature_to_dict(creature: Creature) -> dict[str, Any]:
         "wander_angle": creature.wander_angle,
         "alive": creature.alive,
         "trail": [list(point) for point in creature.trail],
+        "temperament": creature.temperament.to_dict(),
+        "hunger": creature.hunger,
+        "satisfaction_vector": list(creature.satisfaction_vector),
+        "satisfaction": creature.satisfaction,
+        "fights_won": creature.fights_won,
+        "fights_lost": creature.fights_lost,
+        "alpha": creature.alpha,
+        "injury": creature.injury,
+        "starvation_ticks": creature.starvation_ticks,
+        "death_cause": creature.death_cause,
+        "belief_id": creature.belief_id,
+        "ritual_ticks": creature.ritual_ticks,
     }
 
 
@@ -82,6 +96,10 @@ def checkpoint_payload(engine: SimulationEngine) -> dict[str, Any]:
         "resources": [_resource_to_dict(engine.resources[key]) for key in sorted(engine.resources)],
         "lineage": engine.lineage.to_records(),
         "environment": engine.environment.to_dict(),
+        "culture": engine.culture.to_dict(),
+        "death_causes": dict(engine.death_causes),
+        "combat_events": list(engine.combat_events),
+        "recent_events": list(engine.recent_events),
         "metrics": [asdict(sample) for sample in engine.metrics.samples],
         "next_creature_id": engine.next_creature_id,
         "next_resource_id": engine.next_resource_id,
@@ -129,6 +147,20 @@ def _restore_creature(data: dict[str, Any]) -> Creature:
         last_reproduction_tick=int(data["last_reproduction_tick"]),
         wander_angle=float(data["wander_angle"]),
         alive=bool(data["alive"]),
+        temperament=Temperament.from_dict(data.get("temperament")),
+        hunger=float(data.get("hunger", 0.0)),
+        satisfaction_vector=tuple(
+            float(value) for value in data.get("satisfaction_vector", (0, 0, 0, 0))
+        ),
+        satisfaction=float(data.get("satisfaction", 0.0)),
+        fights_won=int(data.get("fights_won", 0)),
+        fights_lost=int(data.get("fights_lost", 0)),
+        alpha=bool(data.get("alpha", False)),
+        injury=float(data.get("injury", 0.0)),
+        starvation_ticks=int(data.get("starvation_ticks", 0)),
+        death_cause=data.get("death_cause"),
+        belief_id=(int(data["belief_id"]) if data.get("belief_id") is not None else None),
+        ritual_ticks=int(data.get("ritual_ticks", 0)),
     )
     creature.trail = [(float(point[0]), float(point[1])) for point in data.get("trail", [])]
     return creature
@@ -143,10 +175,18 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
         _validate_finite(payload)
         if payload.get("format") != FORMAT:
             raise CheckpointError("Not a Vikasa checkpoint")
-        if payload.get("version") != VERSION:
+        version = payload.get("version")
+        if version not in {1, VERSION}:
             raise CheckpointError(
-                f"Unsupported checkpoint version {payload.get('version')}; expected {VERSION}"
+                f"Unsupported checkpoint version {version}; expected 1 or {VERSION}"
             )
+        if version == 1:
+            payload = dict(payload)
+            payload["version"] = VERSION
+            payload.setdefault("culture", {})
+            payload.setdefault("death_causes", {})
+            payload.setdefault("combat_events", [])
+            payload.setdefault("recent_events", [])
         config = SimulationConfig.from_dict(payload["config"])
         engine = SimulationEngine(config, seed=int(payload["seed"]))
         engine.tick = int(payload["tick"])
@@ -165,6 +205,12 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
         engine.resources = {item.id: item for item in resources}
         engine.lineage = LineageStore.from_records(payload["lineage"])
         engine.environment = EnvironmentState.from_dict(payload["environment"])
+        engine.culture = CultureLedger.from_dict(payload.get("culture"))
+        engine.death_causes = {
+            str(key): int(value) for key, value in payload.get("death_causes", {}).items()
+        }
+        engine.combat_events = [dict(item) for item in payload.get("combat_events", [])]
+        engine.recent_events = [dict(item) for item in payload.get("recent_events", [])]
         engine.metrics = MetricsRecorder()
         engine.metrics.samples = [MetricSample(**item) for item in payload.get("metrics", [])]
         engine.next_creature_id = int(payload["next_creature_id"])

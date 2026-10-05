@@ -6,7 +6,17 @@ import math
 from dataclasses import dataclass
 from typing import Any
 
-EVENT_KINDS = {"drought", "abundance", "heat", "redistribute"}
+EVENT_KINDS = {
+    "drought",
+    "abundance",
+    "heat",
+    "cold",
+    "storm",
+    "flood",
+    "wildfire",
+    "disease",
+    "redistribute",
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -60,6 +70,13 @@ class EnvironmentState:
         self.history: list[dict[str, Any]] = []
         self.food_multiplier = 1.0
         self.metabolic_multiplier = 1.0
+        self.movement_multiplier = 1.0
+        self.health_pressure = 0.0
+        self.seasonal_food_multiplier = 1.0
+        self.seasonal_metabolic_multiplier = 1.0
+        self.season = "spring"
+        self.temperature = 0.58
+        self.rainfall = 0.64
         self.current_tick = -1
 
     def schedule(self, event: EnvironmentEvent) -> None:
@@ -70,6 +87,14 @@ class EnvironmentState:
         self.current_tick = tick
         self.food_multiplier = 1.0
         self.metabolic_multiplier = 1.0
+        self.movement_multiplier = 1.0
+        self.health_pressure = 0.0
+        season_index = (tick // 96) % 4
+        self.season = ("spring", "summer", "autumn", "winter")[season_index]
+        self.temperature = (0.58, 0.82, 0.55, 0.3)[season_index]
+        self.rainfall = (0.76, 0.38, 0.62, 0.52)[season_index]
+        self.seasonal_food_multiplier = (1.12, 0.96, 0.84, 0.72)[season_index]
+        self.seasonal_metabolic_multiplier = (0.96, 1.04, 0.98, 1.14)[season_index]
         recorded = {
             (entry["kind"], entry["start_tick"], entry["duration"], entry["intensity"])
             for entry in self.history
@@ -81,10 +106,25 @@ class EnvironmentState:
                 recorded.add(key)
             if not event.active_at(tick):
                 continue
-            if event.kind == "drought" or event.kind == "abundance":
+            if event.kind in {"drought", "abundance"}:
                 self.food_multiplier *= event.intensity
             elif event.kind == "heat":
                 self.metabolic_multiplier *= event.intensity
+                self.health_pressure += max(0.0, event.intensity - 1.0) * 0.16
+            elif event.kind == "cold":
+                self.metabolic_multiplier *= event.intensity
+                self.health_pressure += max(0.0, event.intensity - 1.0) * 0.08
+            elif event.kind == "storm":
+                self.movement_multiplier *= event.intensity
+                self.health_pressure += 0.08 * event.intensity
+            elif event.kind == "flood":
+                self.food_multiplier *= max(0.1, 1.0 / event.intensity)
+                self.health_pressure += 0.12 * event.intensity
+            elif event.kind == "wildfire":
+                self.food_multiplier *= max(0.05, 1.0 - 0.75 * event.intensity)
+                self.health_pressure += 0.18 * event.intensity
+            elif event.kind == "disease":
+                self.health_pressure += 0.025 * event.intensity
 
     @property
     def active_events(self) -> tuple[EnvironmentEvent, ...]:
@@ -96,6 +136,13 @@ class EnvironmentState:
             "history": list(self.history),
             "food_multiplier": self.food_multiplier,
             "metabolic_multiplier": self.metabolic_multiplier,
+            "movement_multiplier": self.movement_multiplier,
+            "health_pressure": self.health_pressure,
+            "seasonal_food_multiplier": self.seasonal_food_multiplier,
+            "seasonal_metabolic_multiplier": self.seasonal_metabolic_multiplier,
+            "season": self.season,
+            "temperature": self.temperature,
+            "rainfall": self.rainfall,
             "current_tick": self.current_tick,
         }
 
@@ -106,5 +153,14 @@ class EnvironmentState:
         state.history = [dict(item) for item in data.get("history", [])]
         state.food_multiplier = float(data.get("food_multiplier", 1.0))
         state.metabolic_multiplier = float(data.get("metabolic_multiplier", 1.0))
+        state.movement_multiplier = float(data.get("movement_multiplier", 1.0))
+        state.health_pressure = float(data.get("health_pressure", 0.0))
+        state.seasonal_food_multiplier = float(data.get("seasonal_food_multiplier", 1.0))
+        state.seasonal_metabolic_multiplier = float(
+            data.get("seasonal_metabolic_multiplier", 1.0)
+        )
+        state.season = str(data.get("season", "spring"))
+        state.temperature = float(data.get("temperature", 0.58))
+        state.rainfall = float(data.get("rainfall", 0.64))
         state.current_tick = int(data.get("current_tick", -1))
         return state
