@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import math
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, ClassVar
 
@@ -29,12 +29,14 @@ def _mapping(value: Any, path: str) -> dict[str, Any]:
     return value
 
 
-def _keys(data: dict[str, Any], allowed: set[str], path: str) -> None:
+def _keys(
+    data: dict[str, Any], allowed: set[str], path: str, *, optional: set[str] | None = None
+) -> None:
     unknown = sorted(set(data) - allowed)
     if unknown:
         name = f"{path}.{unknown[0]}" if path else unknown[0]
         raise ConfigError(f"{name} is not a supported field")
-    missing = sorted(allowed - set(data))
+    missing = sorted(allowed - set(data) - (optional or set()))
     if missing:
         name = f"{path}.{missing[0]}" if path else missing[0]
         raise ConfigError(f"{name} is required")
@@ -121,6 +123,35 @@ class MetricsConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class BehaviorConfig:
+    hysteresis_margin: float = 0.08
+    softmax_temperature: float = 0.08
+    dependent_age_ticks: int = 240
+    care_radius: float = 24.0
+    care_energy_rate: float = 0.25
+    danger_preempt_threshold: float = 0.75
+    territory_migration_margin: float = 0.15
+
+    def __post_init__(self) -> None:
+        for name in ("hysteresis_margin", "danger_preempt_threshold", "territory_migration_margin"):
+            value = _number(getattr(self, name), f"behavior.{name}", minimum=0)
+            if value > 1:
+                raise ConfigError(f"behavior.{name} must not exceed 1")
+        temperature = _number(
+            self.softmax_temperature, "behavior.softmax_temperature", minimum=0.001
+        )
+        if temperature > 1:
+            raise ConfigError("behavior.softmax_temperature must not exceed 1")
+        age = _integer(self.dependent_age_ticks, "behavior.dependent_age_ticks", minimum=0)
+        if age > 1_000_000:
+            raise ConfigError("behavior.dependent_age_ticks must not exceed 1000000")
+        for name, maximum in (("care_radius", 1_000_000), ("care_energy_rate", 1_000_000)):
+            value = _number(getattr(self, name), f"behavior.{name}", minimum=0)
+            if value > maximum:
+                raise ConfigError(f"behavior.{name} must not exceed {maximum}")
+
+
+@dataclass(frozen=True, slots=True)
 class SimulationConfig:
     world: WorldConfig
     genome: GenomeConfig
@@ -131,6 +162,7 @@ class SimulationConfig:
     initial_population: int
     maximum_age: int
     wander_change_probability: float
+    behavior: BehaviorConfig = field(default_factory=BehaviorConfig)
 
     ROOT_KEYS: ClassVar[set[str]] = {
         "world",
@@ -142,6 +174,7 @@ class SimulationConfig:
         "initial_population",
         "maximum_age",
         "wander_change_probability",
+        "behavior",
     }
 
     @classmethod
@@ -156,7 +189,7 @@ class SimulationConfig:
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> SimulationConfig:
         data = _mapping(raw, "config")
-        _keys(data, cls.ROOT_KEYS, "")
+        _keys(data, cls.ROOT_KEYS, "", optional={"behavior"})
 
         world_data = _mapping(data["world"], "world")
         _keys(world_data, {"width", "height", "boundary"}, "world")
@@ -250,6 +283,19 @@ class SimulationConfig:
         if wander > 1:
             raise ConfigError("wander_change_probability must not exceed 1")
 
+        behavior_data = _mapping(data.get("behavior", {}), "behavior")
+        behavior_keys = set(BehaviorConfig.__dataclass_fields__)
+        _keys(behavior_data, behavior_keys, "behavior", optional=behavior_keys)
+        behavior_values = dict(behavior_data)
+        behavior_values.setdefault("care_energy_rate", min(0.25, energy.maximum))
+        behavior = BehaviorConfig(**behavior_values)
+        if behavior.care_radius > min(world.width, world.height) / 2:
+            raise ConfigError(
+                "behavior.care_radius must not exceed half the smaller world dimension"
+            )
+        if behavior.care_energy_rate > energy.maximum:
+            raise ConfigError("behavior.care_energy_rate must not exceed energy.maximum")
+
         return cls(
             world=world,
             genome=genome,
@@ -260,6 +306,7 @@ class SimulationConfig:
             initial_population=initial_population,
             maximum_age=_integer(data["maximum_age"], "maximum_age"),
             wander_change_probability=wander,
+            behavior=behavior,
         )
 
     def to_dict(self) -> dict[str, Any]:

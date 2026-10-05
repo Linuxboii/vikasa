@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 import numpy as np
 from numpy.typing import NDArray
 
 from evolution_sim.model.genome import Genome
 from evolution_sim.model.temperament import Temperament
+
+if TYPE_CHECKING:
+    from evolution_sim.simulation.behavior import BehaviorState
 
 Vector = NDArray[np.float64]
 
@@ -19,6 +23,13 @@ def _vector(value: Vector, name: str) -> Vector:
     if result.shape != (2,) or not np.isfinite(result).all():
         raise ValueError(f"{name} must contain two finite numbers")
     return result
+
+
+def _default_behavior() -> BehaviorState:
+    # Lazy import keeps the model independent of simulation package initialization.
+    from evolution_sim.simulation.behavior import BehaviorState
+
+    return BehaviorState()
 
 
 @dataclass(slots=True)
@@ -50,12 +61,24 @@ class Creature:
     death_cause: str | None = None
     belief_id: int | None = None
     ritual_ticks: int = 0
+    behavior_state: BehaviorState = field(default_factory=_default_behavior)
+    home_center: Vector | None = None
+    home_radius: float = 24.0
 
     def __post_init__(self) -> None:
         if not isinstance(self.id, int) or self.id < 0:
             raise ValueError("id must be a non-negative integer")
         self.position = _vector(self.position, "position")
         self.velocity = _vector(self.velocity, "velocity")
+        self.home_center = _vector(
+            self.position if self.home_center is None else self.home_center, "home_center"
+        )
+        if not math.isfinite(self.home_radius) or self.home_radius <= 0:
+            raise ValueError("home_radius must be finite and positive")
+        from evolution_sim.simulation.behavior import BehaviorState
+
+        if not isinstance(self.behavior_state, BehaviorState):
+            raise ValueError("behavior_state must be a BehaviorState")
         if not isinstance(self.age, int) or self.age < 0:
             raise ValueError("age must be a non-negative integer")
         if not math.isfinite(self.energy):

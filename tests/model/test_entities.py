@@ -62,3 +62,23 @@ def test_resource_requires_finite_positive_energy() -> None:
 
     with pytest.raises(ValueError, match="energy"):
         Resource(4, np.array([8.0, 9.0]), 0.0)
+
+
+def test_creatures_own_home_center_and_default_behavior() -> None:
+    position = np.array([10.0, 20.0])
+    first = Creature(1, position, np.zeros(2), 0, 50.0, GENOME)
+    second = Creature(2, position, np.zeros(2), 0, 50.0, GENOME)
+    first.home_center[0] = 99.0
+    assert second.home_center.tolist() == [10.0, 20.0]
+    assert first.position.tolist() == position.tolist() == [10.0, 20.0]
+    assert first.behavior_state.action.value == "explore"
+    assert 0 < second.home_radius <= min(CONFIG.world.width, CONFIG.world.height) / 2
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [("home_radius", -1.0), ("home_radius", float("inf")), ("home_center", [0.0, float("nan")])],
+)
+def test_creature_rejects_corrupt_home_range(field: str, value: object) -> None:
+    with pytest.raises(ValueError, match=field):
+        Creature(1, np.zeros(2), np.zeros(2), 0, 50.0, GENOME, **{field: value})
