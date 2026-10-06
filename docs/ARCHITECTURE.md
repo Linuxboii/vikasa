@@ -16,10 +16,16 @@ Vikasa separates simulation outcomes from their presentation. `SimulationEngine`
 | `ui/` | Pygame setup, controls, rendering and inspection. |
 | `bridge.py` | Loopback HTTP bridge and command handling for the Godot client. |
 | `godot/` | Procedural 3D habitat, client polling, controls, HUD, world tools, and selected-creature inspection. |
+| `godot/scripts/Observatory.gd`, `LiveChart.gd` | Switchable chart groups, bounded real histories, hover inspection, life/death totals and exposure shading. |
+| `godot/scripts/AtmosphereOverlay.gd` | Rain, cold and fire cues using inexpensive CanvasItem drawing; no simulation feedback. |
 
 Data flows from validated config and a seed into the engine. At each tick the engine updates environment, food, spatial perceptions and behavior; executes selected actions; then resolves fights, feeding, reproduction and deaths in stable order. Culture and satisfaction are updated after the tick's survival events. The engine exports immutable snapshots to clients. Rendering can lag or disconnect without changing the simulation state.
 
 ## Behavior contract
+
+The bridge publishes a completed snapshot about every 160 milliseconds. HTTP readers return the last publication without waiting for the simulation lock, allowing presentation to remain responsive at high requested tick rates. Commands are serialized under the engine lock and publish their result immediately. Requested speeds are 16/48/120 ticks per second; the HUD also reports an actual rate measured from completed ticks. Unachievable catch-up work is dropped. History payloads include at most 240 metric samples and the client draws at most 180, so chart cost stays bounded.
+
+The presentation configuration begins with 64 creatures and a population cap of 180. Above 40 creatures, cognition is deterministically staggered across six ticks; movement and vital processes execute each tick. Contest opportunities are evaluated every four ticks. Rendered creatures use shared low-detail meshes and one simple body shadow; instanced vegetation and a 30 FPS ceiling preserve GPU headroom.
 
 `BehaviorController` receives tick-local perceived resources, threats, eligible mates, dependents, and hazard/terrain pressures. It calculates normalized drives in a stable presentation order: survival, foraging, mating, offspring care, danger avoidance, territory. Eight candidate actions—explore, forage, rest, seek mate, care, flee, patrol, challenge—are scored from weighted drive affinity plus action reward minus travel, exposure, and conflict costs.
 

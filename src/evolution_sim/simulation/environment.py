@@ -72,6 +72,7 @@ class EnvironmentState:
         self.metabolic_multiplier = 1.0
         self.movement_multiplier = 1.0
         self.health_pressure = 0.0
+        self.resource_decay = 0.0
         self.seasonal_food_multiplier = 1.0
         self.seasonal_metabolic_multiplier = 1.0
         self.season = "spring"
@@ -89,6 +90,7 @@ class EnvironmentState:
         self.metabolic_multiplier = 1.0
         self.movement_multiplier = 1.0
         self.health_pressure = 0.0
+        self.resource_decay = 0.0
         season_index = (tick // 96) % 4
         self.season = ("spring", "summer", "autumn", "winter")[season_index]
         self.temperature = (0.58, 0.82, 0.55, 0.3)[season_index]
@@ -108,23 +110,36 @@ class EnvironmentState:
                 continue
             if event.kind in {"drought", "abundance"}:
                 self.food_multiplier *= event.intensity
+                if event.kind == "drought":
+                    severity = max(0.0, 1.0 - event.intensity)
+                    self.resource_decay += 0.035 * severity
+                    self.metabolic_multiplier *= 1.0 + 0.8 * severity
+                    self.health_pressure += 0.15 * severity
+                    self.rainfall *= min(1.0, event.intensity)
             elif event.kind == "heat":
                 self.metabolic_multiplier *= event.intensity
-                self.health_pressure += max(0.0, event.intensity - 1.0) * 0.16
+                self.health_pressure += max(0.0, event.intensity - 1.0) * 0.45
+                self.resource_decay += max(0.0, event.intensity - 1.0) * 0.012
+                self.temperature = min(1.0, self.temperature + 0.15 * event.intensity)
             elif event.kind == "cold":
                 self.metabolic_multiplier *= event.intensity
-                self.health_pressure += max(0.0, event.intensity - 1.0) * 0.08
+                self.health_pressure += max(0.0, event.intensity - 1.0) * 0.25
+                self.temperature = max(0.0, self.temperature - 0.15 * event.intensity)
             elif event.kind == "storm":
                 self.movement_multiplier *= event.intensity
-                self.health_pressure += 0.08 * event.intensity
+                self.health_pressure += 0.35 * event.intensity
+                self.resource_decay += 0.012 * event.intensity
+                self.rainfall = min(1.0, self.rainfall + 0.2 * event.intensity)
             elif event.kind == "flood":
                 self.food_multiplier *= max(0.1, 1.0 / event.intensity)
-                self.health_pressure += 0.12 * event.intensity
+                self.health_pressure += 0.45 * event.intensity
+                self.resource_decay += 0.025 * event.intensity
             elif event.kind == "wildfire":
                 self.food_multiplier *= max(0.05, 1.0 - 0.75 * event.intensity)
-                self.health_pressure += 0.18 * event.intensity
+                self.health_pressure += 0.8 * event.intensity
+                self.resource_decay += 0.055 * event.intensity
             elif event.kind == "disease":
-                self.health_pressure += 0.025 * event.intensity
+                self.health_pressure += 0.4 * event.intensity
 
     @property
     def active_events(self) -> tuple[EnvironmentEvent, ...]:
@@ -138,6 +153,7 @@ class EnvironmentState:
             "metabolic_multiplier": self.metabolic_multiplier,
             "movement_multiplier": self.movement_multiplier,
             "health_pressure": self.health_pressure,
+            "resource_decay": self.resource_decay,
             "seasonal_food_multiplier": self.seasonal_food_multiplier,
             "seasonal_metabolic_multiplier": self.seasonal_metabolic_multiplier,
             "season": self.season,
@@ -155,6 +171,7 @@ class EnvironmentState:
         state.metabolic_multiplier = float(data.get("metabolic_multiplier", 1.0))
         state.movement_multiplier = float(data.get("movement_multiplier", 1.0))
         state.health_pressure = float(data.get("health_pressure", 0.0))
+        state.resource_decay = float(data.get("resource_decay", 0.0))
         state.seasonal_food_multiplier = float(data.get("seasonal_food_multiplier", 1.0))
         state.seasonal_metabolic_multiplier = float(
             data.get("seasonal_metabolic_multiplier", 1.0)

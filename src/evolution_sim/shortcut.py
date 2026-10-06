@@ -8,6 +8,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from evolution_sim.bridge import _godot_binary
+
 
 def _ps_quote(value: str | Path) -> str:
     return "'" + str(value).replace("'", "''") + "'"
@@ -34,6 +36,7 @@ def install_desktop_shortcut(
     )
     if not config_path.is_file():
         raise FileNotFoundError(f"Configuration does not exist: {config_path}")
+    godot_binary = Path(_godot_binary(None))
     pythonw = Path(sys.executable).with_name("pythonw.exe")
     if not pythonw.is_file():
         raise FileNotFoundError(f"GUI Python executable does not exist: {pythonw}")
@@ -53,7 +56,10 @@ def install_desktop_shortcut(
         if desktop_path is not None
         else "$shell.SpecialFolders.Item('Desktop')"
     )
-    arguments = f'-m evolution_sim.cli ui --config "{config_path}" --seed {seed}'
+    arguments = (
+        f'-m evolution_sim.cli godot --config "{config_path}" --seed {seed} '
+        f'--godot-path "{godot_binary}"'
+    )
     script = "; ".join(
         (
             "$shell = New-Object -ComObject WScript.Shell",
@@ -64,8 +70,8 @@ def install_desktop_shortcut(
             f"$link.Arguments = {_ps_quote(arguments)}",
             f"$link.WorkingDirectory = {_ps_quote(root)}",
             "$link.WindowStyle = 1",
-            "$link.Description = 'Launch the Vikasa artificial-life laboratory'",
-            f"$link.IconLocation = {_ps_quote(str(pythonw) + ',0')}",
+            "$link.Description = 'Launch Vikasa Living Biome 3D'",
+            f"$link.IconLocation = {_ps_quote(str(godot_binary) + ',0')}",
             "$link.Save()",
             "Write-Output $path",
         )

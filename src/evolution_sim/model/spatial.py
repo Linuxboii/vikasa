@@ -9,8 +9,6 @@ from collections.abc import Mapping
 import numpy as np
 from numpy.typing import NDArray
 
-from evolution_sim.model.math2d import distance_sq
-
 Vector = NDArray[np.float64]
 Cell = tuple[int, int]
 
@@ -48,20 +46,32 @@ class SpatialHash:
             self.insert(entity_id, positions[entity_id])
 
     def query_radius(self, position: Vector, radius: float) -> list[int]:
-        center = np.asarray(position, dtype=np.float64)
+        center = (
+            position
+            if isinstance(position, np.ndarray)
+            else np.asarray(position, dtype=np.float64)
+        )
         if center.shape != (2,) or not np.isfinite(center).all():
             raise ValueError("position must contain two finite values")
         if not math.isfinite(radius) or radius < 0:
             raise ValueError("radius must be finite and non-negative")
         if not self._positions:
             return []
-        minimum = self._cell(center - radius)
-        maximum = self._cell(center + radius)
+        center_x = float(center[0])
+        center_y = float(center[1])
+        minimum_x = math.floor((center_x - radius) / self.cell_size)
+        maximum_x = math.floor((center_x + radius) / self.cell_size)
+        minimum_y = math.floor((center_y - radius) / self.cell_size)
+        maximum_y = math.floor((center_y + radius) / self.cell_size)
         radius_sq = radius * radius
         result: list[int] = []
-        for x in range(minimum[0], maximum[0] + 1):
-            for y in range(minimum[1], maximum[1] + 1):
+        for x in range(minimum_x, maximum_x + 1):
+            for y in range(minimum_y, maximum_y + 1):
                 for entity_id in self._cells.get((x, y), ()):
-                    if distance_sq(center, self._positions[entity_id]) <= radius_sq:
+                    candidate = self._positions[entity_id]
+                    dx = center_x - float(candidate[0])
+                    dy = center_y - float(candidate[1])
+                    if dx * dx + dy * dy <= radius_sq:
                         result.append(entity_id)
-        return sorted(result)
+        result.sort()
+        return result

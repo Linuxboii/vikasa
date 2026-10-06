@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from itertools import combinations
 from typing import Any
 
 import numpy as np
@@ -36,6 +35,11 @@ class MetricSample:
     trait_offspring_correlation: dict[str, float | None]
     food_multiplier: float
     metabolic_multiplier: float
+    mean_energy_ratio: float = 0.0
+    mean_injury: float = 0.0
+    health_pressure: float = 0.0
+    temperature: float = 0.0
+    rainfall: float = 0.0
 
     def to_row(self) -> dict[str, float | int | None]:
         row: dict[str, float | int | None] = {
@@ -50,6 +54,11 @@ class MetricSample:
             "mean_fitness": self.mean_fitness,
             "food_multiplier": self.food_multiplier,
             "metabolic_multiplier": self.metabolic_multiplier,
+            "mean_energy_ratio": self.mean_energy_ratio,
+            "mean_injury": self.mean_injury,
+            "health_pressure": self.health_pressure,
+            "temperature": self.temperature,
+            "rainfall": self.rainfall,
         }
         for trait in (item.value for item in TRAITS):
             row[f"{trait}_mean"] = self.trait_mean[trait]
@@ -109,6 +118,12 @@ class MetricsRecorder:
             trait_offspring_correlation=correlations,
             food_multiplier=engine.environment.food_multiplier,
             metabolic_multiplier=engine.environment.metabolic_multiplier,
+            mean_energy_ratio=sum(max(0.0, min(1.0, c.energy / engine.config.energy.maximum))
+                                  for c in creatures) / max(1, len(creatures)),
+            mean_injury=sum(c.injury for c in creatures) / max(1, len(creatures)),
+            health_pressure=engine.environment.health_pressure,
+            temperature=engine.environment.temperature,
+            rainfall=engine.environment.rainfall,
         )
         self.samples.append(sample)
         return sample
@@ -129,9 +144,11 @@ class MetricsRecorder:
                 for trait in TRAITS
             ]
         )
-        normalized = [(creature.genome.as_array() - minimum) / span for creature in creatures]
-        distances = [float(np.linalg.norm(a - b)) for a, b in combinations(normalized, 2)]
-        return float(np.mean(distances)) if distances else 0.0
+        normalized = (np.array([c.genome.values for c in creatures]) - minimum) / span
+        delta = normalized[:, None, :] - normalized[None, :, :]
+        distances = np.sqrt(np.sum(delta * delta, axis=2))
+        upper = distances[np.triu_indices(len(creatures), k=1)]
+        return float(np.mean(upper)) if len(upper) else 0.0
 
     def rows(self) -> list[dict[str, float | int | None]]:
         return [sample.to_row() for sample in self.samples]

@@ -37,11 +37,22 @@ func _run() -> void:
 			"behavior": "forage", "behavior_reason": "Following food scent because hunger is rising.", "dependent_ids": [17] if i == 3 else [],
 			"drives": {"survival": 0.2, "foraging": 0.6, "mating": 0.1, "offspring_care": 0.0, "danger_avoidance": 0.1, "territory": 0.3}, "parents": []})
 	var state := {"world": {"width": 1200, "height": 760}, "seed": 2026, "population": animals.size(), "tick": 240,
-		"paused": true, "ticks_per_second": 8, "creatures": animals, "resources": [{"id": 1, "position": [590, 310]}],
+		"paused": true, "ticks_per_second": 2, "creatures": animals, "resources": [{"id": 1, "position": [590, 310]}],
 		"environment": {"season": "summer", "temperature": 0.7, "active_events": []}}
 	main._on_connection(true, "Connected")
 	main._on_state(state)
 	check(world.creature_views.size() == 18, "Animals did not synchronize")
+	var crowded: Dictionary = state.duplicate(true)
+	crowded.creatures = []
+	crowded.resources = []
+	for i in range(260):
+		crowded.creatures.append({"id": i, "position": [300 + i % 40, 250 + i % 30], "velocity": [0.4, 0.1], "size": 4.0, "speed": 2.0, "energy_ratio": 0.8})
+	for i in range(400):
+		crowded.resources.append({"id": i, "position": [250 + i % 50, 220 + i % 35]})
+	main._on_state(crowded)
+	check(world.creature_views.size() <= 180, "Population rendering exceeded the safe visual budget")
+	check(world.resource_views.size() <= 240, "Food rendering exceeded the safe visual budget")
+	main._on_state(state)
 	var gait_before: float = world.creature_views[0]._gait_phase
 	world._process(0.25)
 	check(is_equal_approx(gait_before, world.creature_views[0]._gait_phase), "Paused gait advanced")
@@ -63,9 +74,10 @@ func _run() -> void:
 	main._select(3)
 	var running: Dictionary = state.duplicate(true)
 	running.paused = false
-	running.ticks_per_second = 24
+	running.ticks_per_second = 48
 	main._on_state(running)
-	check(hud.status.text == "Running" and hud.step_button.disabled and hud.speed_buttons[24].button_pressed, "Running/speed state mismatch")
+	check(hud.status.text == "Running" and hud.step_button.disabled and hud.speed_buttons[48].button_pressed, "Running/speed state mismatch")
+	check(hud.observatory.visible and hud.observatory.graphs.size() == 3, "Live observatory graphs missing")
 	main._on_state(state)
 	var payloads: Array = []
 	tools.command_requested.connect(func(payload: Dictionary): payloads.append(payload))
@@ -83,7 +95,7 @@ func _run() -> void:
 	check(not tools.placing_food and not inspector.visible, "Escape did not cancel")
 	tools.weather_choice.select(3)
 	tools._schedule()
-	check(payloads.size() == 2 and payloads[1].kind == "wildfire" and payloads[1].duration == 48, "Weather command mismatch")
+	check(payloads.size() == 2 and payloads[1].kind == "wildfire" and payloads[1].duration == 160, "Weather command mismatch")
 	main._on_connection(false, "Simulation offline · Reconnecting")
 	check(hud.pause_button.disabled and tools.food_button.disabled, "Offline controls not disabled")
 	check(hud.notice.text.contains("offline"), "Offline message missing")

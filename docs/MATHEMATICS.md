@@ -84,6 +84,27 @@ Thus high need does not guarantee a corresponding action: opportunity, travel, d
 
 ## Survival, fights, reproduction, and satisfaction
 
+Under weather pressure `H`, per-tick exposure injury is
+
+```text
+Δinjury = 0.018 × H × (1 − 0.75 × resilience) × (1 + 0.6 × hunger)
+injury_next = min(1, injury + Δinjury)
+```
+
+Lethal injury remains ≥0.98; with active health pressure it is attributed to environmental exposure. With mixed causes this is an approximate attribution. Calm-weather recovery is unchanged. Existing food energy evolves as `food_energy_next = food_energy × (1 − min(0.4, decay))`; a patch below 1 energy unit is removed. Event contributions compose:
+
+| Event (intensity `I`) | Added health pressure | Added food decay |
+| --- | --- | --- |
+| Drought | `0.15 × max(0, 1−I)` | `0.035 × max(0, 1−I)` |
+| Heat | `0.45 × max(0, I−1)` | `0.012 × max(0, I−1)` |
+| Cold | `0.25 × max(0, I−1)` | `0` |
+| Storm | `0.35 × I` | `0.012 × I` |
+| Flood | `0.45 × I` | `0.025 × I` |
+| Wildfire | `0.8 × I` | `0.055 × I` |
+| Disease | `0.4 × I` | `0` |
+
+These are explanatory simulation coefficients. Drought intensity is food growth retained, so smaller values are harsher. Above 40 creatures, cognition is staggered across six ticks; vital processes execute every tick. Contest opportunities are sampled every four ticks, so encounter risk below is per eligible check rather than per tick.
+
 Hunger is `clip(1−E/Emax)`. At nonpositive energy, starvation duration increases one tick; when energy is positive it decreases by one, to a floor of zero. Starvation death occurs at 12 accumulated ticks. Old age and severe injury are separate death causes.
 
 Fight chance is low and gated by close range plus hunger pressure (at least `0.48`) or an active challenge; fleeing prevents a contest. Encounter risk is capped at `0.09` and starts with `0.004 × (0.25+pressure) × (0.3+mean_aggression)`, with a `1.5` multiplier for a challenge. For an active challenger it is multiplied by `1 + 0.75 × fights_satisfaction`, where `fights_satisfaction` is the fourth component below; ordinary maximum-pressure challenge risk therefore remains below `0.03`. Strength combines size, aggression and current energy; defense combines size and resilience. A loss causes injury and greater energy cost. Lethal risk is bounded by `0.42` and increases with low post-contest energy and injury. Victory gives alpha status and increments fight wins.
