@@ -1,74 +1,38 @@
 # Architecture
 
-## Boundary rule
+Vikasa separates simulation outcomes from their presentation. `SimulationEngine` owns all persistent state and advances fixed, deterministic ticks. The Pygame laboratory, headless experiment runner, and Godot Living Biome are clients; none decide creature outcomes.
 
-The simulation engine owns outcomes. UI, charts, persistence, and experiments can read state or issue explicit commands, but none may select a target, choose a mate, mutate a gene, or decide a death.
+## Runtime boundaries
 
-## Dependency direction
+| Area | Responsibility |
+| --- | --- |
+| `config.py` | Typed, validated configuration and defaults, including behavior parameters. |
+| `model/` | Creature/resource state, six-gene genome, temperament, lineage, spatial and genetic primitives. |
+| `simulation/behavior.py` | Local perception contract, six drives, action utilities, arbitration, reason and target. |
+| `simulation/engine.py` | Tick order, movement/energy, home ranges, care, fights, resource contention, reproduction, death, culture and snapshots. |
+| `simulation/environment.py`, `culture.py` | Seasonal/event pressures and cue-based shared traditions. |
+| `io/checkpoints.py` | Strict versioned checkpoint serialization/migration. |
+| `experiments/` and `analytics/` | Scenario execution, metrics, invariant audits, and result charts/exports. |
+| `ui/` | Pygame setup, controls, rendering and inspection. |
+| `bridge.py` | Loopback HTTP bridge and command handling for the Godot client. |
+| `godot/` | Procedural 3D habitat, client polling, controls, HUD, world tools, and selected-creature inspection. |
 
-```text
-configuration
-    ↓
-genome + entities + math + spatial index
-    ↓
-environment + simulation engine + snapshots
-    ↓                  ↓
-analytics          persistence/export
-    ↓                  ↓
-experiments/CLI      Pygame UI
-                       ↓
-                    Godot 4 3D client
-```
+Data flows from validated config and a seed into the engine. At each tick the engine updates environment, food, spatial perceptions and behavior; executes selected actions; then resolves fights, feeding, reproduction and deaths in stable order. Culture and satisfaction are updated after the tick's survival events. The engine exports immutable snapshots to clients. Rendering can lag or disconnect without changing the simulation state.
 
-`simulation.engine` imports analytics only to attach its observational recorder. Analytics accepts engine-like state but does not call `step` or write organism fields.
+## Behavior contract
 
-## Key interfaces
+`BehaviorController` receives tick-local perceived resources, threats, eligible mates, dependents, and hazard/terrain pressures. It calculates normalized drives in a stable presentation order: survival, foraging, mating, offspring care, danger avoidance, territory. Eight candidate actions—explore, forage, rest, seek mate, care, flee, patrol, challenge—are scored from weighted drive affinity plus action reward minus travel, exposure, and conflict costs.
 
-- `SimulationConfig.from_json/from_dict/to_dict`: validated configuration boundary.
-- `Genome`: immutable ordered six-gene value object.
-- `SimulationEngine.step(count)`: only state-advance entry point.
-- `SimulationEngine.snapshot()`: immutable presentation boundary.
-- `EnvironmentState.schedule(event)`: tick-addressed pressure command.
-- `MetricsRecorder.record(engine)`: observational sample.
-- `save_checkpoint/load_checkpoint`: exact continuation boundary.
-- `export_experiment`: portable evidence package.
-- `ExperimentSpec`: reusable scenario plus nested overrides.
-- `EvolutionApp`: user event loop; delegates steps to `SimulationController`.
-- `GodotSimulationServer`: owns the same `SimulationEngine`, advances it at a bounded real-time rate, and exposes local `/state` plus validated `/command` operations to `godot/`.
-- `godot/scripts/Main.gd`: presentation, selection, camera, controls, and 3D scene; it never calculates survival, combat, inheritance, or cultural outcomes.
+An unavailable action is excluded rather than assigned a competing fabricated score. Danger above the configured preemption threshold forces flee; severe survival/injury pressure forces forage or rest. Otherwise an action persists when the alternative is within the configured hysteresis margin; near ties use seeded softmax selection. The state includes the actual action, target, start tick, utility breakdown, and a human-readable reason. See [mathematical definitions](MATHEMATICS.md).
 
-## Deterministic spatial search
+## Persistence and reproducibility
 
-The uniform grid maps IDs to cells and retains positions for exact radius filtering. Queries always return sorted IDs. Food uses a cell width of half maximum perception (minimum 24 units), which avoids scanning thousands of empty micro-cells while preserving exact distance results. The index is built once per tick and shared by movement and consumption.
+The current checkpoint is format `vikasa`, **version 3**. It stores configuration, seed, tick, NumPy PCG64 state, entities, lineage, environment, culture, behavior/home-range state, metrics and counters. Saving writes a temporary sibling, flushes it, then atomically replaces the destination.
 
-Fights and belief transmission use a separate creature-position hash. The bridge binds to `127.0.0.1`, caps request sizes, validates every command, and accepts no remote host configuration. Godot polls immutable JSON presentation data; commands are applied by the Python engine between locked ticks.
+The loader accepts **versions 1 and 2** and migrates them in memory to the current representation, supplying behavior/home-range defaults and deterministic home-radius migration where missing. Version 3 requires its new behavior/home fields and strict JSON integer IDs/references; unsupported versions and invalid invariants fail closed. Saving a migrated run writes v3; source files are not rewritten during loading.
 
-## Persistence transaction
+Determinism depends on equal configuration, seed, scheduled events, tick count, software version and numerical platform. Stable IDs order sensitive updates. Checkpoints preserve the random generator and fractional food-spawn accumulator for exact continuation. Wall-clock rendering and Godot presentation do not feed back into outcomes; explicitly issued world-tool commands do.
 
-1. Build a complete versioned payload.
-2. Reject every non-finite value.
-3. Write sorted JSON to a temporary sibling.
-4. Flush and `fsync`.
-5. Replace the destination atomically.
+## Runtime caveats
 
-Loading constructs and audits a candidate engine before returning it. Callers replace their current engine only after success.
-
-## Extension points
-
-- New gene: extend the stable `Trait` enum, config bounds, phenotype mapping, tests, and migration version together.
-- New environment event: add validation, deterministic tick semantics, export representation, and tests.
-- New metric: add one `MetricSample` field and flatten it in `to_row`.
-- New renderer: consume `WorldSnapshot`; never import engine-private behavior.
-- Neural behavior: introduce a brain interface that receives sensors and returns steering, keeping energy/genetics in the existing engine.
-- Multiple resources or predators: use separate entity types and spatial indexes; define deterministic contention ordering.
-
-## Performance and profiling
-
-The main cost is neighborhood search. A regression test requires 100 default founders to advance 120 ticks within five seconds on the development device. A second slow test runs 100,000 ticks with invariant checks every 1,000 ticks.
-
-```powershell
-.\.venv\Scripts\python.exe -m cProfile -o profile.pstats main.py stress --config config/default.json --ticks 10000
-```
-
-Optimize without changing stable ordering, RNG call order, or tick semantics unless a checkpoint/version migration explicitly permits it.
-
+The engine's world is 2D. Godot supplies a 3D presentation rather than a three-dimensional physics/ecology engine. Seasonal weather cues and hazard pressure are simplified parameters, not fluid/terrain simulation. Culture is a small seeded rule system. Behavior scores are explanatory utilities, not empirically fitted probabilities of real animal action.

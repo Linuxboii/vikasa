@@ -1,5 +1,7 @@
 # Vikasa Ecosystem v2 Design
 
+> **Status: historical/superseded.** This concept is not the current implementation specification. The approved replacement is [the 2026-10-05 wildlife experience spec](2026-10-05-vikasa-wildlife-experience-design.md); see [the scientific model](../../SCIENTIFIC_MODEL.md), [architecture](../../ARCHITECTURE.md), and [README](../../../README.md) for delivered scope. Proposed deployment, release, and remote-push steps below were planning intent only; they are not evidence that those actions were performed.
+
 **Status:** Approved concept, implementation specification  
 **Date:** 2026-10-04  
 **Product:** Vikasa  
