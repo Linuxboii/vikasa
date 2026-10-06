@@ -35,6 +35,7 @@ func _on_state(state: Dictionary) -> void:
 	var selected := _selected()
 	if selected_id >= 0 and selected.is_empty():
 		_select(-1)
+		hud.set_notice("The selected animal is no longer alive. Select another animal to observe.")
 	else:
 		hud.set_selection(selected)
 		inspector.set_creature(selected)
@@ -42,6 +43,11 @@ func _on_state(state: Dictionary) -> void:
 func _on_connection(connected: bool, message: String) -> void:
 	hud.set_connection(connected, message)
 	tools.set_connected(connected)
+	if not connected:
+		latest_state = {}
+		_select(-1)
+		world.clear_snapshot()
+		hud.set_notice(message, true)
 
 func _on_command(_action: String, ok: bool, message: String) -> void:
 	hud.set_notice(message, not ok)
@@ -54,6 +60,10 @@ func _selected() -> Dictionary:
 
 func _select(id: int) -> void:
 	selected_id = id
+	if id < 0:
+		following = false
+		world.set_follow(-1)
+		hud.set_following(false)
 	world.set_selected(id)
 	if following: world.set_follow(id)
 	hud.set_selection(_selected())

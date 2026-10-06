@@ -28,6 +28,9 @@ var speed_buttons: Dictionary = {}
 var _connected := false
 var _paused := false
 var _controls: Array[Button] = []
+var summary_row: HBoxContainer
+var words: VBoxContainer
+var _has_selection := false
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -40,6 +43,9 @@ func _ready() -> void:
 	top.offset_top = 18
 	top.offset_bottom = 86
 	BiomeUI.panel(top)
+	var top_style := top.get_theme_stylebox("panel") as StyleBoxFlat
+	top_style.content_margin_top = 10
+	top_style.content_margin_bottom = 10
 	add_child(top)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 24)
@@ -68,9 +74,10 @@ func _ready() -> void:
 	content.add_theme_constant_override("separation", 10)
 	bottom.add_child(content)
 	var summary := HBoxContainer.new()
+	summary_row = summary
 	summary.add_theme_constant_override("separation", 20)
 	content.add_child(summary)
-	var words := VBoxContainer.new()
+	words = VBoxContainer.new()
 	words.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	summary.add_child(words)
 	title = BiomeUI.label("Observe the living biome", 23)
@@ -80,7 +87,7 @@ func _ready() -> void:
 	needs = HBoxContainer.new()
 	needs.add_theme_constant_override("separation", 18)
 	summary.add_child(needs)
-	for key in ["Energy", "Hunger", "Health", "Safety"]:
+	for key in ["Energy", "Hunger", "Health", "Instinct"]:
 		var box := VBoxContainer.new()
 		box.custom_minimum_size.x = 106
 		box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -128,14 +135,36 @@ func _button(parent: Container, text: String, tip: String, callback: Callable, n
 
 func _resize() -> void:
 	var narrow := get_viewport_rect().size.x < 1150
+	# Reflow selected summary above meters rather than squeezing the action line.
+	if narrow and needs.get_parent() == summary_row:
+		summary_row.remove_child(needs)
+		$ObservationDock.get_child(0).add_child(needs)
+		$ObservationDock.get_child(0).move_child(needs, 1)
+	elif not narrow and needs.get_parent() != summary_row:
+		needs.get_parent().remove_child(needs)
+		summary_row.add_child(needs)
 	needs.add_theme_constant_override("separation", 8 if narrow else 18)
-	for child in needs.get_children(): child.custom_minimum_size.x = 76 if narrow else 106
-	$ObservationDock.offset_top = -250 if narrow else -210
+	for child in needs.get_children(): child.custom_minimum_size.x = 100 if narrow else 122
+	$TopStatus.offset_top = 12
+	$TopStatus.offset_bottom = 69
+	$ObservationDock.offset_bottom = -12
+	$TopStatus.get_child(0).add_theme_constant_override("separation", 14 if narrow else 24)
 	season.add_theme_font_size_override("font_size", 14 if narrow else 16)
+	weather.add_theme_font_size_override("font_size", 14 if narrow else 16)
+	$TopStatus.offset_left = 16
+	$TopStatus.offset_right = -16
+	$ObservationDock.offset_left = 16
+	$ObservationDock.offset_right = -16
+
+func _process(_delta: float) -> void:
+	# Size to the current content after container reflow; keep the bottom anchored.
+	var content := $ObservationDock.get_child(0) as Container
+	$ObservationDock.offset_top = -content.get_combined_minimum_size().y - 40
 
 func set_state(state: Dictionary) -> void:
 	_paused = bool(state.get("paused", false))
 	pause_button.text = "Resume" if _paused else "Pause"
+	status.text = "Paused" if _paused else "Running"
 	pause_button.tooltip_text = "Space · Resume the simulation" if _paused else "Space · Pause the simulation"
 	step_button.disabled = not _connected or not _paused
 	var env: Dictionary = state.get("environment", {})
@@ -145,26 +174,38 @@ func set_state(state: Dictionary) -> void:
 	weather.text = str(events[0].get("kind", "Weather")).capitalize() + " active" if not events.is_empty() else "Seasonal cycle"
 	var rate := float(state.get("ticks_per_second", 8))
 	for value in speed_buttons: speed_buttons[value].set_pressed_no_signal(is_equal_approx(rate, float(value)))
-	if int(state.get("population", 0)) == 0: set_notice("The habitat is empty. Start a new run to observe another population.", false)
-	elif notice.text.begins_with("The habitat is empty"): set_notice("Select an animal to begin observing.", false)
+	if int(state.get("population", 0)) == 0: set_notice("Population extinct. Restart the simulation to begin a new seeded habitat.", false)
+	elif notice.text.begins_with("Population extinct"): set_notice("Select an animal to begin observing.", false)
 
 func set_selection(creature: Dictionary) -> void:
 	var has_selection := not creature.is_empty()
-	inspect_button.disabled = not has_selection
-	follow_button.disabled = not has_selection
+	_has_selection = has_selection
+	inspect_button.disabled = not has_selection or not _connected
+	follow_button.disabled = not has_selection or not _connected
 	needs.visible = has_selection
+	_resize()
 	if not has_selection:
 		title.text = "Observe the living biome"
 		reason.text = "Click an animal to see what it needs and why it acts."
+		hint.visible = false
 		return
-	title.text = "Animal #%d · %s" % [int(creature.get("id", -1)), str(creature.get("behavior", "explore")).replace("_", " ").capitalize()]
+	hint.visible = true
+	title.text = "Animal #%d · %s" % [int(creature.get("id", -1)), BehaviorPresentation.action(creature)]
 	if notice.text == "Select an animal to begin observing.": notice.text = "Animals choose their own actions · Observe their changing needs."
-	reason.text = str(creature.get("behavior_reason", "Exploring the habitat"))
-	var drives: Dictionary = creature.get("drives", {})
-	var values := {"Energy": float(creature.get("energy_ratio", 0)), "Hunger": float(creature.get("hunger", 0)), "Health": 1.0 - float(creature.get("injury", 0)), "Safety": 1.0 - float(drives.get("danger_avoidance", 0))}
+	reason.text = BehaviorPresentation.reason(creature)
+	var raw_drives: Variant = creature.get("drives", {})
+	var drives: Dictionary = raw_drives if raw_drives is Dictionary else {}
+	var strongest := BehaviorPresentation.dominant(drives)
+	var injury: Variant = BehaviorPresentation.ratio(creature, "injury")
+	var values := {"Energy": BehaviorPresentation.ratio(creature, "energy_ratio"), "Hunger": BehaviorPresentation.ratio(creature, "hunger"), "Health": null if injury == null else 1.0 - float(injury), "Instinct": BehaviorPresentation.ratio(drives, strongest)}
 	for key in values:
-		bars[key].value = clampf(values[key], 0, 1)
-		captions[key].text = key + " " + BiomeUI.percent(values[key])
+		var color := Color("#d7c080") if key == "Hunger" else Color("#b4cfa8")
+		if key == "Instinct" and not strongest.is_empty(): color = BehaviorPresentation.DRIVES[strongest].color
+		BehaviorPresentation.meter(bars[key], values[key], color)
+		if values[key] != null:
+			bars[key].tooltip_text = {"Energy": "Usable energy reserve; higher means more reserve.", "Hunger": "Food need; higher means greater hunger.", "Health": "Health remaining; higher means less injury.", "Instinct": "Strongest current pressure; high urgency can influence the next action."}[key]
+		captions[key].text = (str(BehaviorPresentation.DRIVES[strongest].label) if key == "Instinct" and not strongest.is_empty() else key) + " " + BehaviorPresentation.percent(values[key])
+		if key == "Instinct": captions[key].tooltip_text = "Dominant instinct · " + BehaviorPresentation.urgency(values[key])
 
 func set_connection(value: bool, message: String) -> void:
 	_connected = value
@@ -172,11 +213,19 @@ func set_connection(value: bool, message: String) -> void:
 	status.add_theme_color_override("font_color", Color("#b8d3a7") if value else Color("#e0b48a"))
 	for button in _controls: button.disabled = not value
 	step_button.disabled = not value or not _paused
-	if not value: set_notice(message, true)
+	inspect_button.disabled = not value or not _has_selection
+	follow_button.disabled = not value or not _has_selection
+	if not value:
+		population.text = "— animals"
+		season.text = "Waiting for live simulation"
+		weather.text = ""
+		for button in speed_buttons.values(): button.set_pressed_no_signal(false)
+		set_notice(message, true)
 	elif notice.text.begins_with("Simulation offline") or notice.text.begins_with("Connecting"): set_notice("Select an animal to begin observing.", false)
 
 func set_notice(message: String, error: bool = false) -> void:
 	notice.text = message
+	notice.visible = error or not message.begins_with("Select an animal") and not message.begins_with("Animals choose")
 	notice.add_theme_color_override("font_color", Color("#ecc09f") if error else BiomeUI.ACCENT)
 
 func set_hint(message: String) -> void:

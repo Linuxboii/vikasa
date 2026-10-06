@@ -51,24 +51,30 @@ func _build_ground(width: float, depth: float, seed_value: int) -> void:
 	underlay_material.albedo_color = Color("#254737")
 	underlay_material.roughness = 1.0
 	underlay.material_override = underlay_material
-	underlay.position.y = -0.26
+	# Always below the minimum terrain height; never clips through the field.
+	underlay.position.y = -2.0
 	add_child(underlay)
 
 func _terrain_point(x: int, z: int, x_steps: int, z_steps: int, width: float, depth: float, noise: FastNoiseLite) -> Vector3:
 	var px := -width * 0.5 + width * float(x) / float(x_steps)
 	var pz := -depth * 0.5 + depth * float(z) / float(z_steps)
 	var edge: float = minf(1.0, minf((float(x) / float(x_steps)) * 8.0, minf((float(z) / float(z_steps)) * 8.0, minf((float(x_steps - x) / float(x_steps)) * 8.0, (float(z_steps - z) / float(z_steps)) * 8.0))))
-	var height: float = (noise.get_noise_2d(px, pz) * 1.25 + noise.get_noise_2d(px * 2.2, pz * 2.2) * 0.34) * edge
+	var height: float = -0.16 + (noise.get_noise_2d(px, pz) * 0.14 + noise.get_noise_2d(px * 2.2, pz * 2.2) * 0.04) * edge
+	# Recess scenic pools into the same terrain mesh so their surfaces stay visible.
+	for pool in _pools(width, depth):
+		var elliptical := Vector2((px - pool.x) / (width * 0.052), (pz - pool.y) / (depth * 0.06)).length()
+		height -= 0.48 * (1.0 - smoothstep(0.72, 1.25, elliptical))
 	return Vector3(px, height, pz)
 
 func _add_land_vertex(surface: SurfaceTool, point: Vector3) -> void:
-	var color := Color("#688b50")
+	var color := Color("#6c7d52")
 	if point.y > 0.6:
 		color = Color("#77775a").lerp(Color("#95a16a"), clampf(point.y * 0.12, 0.0, 0.5))
 	elif point.y < -0.7:
 		color = Color("#376d52").lerp(Color("#4c8053"), clampf((point.y + 2.0) * 0.15, 0.0, 0.5))
 	else:
-		color = Color("#416b45").lerp(Color("#7c9b56"), clampf((point.y + 1.0) * 0.42, 0.0, 0.78))
+		var patch := 0.5 + sin(point.x * 0.14) * cos(point.z * 0.17) * 0.5
+		color = Color("#586d47").lerp(Color("#7e865c"), patch * 0.7)
 	surface.set_color(color)
 	surface.add_vertex(point)
 
@@ -89,18 +95,21 @@ func _build_trees(width: float, depth: float, seed_value: int) -> void:
 	canopy_mesh.radial_segments = 8
 	canopy_mesh.rings = 6
 	canopy_mm.mesh = canopy_mesh
-	var tree_count := 92
+	var tree_count := 74
 	trunk_mm.instance_count = tree_count
 	canopy_mm.instance_count = tree_count
 	for i in range(tree_count):
-		var x := rng.randf_range(-width * 0.48, width * 0.48)
-		var z := rng.randf_range(-depth * 0.48, depth * 0.48)
-		var scale := rng.randf_range(0.7, 1.6)
+		# Keep the center readable; group cover into small groves along the edges.
+		var centers := [Vector2(-width * 0.34, -depth * 0.32), Vector2(width * 0.33, -depth * 0.3), Vector2(-width * 0.35, depth * 0.25), Vector2(width * 0.38, depth * 0.3)]
+		var center: Vector2 = centers[i % centers.size()]
+		var x := clampf(center.x + rng.randfn(0, width * 0.07), -width * 0.47, width * 0.47)
+		var z := clampf(center.y + rng.randfn(0, depth * 0.08), -depth * 0.47, depth * 0.47)
+		var scale := rng.randf_range(1.2, 2.1)
 		var height := 2.15 * scale
 		var transform := Transform3D(Basis().scaled(Vector3.ONE * scale), Vector3(x, height * 0.5, z))
 		trunk_mm.set_instance_transform(i, transform)
-		var canopy_basis := Basis().scaled(Vector3(0.8, 1.0, 0.8) * scale)
-		canopy_mm.set_instance_transform(i, Transform3D(canopy_basis, Vector3(x, height + 0.45 * scale, z)))
+		var canopy_basis := Basis().scaled(Vector3(2.3, 1.7, 2.0) * scale)
+		canopy_mm.set_instance_transform(i, Transform3D(canopy_basis, Vector3(x, height + 0.3 * scale, z)))
 	var trunks := MultiMeshInstance3D.new()
 	trunks.name = "CanopyTrunks"
 	trunks.multimesh = trunk_mm
@@ -109,23 +118,25 @@ func _build_trees(width: float, depth: float, seed_value: int) -> void:
 	var canopies := MultiMeshInstance3D.new()
 	canopies.name = "CanopyCrowns"
 	canopies.multimesh = canopy_mm
-	canopies.material_override = _mat(Color("#72a257"), 0.82)
+	canopies.material_override = _mat(Color("#547a48"), 0.92)
 	add_child(canopies)
 
 func _build_water(width: float, depth: float) -> void:
-	var placements := [Vector3(-width * 0.22, -0.62, -depth * 0.1), Vector3(width * 0.27, -0.68, depth * 0.2), Vector3(-width * 0.02, -0.6, depth * 0.34)]
-	var sizes := [Vector3(5.5, 0.16, 3.1), Vector3(4.2, 0.14, 2.3), Vector3(3.2, 0.12, 1.7)]
+	var placements := _pools(width, depth)
 	for i in range(placements.size()):
 		var pond := MeshInstance3D.new()
 		var mesh := SphereMesh.new()
 		mesh.radial_segments = 24
 		mesh.rings = 12
 		pond.mesh = mesh
-		pond.scale = sizes[i]
-		pond.position = placements[i]
-		pond.material_override = _mat(Color("#3e9a91"), 0.18, Color("#72cbbb"), 0.12)
+		pond.scale = Vector3(width * 0.095, 0.045, depth * 0.11)
+		pond.position = Vector3(placements[i].x, -0.23, placements[i].y)
+		pond.material_override = _mat(Color("#406b70"), 0.25)
 		pond.name = "SeasonalPool"
 		add_child(pond)
+
+func _pools(width: float, depth: float) -> Array[Vector2]:
+	return [Vector2(-width * 0.22, -depth * 0.1), Vector2(width * 0.23, depth * 0.2)]
 
 func _build_rocks(width: float, depth: float, seed_value: int) -> void:
 	var rng := RandomNumberGenerator.new()
