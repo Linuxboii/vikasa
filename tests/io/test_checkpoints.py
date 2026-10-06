@@ -40,9 +40,15 @@ def test_fractional_spawn_accumulator_survives_round_trip(tiny_config, tmp_path)
     save_checkpoint(engine, path)
 
     restored = load_checkpoint(path)
+    engine.step()
     restored.step()
 
-    assert len(restored.resources) == 1
+    # In the compact fixture the creature can immediately consume the newly
+    # spawned patch, so compare with uninterrupted execution instead of
+    # assuming the patch remains present after the tick.
+    assert restored.spawn_accumulator == pytest.approx(engine.spawn_accumulator)
+    assert restored.next_resource_id == engine.next_resource_id == 1
+    assert restored.snapshot() == engine.snapshot()
 
 
 def test_checkpoint_write_is_atomic_and_leaves_no_temporary_file(tiny_config, tmp_path) -> None:

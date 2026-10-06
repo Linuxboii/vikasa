@@ -13,11 +13,11 @@
     "mutation_sigma": 0.075,
     "crossover": "arithmetic"
   },
-  "energy": {"initial": 105.0, "basal_cost": 0.023, "movement_cost": 0.017, "maximum": 230.0},
-  "reproduction": {"minimum_age": 180, "cooldown": 120, "mate_radius": 62.0, "offspring_energy": 32.0, "population_cap": 600},
-  "resources": {"initial_count": 260, "spawn_rate": 0.48, "maximum_count": 520, "energy_value": 30.0},
-  "metrics": {"sample_interval": 10, "diversity_sample": 128},
-  "initial_population": 100,
-  "maximum_age": 7200,
+  "energy": {"initial": 100.0, "basal_cost": 0.09, "movement_cost": 0.026, "maximum": 230.0},
+  "reproduction": {"minimum_age": 90, "cooldown": 100, "mate_radius": 62.0, "offspring_energy": 32.0, "population_cap": 180},
+  "resources": {"initial_count": 150, "spawn_rate": 0.36, "maximum_count": 320, "energy_value": 30.0},
+  "metrics": {"sample_interval": 8, "diversity_sample": 48},
+  "initial_population": 64,
+  "maximum_age": 1100,
   "wander_change_probability": 0.03
 }

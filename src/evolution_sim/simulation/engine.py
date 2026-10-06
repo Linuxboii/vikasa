@@ -31,6 +31,9 @@ from evolution_sim.simulation.snapshots import (
 HOME_MIGRATION_PERSISTENCE_TICKS = 24
 HOME_MIGRATION_RATE = 0.005
 CARE_PARENT_RESERVE = 0.35
+ADAPTIVE_DECISION_POPULATION = 40
+ADAPTIVE_DECISION_INTERVAL = 6
+COMBAT_EVALUATION_INTERVAL = 4
 
 
 class SimulationEngine:
@@ -129,10 +132,15 @@ class SimulationEngine:
         for creature in self.creatures.values():
             creature.fight_wins_tick = 0
         self.environment.update(self.tick)
+        self._weather_resource_loss()
         self._regenerate_resources()
         resource_index = self._resource_index()
         self._move_creatures(resource_index)
-        self._resolve_fights()
+        # Contest opportunities are intentionally sparse in a natural biome.
+        # Sampling them periodically also avoids rebuilding a second neighbor
+        # index on every visual movement tick.
+        if self.tick % COMBAT_EVALUATION_INTERVAL == 0:
+            self._resolve_fights()
         self._resolve_consumption(resource_index)
         self._resolve_reproduction()
         self._resolve_deaths()
@@ -141,6 +149,18 @@ class SimulationEngine:
         self._update_satisfaction()
         if self.tick % self.config.metrics.sample_interval == 0:
             self.metrics.record(self)
+
+    def _weather_resource_loss(self) -> None:
+        decay = min(0.4, self.environment.resource_decay)
+        if decay <= 0.0:
+            return
+        exhausted = []
+        for resource_id, resource in self.resources.items():
+            resource.energy *= 1.0 - decay
+            if resource.energy < 1.0:
+                exhausted.append(resource_id)
+        for resource_id in exhausted:
+            del self.resources[resource_id]
 
     def _regenerate_resources(self) -> None:
         self.spawn_accumulator += (
@@ -176,8 +196,17 @@ class SimulationEngine:
             key for key, creature in self.creatures.items() if self._eligible(creature)
         }
         # Every decision sees the same tick's positions; no earlier creature has moved.
+        # Large populations stagger cognition across six ticks. Movement, hunger,
+        # combat, consumption and mortality still advance every tick, while a
+        # creature's intent can be reused briefly while the world stays live.
+        stagger_decisions = len(self.creatures) > ADAPTIVE_DECISION_POPULATION
         for creature_id in sorted(self.creatures):
-            self._choose_behavior(creature_id)
+            if (
+                not stagger_decisions
+                or self.tick == 0
+                or (self.tick + creature_id) % ADAPTIVE_DECISION_INTERVAL == 0
+            ):
+                self._choose_behavior(creature_id)
         for creature_id in sorted(self.creatures):
             self._execute_behavior(creature_id)
         self._behavior_resource_index = self._behavior_creature_index = None
@@ -380,8 +409,9 @@ class SimulationEngine:
                 1.0,
                 creature.injury
                 + self.environment.health_pressure
-                * (1.0 - creature.temperament.resilience)
-                * 0.003,
+                * (1.0 - 0.75 * creature.temperament.resilience)
+                * (1.0 + creature.hunger * 0.6)
+                * 0.018,
             )
         else:
             recovery = 0.003 if state.action is ActionName.REST else 0.0015
@@ -649,7 +679,11 @@ class SimulationEngine:
             if creature.age > self.config.maximum_age:
                 cause = "old age"
             elif creature.injury >= 0.98:
-                cause = "fight injuries"
+                cause = (
+                    "environmental exposure"
+                    if self.environment.health_pressure > 0.0
+                    else "fight injuries"
+                )
             elif creature.starvation_ticks >= 12:
                 cause = "starvation"
             else:

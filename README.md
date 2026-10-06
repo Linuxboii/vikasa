@@ -2,34 +2,107 @@
 
 Vikasa is a deterministic artificial-life sandbox. Watch small wild creatures forage, rest, flee, seek mates, care for young, patrol a home range, and sometimes challenge a rival. Their decisions emerge from changing needs and local opportunities; the interface exposes the action and its reason so the habitat stays readable rather than becoming a wall of statistics.
 
-![A storm moving through the Vikasa living biome](docs/images/wildlife-storm.png)
+![Live Observatory: population, life/death and energy histories](docs/images/presentation-overview.png)
 
 The Python simulation engine is authoritative. The Godot 4 client renders a procedural 3D habitat and sends observation/control commands to a loopback-only bridge. A Pygame lab and headless CLI remain available. This is an explanatory toy model—not a forecast for a real species.
 
-## Recommended launch: 3D Living Biome
+## Run the 3D Living Biome
 
-Requires Python 3.12+, Godot 4, and a desktop capable of running the Godot renderer. From the repository root:
+The interactive 3D GUI runs on desktop Windows, macOS, and Linux. It requires Python 3.12 or newer, Godot 4, and a graphics-capable desktop; this repository does not currently provide an Android or iOS app. The commands below assume you already have a Vikasa source checkout and run them from its root directory (the one containing `pyproject.toml`).
+
+### Windows (PowerShell)
+
+Install Godot 4 if it is not already installed, then create the environment, install Vikasa, and launch the 3D client:
 
 ```powershell
+winget install --id GodotEngine.GodotEngine --exact --scope user
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
-.\.venv\Scripts\python.exe -m pip install -e ".[dev]"
+.\.venv\Scripts\python.exe -m pip install -e .
 .\.venv\Scripts\vikasa.exe godot --config config\showcase.json --seed 2026
 ```
 
-On macOS/Linux, use `python3.12`, `.venv/bin/python`, and `.venv/bin/vikasa` in the equivalent commands. If Godot is not discoverable, set `VIKASA_GODOT_BINARY` or pass `--godot-path` to the `godot` command. For a manually opened Godot editor, start the bridge with `.venv/Scripts/vikasa.exe serve --config config/showcase.json --seed 2026`, then open `godot/project.godot`.
+The launcher detects a per-user WinGet Godot installation. To create or refresh a desktop shortcut for this checkout, run:
+
+```powershell
+.\.venv\Scripts\vikasa.exe shortcut --config config\showcase.json --seed 2026
+```
+
+### macOS (Terminal)
+
+With Homebrew installed, run:
+
+```bash
+brew install python@3.12
+brew install --cask godot
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e .
+vikasa godot --config config/showcase.json --seed 2026 --godot-path /Applications/Godot.app/Contents/MacOS/Godot
+```
+
+### Linux (Ubuntu 24.04+, Terminal)
+
+This copy/paste path uses Ubuntu's Python 3.12 packages and Godot's Flathub build. Run the first block once, then keep the first terminal open while the GUI runs in a second terminal:
+
+```bash
+sudo apt update
+sudo apt install -y python3.12 python3.12-venv flatpak
+flatpak remote-add --user --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+flatpak install --user -y flathub org.godotengine.Godot
+python3.12 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e .
+```
+
+Terminal 1 — start the simulation bridge from the repository root:
+
+```bash
+source .venv/bin/activate
+vikasa serve --config config/showcase.json --seed 2026
+```
+
+Terminal 2 — from the same repository root, launch the Godot GUI:
+
+```bash
+flatpak run org.godotengine.Godot --path "$PWD/godot"
+```
+
+On other Linux distributions, install Python 3.12 (including its `venv` support) and Flatpak with that distribution's package manager, then use the same setup and two-terminal commands. Godot must be able to read the checkout's `godot/` directory. The Pygame 2D lab remains available on all three desktop platforms with `vikasa ui --config config/showcase.json --seed 2026` (Windows: `.\.venv\Scripts\vikasa.exe ui --config config\showcase.json --seed 2026`).
+
+For direct GUI launch on Windows or macOS, the `godot` command starts the Python simulation bridge and Godot client together. If Godot is installed outside the automatic search locations, supply its executable with `--godot-path` or set `VIKASA_GODOT_BINARY`.
+
+### Screenshots
+
+| Live Observatory | Storm and population loss |
+| --- | --- |
+| ![Population, food and survival graphs](docs/images/presentation-overview.png) | ![Exposure deaths and shaded weather intervals](docs/images/presentation-storm.png) |
+
+| Genetic trends | Creature profile |
+| --- | --- |
+| ![Inherited size, speed, perception and diversity](docs/images/presentation-genetics.png) | ![Creature inspector with the Observatory](docs/images/presentation-selected.png) |
+
+These are real seeded bridge states, including an explicitly applied storm. See the current [960×600 layout](docs/images/presentation-compact.png). Earlier captures remain in `docs/images/` for reference.
 
 ### Observe and control
 
 - Click a creature to open its readable profile: current action and reason, energy, hunger, injury, instincts, top action choices, genes, encounters, satisfaction, and lineage.
 - Use **Follow** to track the selected animal; **Reset view** returns to the whole habitat. Right-drag orbits, and the wheel zooms.
-- **Space** pauses/resumes. **Step** advances one tick while paused. **Natural**, **Fast**, and **Very fast** set 8, 24, or 60 simulation ticks per second.
-- **World tools** can place a food patch at a clicked world position or schedule bloom, drought, heat, storm, or wildfire pressure. These are experiments, not interventions in a real ecosystem.
+- **Space** pauses/resumes; **Step** advances one tick while paused. **Observe · 16**, **Present · 48**, and **Accelerate · 120** request those tick rates. Present is the default; the HUD displays actual speed. Excess catch-up work is discarded on slower hardware. With the complete 3D window open, this Intel Iris Xe development laptop sustained about 43 ticks/second in a 12-second Accelerate sample; this is an example, not a guarantee for all devices.
+- **Graphs** toggles the Observatory. **Population**, **Survival**, and **Genetics** show real engine histories; hover to inspect values at a tick. Shaded periods show weather exposure. Birth/death totals retain outcomes between GUI polls.
+- **World tools** offers drought, heat, storm, wildfire, cold, disease, a food bloom, and food placement. Adjust pressure and duration, then **Apply weather**. Drought intensity is food growth retained (lower is harsher); other hazards strengthen as intensity increases. Default duration is 160 ticks.
+- **Restart biome** resets the population and histories with the same seed after an experiment or extinction.
 - **Escape** cancels placement/closes a panel. The HUD reports offline state and clears stale creature data if the bridge disconnects.
 
-![Selected creature needs and action choices](docs/images/wildlife-instincts.png)
+![Creature details alongside real biome histories](docs/images/presentation-selected.png)
 
 The model tracks six drives—survival, foraging, mating, offspring care, danger avoidance, and territory. They are competing normalized pressures, not human feelings. Expand **Instincts** to read each one and **Action choices** to inspect the leading perceived utilities. An urgent danger can preempt the highest score; otherwise hysteresis and seeded near-tie choice reduce jitter. The exact model and its caveats are in [the scientific model](docs/SCIENTIFIC_MODEL.md) and [the mathematics reference](docs/MATHEMATICS.md).
+
+The client uses shared meshes, one simple body shadow per visible animal, static habitat shadows, instanced vegetation, a 30 FPS ceiling, at most 180 visible creatures and 240 food patches, and bounded chart histories. The full population lives in Python; drawing alone is capped. Above 40 creatures, decisions are deterministically staggered across six ticks while movement, hunger, consumption, births and deaths advance every tick. Combat opportunities are checked every four ticks. Completed GUI snapshots publish about six times/second, so polling does not wait for a simulation tick. Diversity analysis is vectorized.
+
+The showcase starts with 64 founders, a cap of 180 and a maximum age of 1,100 ticks. Reserve costs permit scarcity and generational turnover within a presentation. Weather depletes existing food and causes resilience-dependent exposure injury. Prolonged hazards can kill creatures; exposure deaths are reported separately from starvation and fight injuries. These coefficients are illustrative rather than calibrated to real species.
 
 ## Pygame laboratory
 

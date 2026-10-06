@@ -12,7 +12,7 @@ The Python process owns the simulation; the Godot window is its live 3D observer
 
 ## 0:00–0:45 — Read the habitat
 
-Point out the seasonal indicator, animal count and weather status. Say: “The world is three-dimensional in presentation; the underlying ecological engine is a deterministic two-dimensional model. It tracks explicit resources, needs and ancestry.”
+Choose **Present · 48**. Point out the actual tick rate, animal count and Observatory graphs: population/food, cumulative births/deaths and reserves/injury. Hover to inspect sampled values. The world is three-dimensional in presentation with a deterministic two-dimensional ecological engine.
 
 Right-drag to orbit and use the wheel to zoom. Click a creature. The bottom observation dock should immediately explain its current action and reason; identify the energy, hunger, health and dominant-instinct meters.
 
@@ -24,7 +24,9 @@ Select **Follow** and show the creature close-up. Use **Reset view** to return t
 
 ## 1:40–2:40 — Apply environmental pressure
 
-Open **World tools** and schedule a storm or drought, using a moderate duration/intensity. Keep the animal selected if it remains alive; observe the changed season/weather, behavior reason, and needs. Use **Space** to pause and **Step** once to show that one deterministic tick advances while paused. **Natural**, **Fast**, and **Very fast** choose 8/24/60 ticks per second.
+Open **World tools**, choose **Storm**, pressure **1.4×**, duration **160 ticks**, then **Apply weather**. Watch rain appear, exposure shading enter the graphs, injury rise and vulnerable animals die. Switch to **Survival** to compare reserves, rainfall and metabolic pressure. Outcomes depend on the current state; severe sustained weather can cause extinction. Use **Restart biome** to recover.
+
+For drought choose **25% food growth retained** and **320–480 ticks**. It erodes existing food and suppresses growth, so starvation takes time. A food bloom illustrates recovery while survivors remain. **Observe · 16**, **Present · 48**, and **Accelerate · 120** request those rates; the HUD displays the actual rate. **Space** pauses and **Step** isolates one tick.
 
 Say: “The model represents these events as coarse multipliers and pressure signals. It is not a weather forecast or a terrain-physics simulation.”
 
@@ -39,6 +41,8 @@ In a terminal, run the bundled hazard protocol:
 Open the generated `summary.json` and charts. Call out the seed, event schedule and empty invariant-error list. A single run is an illustration; comparisons need replicate seeds.
 
 ## 3:30–4:20 — Explain inherited outcomes and culture carefully
+
+Open **Genetics** to show mean inherited size/speed, perception and normalized diversity. Population means alone do not prove adaptation; inheritance and replicated comparisons matter.
 
 Show a selected animal’s genome, parents, offspring, hunger and encounter history. Explain that offspring inherit bounded body genes and temperament, while survival and reproduction create selection. Repeated shared cues may form a named belief/ritual group under a small probabilistic rule; that is not a claim of language, theology or human religion.
 

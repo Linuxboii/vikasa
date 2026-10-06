@@ -8,6 +8,15 @@ func build(world_width: float, world_height: float, scale_factor: float, seed_va
 	_build_trees(width, depth, seed_value)
 	_build_water(width, depth)
 	_build_rocks(width, depth, seed_value)
+	_build_meadow(width, depth, seed_value)
+	var plinth := MeshInstance3D.new()
+	plinth.name = "BiomePlinth"
+	var base := BoxMesh.new()
+	base.size = Vector3(width + 1.2, 1.3, depth + 1.2)
+	plinth.mesh = base
+	plinth.position.y = -1.05
+	plinth.material_override = _mat(Color("#1c3d38"), 0.95)
+	add_child(plinth)
 
 func _build_ground(width: float, depth: float, seed_value: int) -> void:
 	var noise := FastNoiseLite.new()
@@ -74,7 +83,8 @@ func _add_land_vertex(surface: SurfaceTool, point: Vector3) -> void:
 		color = Color("#376d52").lerp(Color("#4c8053"), clampf((point.y + 2.0) * 0.15, 0.0, 0.5))
 	else:
 		var patch := 0.5 + sin(point.x * 0.14) * cos(point.z * 0.17) * 0.5
-		color = Color("#586d47").lerp(Color("#7e865c"), patch * 0.7)
+		var moisture := 0.5 + sin(point.x * 0.31 + cos(point.z * 0.13) * 2.0) * sin(point.z * 0.22) * 0.5
+		color = Color("#476651").lerp(Color("#92a878"), patch * 0.5 + moisture * 0.25)
 	surface.set_color(color)
 	surface.add_vertex(point)
 
@@ -91,6 +101,7 @@ func _build_trees(width: float, depth: float, seed_value: int) -> void:
 	trunk_mm.mesh = trunk_mesh
 	var canopy_mm := MultiMesh.new()
 	canopy_mm.transform_format = MultiMesh.TRANSFORM_3D
+	canopy_mm.use_colors = true
 	var canopy_mesh := SphereMesh.new()
 	canopy_mesh.radial_segments = 8
 	canopy_mesh.rings = 6
@@ -110,6 +121,7 @@ func _build_trees(width: float, depth: float, seed_value: int) -> void:
 		trunk_mm.set_instance_transform(i, transform)
 		var canopy_basis := Basis().scaled(Vector3(2.3, 1.7, 2.0) * scale)
 		canopy_mm.set_instance_transform(i, Transform3D(canopy_basis, Vector3(x, height + 0.3 * scale, z)))
+		canopy_mm.set_instance_color(i, Color("#476d59").lerp(Color("#a0b877"), rng.randf()))
 	var trunks := MultiMeshInstance3D.new()
 	trunks.name = "CanopyTrunks"
 	trunks.multimesh = trunk_mm
@@ -118,7 +130,9 @@ func _build_trees(width: float, depth: float, seed_value: int) -> void:
 	var canopies := MultiMeshInstance3D.new()
 	canopies.name = "CanopyCrowns"
 	canopies.multimesh = canopy_mm
-	canopies.material_override = _mat(Color("#547a48"), 0.92)
+	var leaves := _mat(Color.WHITE, 0.92)
+	leaves.vertex_color_use_as_albedo = true
+	canopies.material_override = leaves
 	add_child(canopies)
 
 func _build_water(width: float, depth: float) -> void:
@@ -131,12 +145,39 @@ func _build_water(width: float, depth: float) -> void:
 		pond.mesh = mesh
 		pond.scale = Vector3(width * 0.095, 0.045, depth * 0.11)
 		pond.position = Vector3(placements[i].x, -0.23, placements[i].y)
-		pond.material_override = _mat(Color("#406b70"), 0.25)
+		pond.material_override = _mat(Color("#63a0a7"), 0.22)
 		pond.name = "SeasonalPool"
 		add_child(pond)
 
 func _pools(width: float, depth: float) -> Array[Vector2]:
 	return [Vector2(-width * 0.22, -depth * 0.1), Vector2(width * 0.23, depth * 0.2)]
+
+func _build_meadow(width: float, depth: float, seed_value: int) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = seed_value + 934
+	var meadow := MultiMesh.new()
+	meadow.transform_format = MultiMesh.TRANSFORM_3D
+	meadow.use_colors = true
+	var tuft := CylinderMesh.new()
+	tuft.top_radius = 0.0
+	tuft.bottom_radius = 0.16
+	tuft.height = 0.48
+	tuft.radial_segments = 3
+	meadow.mesh = tuft
+	meadow.instance_count = 480
+	for i in range(meadow.instance_count):
+		var x := rng.randf_range(-width * 0.48, width * 0.48)
+		var z := rng.randf_range(-depth * 0.48, depth * 0.48)
+		var size := rng.randf_range(0.6, 1.3)
+		meadow.set_instance_transform(i, Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * size), Vector3(x, 0.1, z)))
+		meadow.set_instance_color(i, Color("#83a168").lerp(Color("#cfbd82"), rng.randf() * 0.65))
+	var field := MultiMeshInstance3D.new()
+	field.multimesh = meadow
+	var material := _mat(Color.WHITE, 1)
+	material.vertex_color_use_as_albedo = true
+	field.material_override = material
+	field.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	add_child(field)
 
 func _build_rocks(width: float, depth: float, seed_value: int) -> void:
 	var rng := RandomNumberGenerator.new()

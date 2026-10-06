@@ -41,7 +41,15 @@ func _received(result: int, code: int, _headers: PackedStringArray, body: Packed
 	connected = true
 	connection_changed.emit(true, "Connected")
 	state_updated.emit(parsed)
-	_timer.start(0.22)
+	var rate := float(parsed.get("ticks_per_second", 24.0))
+	var population := int(parsed.get("population", 0))
+	# Presentation updates do not need to match simulation ticks. Polling less
+	# often at high speed/population leaves CPU time for both the engine and UI.
+	var poll_interval := 0.22
+	if rate > 48.0: poll_interval = 0.26
+	if population > 250: poll_interval = maxf(poll_interval, 0.42)
+	if population > 450: poll_interval = maxf(poll_interval, 0.55)
+	_timer.start(poll_interval)
 
 func _failed(message: String) -> void:
 	_busy = false

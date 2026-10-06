@@ -4,6 +4,8 @@ signal world_clicked(world_position: Vector2)
 signal creature_clicked(creature_id: int)
 
 const SCALE := 0.1
+const MAX_VISIBLE_CREATURES := 180
+const MAX_VISIBLE_RESOURCES := 240
 const Animal := preload("res://scripts/CreatureView.gd")
 const Land := preload("res://scripts/Habitat.gd")
 var placement_mode := false
@@ -26,25 +28,32 @@ var selected_id := -1
 var follow_id := -1
 var environment: Environment
 var sun: DirectionalLight3D
+var resource_mesh: SphereMesh
+var resource_material: StandardMaterial3D
 var _paused := false
 var _weather_kind := ""
 
 func _ready() -> void:
 	environment = Environment.new()
 	environment.background_mode = Environment.BG_COLOR
-	environment.background_color = Color("#a6b79b")
+	environment.background_color = Color("#283f46")
 	environment.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	environment.ambient_light_color = Color("#d4ddbf")
-	environment.ambient_light_energy = 0.45
+	environment.ambient_light_color = Color("#ccdbe3")
+	environment.ambient_light_energy = 0.62
 	environment.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	var sky := WorldEnvironment.new()
 	sky.environment = environment
 	add_child(sky)
 	sun = DirectionalLight3D.new()
 	sun.rotation_degrees = Vector3(-52, -28, 0)
-	sun.light_color = Color("#ffe7bb")
-	sun.light_energy = 0.85
+	sun.light_color = Color("#fff1d5")
+	sun.light_energy = 1.1
+	# Hundreds of animated procedural animals make per-creature shadows the
+	# dominant cost on integrated GPUs. Soft ambient lighting keeps silhouettes
+	# readable without making the habitat's frame time scale with population.
+	# Only static trees and terrain cast shadows; creature meshes explicitly opt out.
 	sun.shadow_enabled = true
+	sun.directional_shadow_max_distance = 160.0
 	add_child(sun)
 	creatures_root = Node3D.new()
 	creatures_root.name = "LivingPopulation"
@@ -52,6 +61,12 @@ func _ready() -> void:
 	resources_root = Node3D.new()
 	resources_root.name = "FoodPatches"
 	add_child(resources_root)
+	resource_mesh = SphereMesh.new()
+	resource_mesh.radial_segments = 8
+	resource_mesh.rings = 4
+	resource_material = StandardMaterial3D.new()
+	resource_material.albedo_color = Color("#dec16e")
+	resource_material.roughness = 0.9
 	camera = Camera3D.new()
 	camera.fov = 48.0
 	camera.far = 400.0
@@ -84,7 +99,10 @@ func set_state(state: Dictionary) -> void:
 		reset_camera()
 	var seen: Dictionary = {}
 	data_by_id.clear()
-	for data in state.get("creatures", []):
+	var visible_creatures := _limited_items(
+		state.get("creatures", []), MAX_VISIBLE_CREATURES, [selected_id, follow_id]
+	)
+	for data in visible_creatures:
 		if not data is Dictionary: continue
 		var id := int(data.get("id", -1))
 		seen[id] = true
@@ -92,7 +110,7 @@ func set_state(state: Dictionary) -> void:
 		if not creature_views.has(id):
 			var view = Animal.new()
 			view.name = "Creature_%d" % id
-			view.configure(data, SCALE, width, height)
+			view.configure(data, SCALE, width, height, true)
 			creatures_root.add_child(view)
 			# Place immediately at spawn; interpolation starts on the next frame.
 			view.position = _position(data.get("position", [0, 0]))
@@ -110,14 +128,14 @@ func set_state(state: Dictionary) -> void:
 	sun.light_energy = lerpf(0.75, 0.95, clampf(float(conditions.get("temperature", 0.5)), 0, 1))
 	var events: Array = conditions.get("active_events", [])
 	_weather_kind = str(events[0].get("kind", "")) if not events.is_empty() else ""
-	environment.background_color = Color("#8b9e9b") if _weather_kind == "storm" else Color("#a6b79b")
+	environment.background_color = Color("#26343f") if _weather_kind in ["storm", "flood"] else Color("#283f46")
 	sun.light_color = Color("#b8c9d2") if _weather_kind == "storm" else (Color("#efd1a6") if _weather_kind in ["heat", "wildfire", "drought"] else Color("#ffe7bb"))
 	sun.light_energy *= 0.7 if _weather_kind == "storm" else 1.0
 
 func clear_snapshot() -> void:
 	_paused = true
 	_weather_kind = ""
-	environment.background_color = Color("#a6b79b")
+	environment.background_color = Color("#283f46")
 	sun.light_color = Color("#ffe7bb")
 	sun.light_energy = 0.85
 	data_by_id.clear()
@@ -130,21 +148,16 @@ func clear_snapshot() -> void:
 
 func _sync_resources(items: Array) -> void:
 	var seen: Dictionary = {}
-	for data in items:
+	for data in _limited_items(items, MAX_VISIBLE_RESOURCES):
 		if not data is Dictionary: continue
 		var id := int(data.get("id", -1))
 		seen[id] = true
 		if not resource_views.has(id):
 			var patch := MeshInstance3D.new()
-			var mesh := SphereMesh.new()
-			mesh.radial_segments = 10
-			mesh.rings = 6
-			patch.mesh = mesh
+			patch.mesh = resource_mesh
 			patch.scale = Vector3(0.22, 0.18, 0.22)
-			var material := StandardMaterial3D.new()
-			material.albedo_color = Color("#dec16e")
-			material.roughness = 0.9
-			patch.material_override = material
+			patch.material_override = resource_material
+			patch.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 			resources_root.add_child(patch)
 			resource_views[id] = patch
 		resource_views[id].position = _position(data.get("position", [0, 0])) + Vector3(0, 0.3, 0)
@@ -152,6 +165,27 @@ func _sync_resources(items: Array) -> void:
 		if not seen.has(id):
 			resource_views[id].queue_free()
 			resource_views.erase(id)
+
+func _limited_items(items: Array, limit: int, priority_ids: Array = []) -> Array:
+	# Rendering remains bounded even when the simulation grows into thousands of
+	# agents. Keep selection/follow targets visible without changing simulation.
+	if items.size() <= limit:
+		return items
+	var visible: Array = items.slice(0, limit)
+	var replacement_index := visible.size() - 1
+	for priority in priority_ids:
+		var priority_id := int(priority)
+		if priority_id < 0:
+			continue
+		var already_visible := visible.any(func(data): return data is Dictionary and int(data.get("id", -1)) == priority_id)
+		if already_visible:
+			continue
+		for data in items:
+			if data is Dictionary and int(data.get("id", -1)) == priority_id:
+				visible[replacement_index] = data
+				replacement_index = maxi(0, replacement_index - 1)
+				break
+	return visible
 
 func _position(point: Array) -> Vector3:
 	if point.size() < 2: return Vector3.ZERO

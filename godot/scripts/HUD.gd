@@ -1,4 +1,6 @@
 extends Control
+const ObservatoryView := preload("res://scripts/Observatory.gd")
+const Atmosphere := preload("res://scripts/AtmosphereOverlay.gd")
 
 signal pause_requested
 signal step_requested
@@ -7,6 +9,7 @@ signal inspect_requested
 signal world_tools_requested
 signal reset_requested
 signal follow_requested
+signal restart_requested
 
 var status: Label
 var population: Label
@@ -31,10 +34,16 @@ var _controls: Array[Button] = []
 var summary_row: HBoxContainer
 var words: VBoxContainer
 var _has_selection := false
+var observatory: PanelContainer
+var atmosphere: Control
+var telemetry: Label
+var graphs_button: Button
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	atmosphere = Atmosphere.new()
+	add_child(atmosphere)
 	var top := PanelContainer.new()
 	top.name = "TopStatus"
 	top.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
@@ -50,8 +59,12 @@ func _ready() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 24)
 	top.add_child(row)
-	var brand := BiomeUI.label("Vikasa", 27, BiomeUI.ACCENT)
-	row.add_child(brand)
+	var brand_box := VBoxContainer.new()
+	brand_box.add_theme_constant_override("separation", 0)
+	row.add_child(brand_box)
+	var brand := BiomeUI.label("VIKASA", 28, BiomeUI.ACCENT)
+	brand_box.add_child(brand)
+	brand_box.add_child(BiomeUI.label("L I V I N G   B I O M E", 10, BiomeUI.MUTED))
 	season = BiomeUI.label("Living biome · Waiting for simulation", 16, BiomeUI.MUTED)
 	season.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(season)
@@ -61,6 +74,10 @@ func _ready() -> void:
 	row.add_child(weather)
 	status = BiomeUI.label("Connecting…", 14, BiomeUI.MUTED)
 	row.add_child(status)
+	telemetry = BiomeUI.label("— ticks/s", 13, Color("#7be0c2"))
+	row.add_child(telemetry)
+	observatory = ObservatoryView.new()
+	add_child(observatory)
 	var bottom := PanelContainer.new()
 	bottom.name = "ObservationDock"
 	bottom.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
@@ -106,7 +123,7 @@ func _ready() -> void:
 	content.add_child(actions)
 	pause_button = _button(actions, "Pause", "Space · Pause or resume the simulation", func(): pause_requested.emit())
 	step_button = _button(actions, "Step", "Advance one tick while paused", func(): step_requested.emit())
-	for speed in [{"name": "Natural", "value": 8}, {"name": "Fast", "value": 24}, {"name": "Very fast", "value": 60}]:
+	for speed in [{"name": "Observe · 16", "value": 16}, {"name": "Present · 48", "value": 48}, {"name": "Accelerate · 120", "value": 120}]:
 		var value := int(speed.value)
 		var button := _button(actions, str(speed.name), "%d simulation ticks per second" % value, func(): speed_requested.emit(value))
 		button.toggle_mode = true
@@ -116,6 +133,10 @@ func _ready() -> void:
 	follow_button.toggle_mode = true
 	_button(actions, "Reset view", "Return to the whole habitat", func(): reset_requested.emit(), false)
 	tools_button = _button(actions, "World tools", "Place food or schedule environmental pressures", func(): world_tools_requested.emit(), false)
+	graphs_button = _button(actions, "Graphs", "Toggle live population, survival and genetic charts", func(): observatory.visible = not observatory.visible, false)
+	graphs_button.toggle_mode = true
+	graphs_button.button_pressed = true
+	_button(actions, "Restart biome", "Begin again with the same seed and a fresh population", func(): restart_requested.emit())
 	hint = BiomeUI.label("Right-drag to orbit · Wheel to zoom · Click an animal to observe", 13, BiomeUI.MUTED)
 	content.add_child(hint)
 	notice = BiomeUI.paragraph("Connecting to the simulation…", 14, BiomeUI.ACCENT)
@@ -146,11 +167,12 @@ func _resize() -> void:
 	needs.add_theme_constant_override("separation", 8 if narrow else 18)
 	for child in needs.get_children(): child.custom_minimum_size.x = 100 if narrow else 122
 	$TopStatus.offset_top = 12
-	$TopStatus.offset_bottom = 69
+	$TopStatus.offset_bottom = 84
 	$ObservationDock.offset_bottom = -12
 	$TopStatus.get_child(0).add_theme_constant_override("separation", 14 if narrow else 24)
 	season.add_theme_font_size_override("font_size", 14 if narrow else 16)
 	weather.add_theme_font_size_override("font_size", 14 if narrow else 16)
+	telemetry.visible = not narrow
 	$TopStatus.offset_left = 16
 	$TopStatus.offset_right = -16
 	$ObservationDock.offset_left = 16
@@ -170,9 +192,13 @@ func set_state(state: Dictionary) -> void:
 	var env: Dictionary = state.get("environment", {})
 	season.text = "%s · Tick %d%s" % [str(env.get("season", "spring")).capitalize(), int(state.get("tick", 0)), " · Paused" if _paused else ""]
 	population.text = "%d animals" % int(state.get("population", 0))
+	telemetry.text = "%.1f ticks/s · %d FPS" % [float(state.get("actual_ticks_per_second", 0)), roundi(Engine.get_frames_per_second())]
+	telemetry.tooltip_text = "Measured simulation speed. Requested speed adapts to available CPU time."
+	observatory.set_state(state)
+	atmosphere.set_state(state)
 	var events: Array = env.get("active_events", [])
 	weather.text = str(events[0].get("kind", "Weather")).capitalize() + " active" if not events.is_empty() else "Seasonal cycle"
-	var rate := float(state.get("ticks_per_second", 8))
+	var rate := float(state.get("ticks_per_second", 48))
 	for value in speed_buttons: speed_buttons[value].set_pressed_no_signal(is_equal_approx(rate, float(value)))
 	if int(state.get("population", 0)) == 0: set_notice("Population extinct. Restart the simulation to begin a new seeded habitat.", false)
 	elif notice.text.begins_with("Population extinct"): set_notice("Select an animal to begin observing.", false)
@@ -185,8 +211,8 @@ func set_selection(creature: Dictionary) -> void:
 	needs.visible = has_selection
 	_resize()
 	if not has_selection:
-		title.text = "Observe the living biome"
-		reason.text = "Click an animal to see what it needs and why it acts."
+		title.text = "Every life leaves a trace."
+		reason.text = "Select a creature to follow its instincts. Open World tools to test the limits of survival."
 		hint.visible = false
 		return
 	hint.visible = true

@@ -1,12 +1,35 @@
 from __future__ import annotations
 
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from evolution_sim.bridge import GodotSimulationServer
+from evolution_sim.bridge import GodotSimulationServer, _next_simulation_deadline
 from evolution_sim.cli import main
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_slow_simulation_tick_discards_backlog_and_yields_briefly() -> None:
+    assert _next_simulation_deadline(10.0, 0.125, 10.0) == 10.125
+    assert abs(_next_simulation_deadline(10.0, 0.125, 11.0) - 11.002) < 1e-12
+
+
+def test_live_publication_does_not_wait_for_simulation_lock(tiny_config) -> None:
+    bridge = GodotSimulationServer(tiny_config, seed=19, port=0)
+    bridge.paused = True
+    bridge.start()
+    pool = ThreadPoolExecutor(max_workers=1)
+    try:
+        with bridge.lock:
+            result = pool.submit(bridge.state).result(timeout=0.5)
+            assert result["population"] == tiny_config.initial_population
+        bridge.command({"action": "restart"})
+        bridge.command({"action": "pause"})
+        assert bridge.state()["total_deaths"] == 0
+    finally:
+        pool.shutdown(wait=True)
+        bridge.stop()
 
 
 def test_validate_command_accepts_valid_config(capsys) -> None:

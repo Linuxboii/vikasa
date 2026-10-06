@@ -22,6 +22,7 @@ func _ready() -> void:
 	hud.world_tools_requested.connect(func(): inspector.set_open(false); tools.set_open(not tools.visible))
 	hud.reset_requested.connect(func(): following = false; world.reset_camera(); hud.set_following(false))
 	hud.follow_requested.connect(_toggle_follow)
+	hud.restart_requested.connect(func(): _select(-1); client.send_command({"action": "restart"}))
 	inspector.closed.connect(func(): inspector.set_open(false))
 	tools.command_requested.connect(client.send_command)
 	tools.placement_changed.connect(func(active: bool): world.placement_mode = active; hud.set_hint("Click the habitat to place food · Escape cancels" if active else "Right-drag to orbit · Wheel to zoom · Click an animal to observe"))

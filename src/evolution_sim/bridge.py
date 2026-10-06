@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import threading
 import time
+from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
@@ -20,6 +22,14 @@ from evolution_sim.simulation.environment import EVENT_KINDS, EnvironmentEvent
 
 DEFAULT_PORT = 8765
 MAX_REQUEST_BYTES = 32_768
+
+
+def _next_simulation_deadline(deadline: float, tick_interval: float, now: float) -> float:
+    """Schedule one tick without carrying an unbounded catch-up backlog."""
+    planned = deadline + tick_interval
+    if now > planned:
+        return now + min(0.002, tick_interval * 0.1)
+    return planned
 
 
 class _BridgeServer(ThreadingHTTPServer):
@@ -82,7 +92,9 @@ class GodotSimulationServer:
         self.port = port
         self.lock = threading.RLock()
         self.paused = False
-        self.ticks_per_second = 8.0
+        self.ticks_per_second = 48.0
+        self._tick_times: deque[float] = deque(maxlen=256)
+        self._published_state: dict[str, Any] | None = None
         self.running = True
         self._stop = threading.Event()
         self._http = _BridgeServer(("127.0.0.1", port), self)
@@ -94,6 +106,7 @@ class GodotSimulationServer:
         )
 
     def start(self) -> None:
+        self._published_state = self._build_state()
         self._http_thread.start()
         self._sim_thread.start()
 
@@ -107,21 +120,32 @@ class GodotSimulationServer:
 
     def _run_simulation(self) -> None:
         deadline = time.monotonic()
-        while not self._stop.wait(0.01):
+        published_at = deadline
+        while not self._stop.wait(0.002):
             if self.paused:
                 deadline = time.monotonic()
                 continue
             now = time.monotonic()
             tick_interval = 1.0 / self.ticks_per_second
-            ticks = min(16, max(0, int((now - deadline) / tick_interval)))
-            if ticks:
+            if now >= deadline:
                 with self.lock:
-                    self.engine.step(ticks)
-                deadline += ticks * tick_interval
-            elif now - deadline > 1.0:
-                deadline = now
+                    self.engine.step(1)
+                    self._tick_times.append(time.monotonic())
+                    if time.monotonic() - published_at >= 0.16:
+                        self._published_state = self._build_state()
+                        published_at = time.monotonic()
+                deadline = _next_simulation_deadline(
+                    deadline, tick_interval, time.monotonic()
+                )
 
     def state(self) -> dict[str, Any]:
+        # HTTP reads a completed immutable-by-convention publication; a slow
+        # engine tick cannot make a GUI poll queue behind the simulation lock.
+        if self._sim_thread.is_alive() and self._published_state is not None:
+            return self._published_state
+        return self._build_state()
+
+    def _build_state(self) -> dict[str, Any]:
         with self.lock:
             engine = self.engine
             snapshot_by_id = {item.id: item for item in engine.snapshot().creatures}
@@ -231,6 +255,11 @@ class GodotSimulationServer:
                 "tick": engine.tick,
                 "paused": self.paused,
                 "ticks_per_second": self.ticks_per_second,
+                "actual_ticks_per_second": (
+                    round((len(self._tick_times) - 1)
+                          / max(0.001, self._tick_times[-1] - self._tick_times[0]), 1)
+                    if len(self._tick_times) > 1 and not self.paused else 0.0
+                ),
                 "world": {
                     "width": engine.config.world.width,
                     "height": engine.config.world.height,
@@ -263,19 +292,31 @@ class GodotSimulationServer:
                 "fights": list(engine.combat_events),
                 "traditions": traditions,
                 "chronicle": chronicles,
+                "history": [sample.to_row() for sample in engine.metrics.samples[-240:]],
+                "weather_history": list(engine.environment.history[-24:]),
             }
 
     def command(self, value: dict[str, Any]) -> dict[str, Any]:
+        with self.lock:
+            return self._apply_command(value)
+
+    def _apply_command(self, value: dict[str, Any]) -> dict[str, Any]:
         action = value.get("action")
         if action == "pause":
             self.paused = True
         elif action == "resume":
             self.paused = False
+            self._tick_times.clear()
+        elif action == "restart":
+            self.engine = SimulationEngine(self.engine.config, seed=self.engine.seed)
+            self._tick_times.clear()
+            self.paused = False
         elif action == "speed":
-            speed = float(value.get("ticks_per_second", 8))
+            speed = float(value.get("ticks_per_second", 48))
             if not 0.25 <= speed <= 120.0:
                 raise ValueError("ticks_per_second must be between 0.25 and 120")
             self.ticks_per_second = speed
+            self._tick_times.clear()
         elif action == "step":
             count = int(value.get("count", 1))
             if not 1 <= count <= 100:
@@ -326,13 +367,36 @@ class GodotSimulationServer:
                 )
                 self.engine.resources[resource.id] = resource
         else:
-            raise ValueError("action must be pause, resume, speed, step, weather, or food")
+            raise ValueError("action must be pause, resume, restart, speed, step, weather, or food")
+        self._published_state = self._build_state()
         return {"ok": True, "action": action}
 
 
 def _godot_binary(explicit: str | None) -> str:
     candidates = [explicit, os.environ.get("VIKASA_GODOT_BINARY")]
     candidates.extend([shutil.which("godot4"), shutil.which("godot")])
+    local_app_data = os.environ.get("LOCALAPPDATA")
+    if local_app_data:
+        winget_packages = (
+            Path(local_app_data)
+            / "Microsoft"
+            / "WinGet"
+            / "Packages"
+        )
+        winget_binaries = list(
+            winget_packages.glob(
+                "GodotEngine.GodotEngine_*/Godot_v*-stable_win64.exe"
+            )
+        )
+
+        def version_key(path: Path) -> tuple[int, ...]:
+            match = re.search(r"Godot_v([0-9.]+)-stable", path.name)
+            return tuple(int(part) for part in match.group(1).split(".")) if match else ()
+
+        candidates.extend(
+            str(path)
+            for path in sorted(winget_binaries, key=version_key, reverse=True)
+        )
     candidates.extend(
         [
             str(
@@ -349,7 +413,8 @@ def _godot_binary(explicit: str | None) -> str:
         if candidate and (Path(candidate).is_file() or shutil.which(candidate)):
             return str(candidate)
     raise RuntimeError(
-        "Godot 4 was not found. Set VIKASA_GODOT_BINARY or pass --godot-path to the Godot 4 executable."
+        "Godot 4 was not found. Set VIKASA_GODOT_BINARY or pass "
+        "--godot-path to the Godot 4 executable."
     )
 
 

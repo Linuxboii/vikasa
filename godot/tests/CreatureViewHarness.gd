@@ -69,7 +69,7 @@ func _run() -> void:
 		var view: CreatureView = VIEW.new()
 		root.add_child(view)
 		gallery.append(view)
-		view.configure(specimen, 0.1, 120, 80)
+		view.configure(specimen, 0.1, 120, 80, false)
 		view.position = Vector3((specimens.find(specimen) - 1) * 4.2, 0, 0)
 		assert(view.legs.size() == 4, "four articulated legs required")
 		assert(view.gait_stride_scale >= 0.85 and view.gait_stride_scale <= 1.15, "speed gene gait effect must stay bounded")
@@ -112,6 +112,14 @@ func _run() -> void:
 		assert(view.find_child("AlphaMark", true, false) != null)
 	for index in gallery.size():
 		gallery[index].position = Vector3((index - 1) * 4.2, 0, 0)
+	var compact_view: CreatureView = VIEW.new()
+	root.add_child(compact_view)
+	compact_view.configure(specimens[0], 0.1, 120, 80, true)
+	var compact_meshes := compact_view.find_children("*", "MeshInstance3D", true, false)
+	assert(compact_meshes.size() <= 16, "economy creature must stay within a 16-mesh budget")
+	for mesh_instance in compact_meshes:
+		if mesh_instance != compact_view.body:
+			assert(mesh_instance.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "only the simple body may cast a shadow")
 	if close_up:
 		gallery[0].visible = false
 		gallery[2].visible = false
