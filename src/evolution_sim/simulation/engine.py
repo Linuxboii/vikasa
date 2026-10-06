@@ -428,9 +428,17 @@ class SimulationEngine:
                     actor.behavior_state.action is ActionName.FLEE for actor in (first, second)
                 ):
                     continue
-                risk = min(
-                    0.09,
-                    0.004 * (0.25 + pressure) * (0.3 + aggression) * (1.5 if is_challenge else 1.0),
+                challenger_satisfaction = max(
+                    (
+                        min(1.0, max(0.0, actor.satisfaction_vector[3]))
+                        for actor, rival in ((first, second), (second, first))
+                        if actor.behavior_state.action is ActionName.CHALLENGE
+                        and actor.behavior_state.target_id == rival.id
+                    ),
+                    default=0.0,
+                )
+                risk = self._fight_risk(
+                    pressure, aggression, is_challenge, challenger_satisfaction
                 )
                 if self.rng.random() >= risk:
                     continue
@@ -489,6 +497,22 @@ class SimulationEngine:
                     }
                 )
                 break
+
+    @staticmethod
+    def _fight_risk(
+        pressure: float,
+        aggression: float,
+        is_challenge: bool,
+        challenger_satisfaction: float,
+    ) -> float:
+        base = (
+            0.004
+            * (0.25 + pressure)
+            * (0.3 + aggression)
+            * (1.5 if is_challenge else 1.0)
+        )
+        repeat_winner_factor = 1.0 + 0.75 * min(1.0, max(0.0, challenger_satisfaction))
+        return min(0.09, base * repeat_winner_factor)
 
     def _resolve_consumption(self, resource_index: SpatialHash) -> None:
         if not self.resources:
@@ -697,7 +721,10 @@ class SimulationEngine:
                 drives=item.behavior_state.drives.values,
                 behavior_scores=tuple(
                     (action.value, float(score))
-                    for action, score in item.behavior_state.utility_breakdown.items()
+                    for action, score in sorted(
+                        item.behavior_state.utility_breakdown.items(),
+                        key=lambda item: item[0].value,
+                    )
                 ),
                 target_kind=item.behavior_state.target_kind,
                 target_id=item.behavior_state.target_id,

@@ -23,7 +23,7 @@ Data flows from validated config and a seed into the engine. At each tick the en
 
 `BehaviorController` receives tick-local perceived resources, threats, eligible mates, dependents, and hazard/terrain pressures. It calculates normalized drives in a stable presentation order: survival, foraging, mating, offspring care, danger avoidance, territory. Eight candidate actions—explore, forage, rest, seek mate, care, flee, patrol, challenge—are scored from weighted drive affinity plus action reward minus travel, exposure, and conflict costs.
 
-An unavailable action is excluded rather than assigned a competing fabricated score. Danger above the configured preemption threshold forces flee; severe survival/injury pressure forces forage or rest. Otherwise an action persists when the alternative is within the configured hysteresis margin; near ties use seeded softmax selection. The state includes the actual action, target, start tick, utility breakdown, and a human-readable reason. See [mathematical definitions](MATHEMATICS.md).
+An unavailable action is excluded rather than assigned a competing fabricated score. Danger at or above the configured preemption threshold forces flee; severe survival/injury pressure forces forage or rest. Otherwise an action persists when the alternative is within the configured hysteresis margin; near ties use seeded softmax selection. A creature's fight-wins satisfaction component modestly strengthens eligible repeat-challenge utility and the low encounter probability. The state includes the actual action, target, start tick, utility breakdown, and a human-readable reason. See [mathematical definitions](MATHEMATICS.md).
 
 ## Persistence and reproducibility
 

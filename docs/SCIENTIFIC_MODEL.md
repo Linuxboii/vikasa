@@ -14,7 +14,7 @@ Aggression, resilience, and sociability are separate inherited behavioral traits
 
 The engine updates seasonal and scheduled environment pressures, regenerates resources, constructs spatial indexes, forms local perceptions, decides/executes actions, resolves fights, resolves food contention, resolves paired reproduction, applies deaths, advances the tick, then updates culture, satisfaction, and sampled metrics.
 
-Six normalized drives are recalculated from current reserves, injury, nearby opportunities, dependents, threats, hazards, home-range displacement and temperament: survival, foraging, mating, offspring care, danger avoidance, territory. They feed eight candidate actions: explore, forage, rest, seek mate, care, flee, patrol, and challenge. Each action's utility is a bounded drive-affinity reward minus travel, exposure, and conflict costs. Unavailable actions are excluded. Danger over threshold preempts with flight; critical survival/injury pressure preempts with foraging/rest. Otherwise hysteresis preserves a current action when close to the best score, and seeded softmax breaks near ties. Selection is reproducible for a fixed engine state and RNG stream.
+Six normalized drives are recalculated from current reserves, injury, nearby opportunities, dependents, threats, hazards, home-range displacement and temperament: survival, foraging, mating, offspring care, danger avoidance, territory. They feed eight candidate actions: explore, forage, rest, seek mate, care, flee, patrol, and challenge. Each action's utility is a bounded drive-affinity reward minus travel, exposure, and conflict costs. Unavailable actions are excluded. Danger at or above threshold preempts with flight; critical survival/injury pressure preempts with foraging/rest. Otherwise hysteresis preserves a current action when close to the best score, and seeded softmax breaks near ties. Selection is reproducible for a fixed engine state and RNG stream.
 
 ## Energy, food, and mortality
 
@@ -30,7 +30,7 @@ Each creature has a center and radius for a small home range. Patrol actions cho
 
 Close encounters only roll for fights under hunger pressure or an explicit challenge, and flee suppresses the encounter. Aggression modulates a low baseline probability; size, energy, and resilience affect winning. Winners gain alpha status; both participants pay energy, the loser gains injury, and a weakened/injured loser has a bounded nonzero fatal chance. There is no permanent rank hierarchy: alpha is a retained victory marker, and challengers must still meet behavioral opportunity/risk conditions.
 
-The four satisfaction components are energy security, saturating offspring history, saturating food acquired, and saturating fight wins. Their current weighted scalar is `0.34 energy + 0.18 offspring + 0.22 food + 0.26 fights`. It is an inspectable summary used as part of some alpha challenge selection, not a global evolutionary fitness function and not a measure of subjective welfare.
+The four satisfaction components are energy security, saturating offspring history, saturating food acquired, and saturating fight wins. Their current weighted scalar is `0.34 energy + 0.18 offspring + 0.22 food + 0.26 fights`. The fight-wins component modestly lifts utility for eligible repeat challenges and raises the still-low encounter chance for active challengers; winning gives alpha status. Satisfaction is not a global evolutionary fitness function or a measure of subjective welfare.
 
 ## Environment and shared traditions
 

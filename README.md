@@ -45,7 +45,7 @@ The 2D laboratory has a launch configurator, presets, organism selection, traits
 - Foraging and resource competition, energy costs, accumulated starvation, aging, mating, offspring, and lineage.
 - Six drives arbitrated among eight actions: explore, forage, rest, seek mate, care, flee, patrol, and challenge.
 - Small home ranges, local hazard/threat perception, intermittent low-probability fights, injury, occasional fatal outcomes, and alpha status after victory.
-- Satisfaction summarized from energy security, offspring history, food acquired, and fights won; it affects alpha behavior but is not a universal fitness objective.
+- Satisfaction summarizes energy security, offspring history, food acquired, and fights won. Its fight-wins component modestly raises repeat-challenge utility and the still-low encounter chance; satisfaction is not a universal fitness objective.
 - Seasonal food/temperature/rainfall signals and scheduled drought, abundance, heat, cold, storm, flood, wildfire, and disease pressure.
 - A small cultural-tradition mechanic: repeated shared cues can found named beliefs and rituals. This is not language, theology, reflective religion, or guaranteed emergence.
 - Seeded experiments, invariant audits, CSV/JSON evidence, atomic checkpoints, and a deterministic live bridge.

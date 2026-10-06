@@ -267,6 +267,36 @@ def test_challenge_can_compete_under_credible_local_pressure_without_alpha(tiny_
     assert ActionName.CHALLENGE not in decision.scores
 
 
+def test_fight_satisfaction_increases_repeat_challenge_utility(tiny_config):
+    creature = animal(
+        tiny_config,
+        home_center=np.array([5.0, 5.0]),
+        home_radius=10.0,
+        temperament=Temperament(aggression=1.0),
+    )
+    rival = animal(
+        tiny_config,
+        entity_id=2,
+        position=(51.0, 50.0),
+        energy=180.0,
+        temperament=Temperament(aggression=0.8),
+    )
+    perception = BehaviorPerception(threats=(rival,))
+    controller = behavior.BehaviorController(tiny_config)
+
+    first_challenge = controller.decide(
+        creature, perception, 220.0, 10, np.random.default_rng(1)
+    )
+    creature.satisfaction_vector = (0.8, 0.8, 0.8, 0.9)
+    repeat_challenge = controller.decide(
+        creature, perception, 220.0, 10, np.random.default_rng(1)
+    )
+
+    assert first_challenge.scores[ActionName.CHALLENGE] < repeat_challenge.scores[
+        ActionName.CHALLENGE
+    ]
+
+
 def test_hunger_and_food_proximity_increase_foraging_pressure(tiny_config):
     creature = animal(tiny_config)
     food = Resource(1, np.array([50.0, 50.0]), 33.0)
