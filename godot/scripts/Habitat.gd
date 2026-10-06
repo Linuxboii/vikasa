@@ -37,6 +37,7 @@ func _build_ground(width: float, depth: float, seed_value: int) -> void:
 	ground.mesh = mesh
 	var material := StandardMaterial3D.new()
 	material.vertex_color_use_as_albedo = true
+	material.vertex_color_is_srgb = true
 	material.roughness = 0.96
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
 	ground.material_override = material
@@ -100,12 +101,12 @@ func _build_trees(width: float, depth: float, seed_value: int) -> void:
 		trunk_mm.set_instance_transform(i, transform)
 		var canopy_basis := Basis().scaled(Vector3(0.8, 1.0, 0.8) * scale)
 		canopy_mm.set_instance_transform(i, Transform3D(canopy_basis, Vector3(x, height + 0.45 * scale, z)))
-	var trunks := MeshInstance3D.new()
+	var trunks := MultiMeshInstance3D.new()
 	trunks.name = "CanopyTrunks"
 	trunks.multimesh = trunk_mm
 	trunks.material_override = _mat(Color("#6d5236"), 0.92)
 	add_child(trunks)
-	var canopies := MeshInstance3D.new()
+	var canopies := MultiMeshInstance3D.new()
 	canopies.name = "CanopyCrowns"
 	canopies.multimesh = canopy_mm
 	canopies.material_override = _mat(Color("#72a257"), 0.82)
@@ -140,7 +141,7 @@ func _build_rocks(width: float, depth: float, seed_value: int) -> void:
 		var scale := Vector3(rng.randf_range(0.18, 0.54), rng.randf_range(0.14, 0.4), rng.randf_range(0.18, 0.48))
 		var pos := Vector3(rng.randf_range(-width * 0.49, width * 0.49), -0.08, rng.randf_range(-depth * 0.49, depth * 0.49))
 		multimesh.set_instance_transform(i, Transform3D(Basis().scaled(scale), pos))
-	var rocks := MeshInstance3D.new()
+	var rocks := MultiMeshInstance3D.new()
 	rocks.name = "Fieldstones"
 	rocks.multimesh = multimesh
 	rocks.material_override = _mat(Color("#858a67"), 0.94)
