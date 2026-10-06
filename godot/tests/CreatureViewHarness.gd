@@ -60,9 +60,9 @@ func _run() -> void:
 			shrub.material_override = leaf
 			root.add_child(shrub)
 	var specimens := [
-		{"id": 1, "size": 2.5, "aggression": 0.05, "energy_ratio": 0.82, "behavior": "forage", "position": [20.0, 24.0], "velocity": [0.5, 0.1]},
-		{"id": 2, "size": 4.0, "aggression": 0.45, "energy_ratio": 0.48, "behavior": "rest", "position": [30.0, 24.0], "velocity": [0.0, 0.0], "alpha": true},
-		{"id": 3, "size": 6.5, "aggression": 0.92, "energy_ratio": 0.19, "behavior": "challenge", "position": [40.0, 24.0], "velocity": [1.2, 0.1], "injury": 0.31, "perception": 3.7, "resilience": 0.9, "sociability": 0.1}
+		{"id": 1, "size": 2.5, "speed": 0.5, "aggression": 0.05, "energy_ratio": 0.82, "behavior": "forage", "position": [20.0, 24.0], "velocity": [0.5, 0.1]},
+		{"id": 2, "size": 4.0, "speed": 2.25, "aggression": 0.45, "energy_ratio": 0.48, "behavior": "rest", "position": [30.0, 24.0], "velocity": [0.0, 0.0], "alpha": true},
+		{"id": 3, "size": 6.5, "speed": 4.0, "aggression": 0.92, "energy_ratio": 0.19, "behavior": "challenge", "position": [40.0, 24.0], "velocity": [1.2, 0.1], "injury": 0.31, "perception": 3.7, "resilience": 0.9, "sociability": 0.1}
 	]
 	var gallery: Array[CreatureView] = []
 	for specimen in specimens:
@@ -72,6 +72,7 @@ func _run() -> void:
 		view.configure(specimen, 0.1, 120, 80)
 		view.position = Vector3((specimens.find(specimen) - 1) * 4.2, 0, 0)
 		assert(view.legs.size() == 4, "four articulated legs required")
+		assert(view.gait_stride_scale >= 0.85 and view.gait_stride_scale <= 1.15, "speed gene gait effect must stay bounded")
 		assert(view.body.scale.x > view.body.scale.y * 2.0, "spine/body silhouette must be elongated and low")
 		var feet := view.find_children("Foot", "MeshInstance3D", true, false)
 		assert(feet.size() == 4, "four visible feet required")
@@ -87,6 +88,19 @@ func _run() -> void:
 			assert(foot.global_position.y - 0.11 >= 0.0, "foot geometry remains above the habitat floor")
 		if int(specimen.id) == 2:
 			assert(view.alpha_mark.visible, "alpha should use a distinct visual mark")
+		if int(specimen.id) == 1:
+			var slow_stride_scale := view.gait_stride_scale
+			view.update_state({"speed": 4.0}, 0.0)
+			var fast_stride_scale := view.gait_stride_scale
+			assert(fast_stride_scale > slow_stride_scale, "higher speed gene should lengthen the visual stride")
+			assert(fast_stride_scale <= 1.15, "high speed gene effect must remain bounded")
+			var body_material := view.body.material_override as StandardMaterial3D
+			var coat_before_stress := view._base_body_color
+			for _poll in range(12):
+				view.update_state({"energy_ratio": 0.0}, 0.0)
+			assert(body_material.albedo_color != coat_before_stress, "low energy should visibly mute the coat")
+			view.update_state({"energy_ratio": 1.0}, 0.0)
+			assert(body_material.albedo_color.is_equal_approx(coat_before_stress), "energy recovery should restore the original genome-linked coat")
 		var standing_head_y := view.head.position.y
 		view.update_state({"position": [41.0, 24.0], "velocity": [1.4, 0.0], "behavior": "flee", "injury": 0.4}, 0.2)
 		assert(view.injury_mark.visible, "injury state should add a visible mark")

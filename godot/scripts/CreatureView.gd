@@ -18,6 +18,8 @@ var _world_height := 760.0
 var _size_scale := 1.0
 var _gait_phase := 0.0
 var _speed := 0.0
+var _base_body_color := Color.WHITE
+var gait_stride_scale := 1.0
 var _energy_ratio := 1.0
 var _injury := 0.0
 var _behavior := "explore"
@@ -41,6 +43,7 @@ func configure(data: Dictionary, scale_factor: float, world_width: float, world_
 	_base_body_y = 0.70 * _size_scale
 	var hue := fposmod(0.10 + size_gene * 0.013 + resilience * 0.06, 1.0)
 	var hide := Color.from_hsv(hue, 0.42 + aggression * 0.10, 0.40 + resilience * 0.08)
+	_base_body_color = hide
 	var underside := hide.lightened(0.20)
 	var accent := Color.from_hsv(fposmod(hue + 0.10, 1.0), 0.38, 0.64)
 	var dark := hide.darkened(0.32)
@@ -129,6 +132,10 @@ func update_state(data: Dictionary, delta: float, scale_factor: float = -1.0, wo
 	_speed = sqrt(vx * vx + vz * vz)
 	if _speed > 0.0001: rotation.y = lerp_angle(rotation.y, -atan2(vz, vx), clampf(delta * 6, 0, 1))
 	_energy_ratio = clampf(float(data.get("energy_ratio", 1.0)), 0, 1)
+	# The inherited speed gene shapes stride length subtly, without adding any
+	# randomness to the simulation-facing state. Config bounds are 0.5..4.0.
+	var speed_gene := clampf(float(data.get("speed", 2.25)), 0.5, 4.0)
+	gait_stride_scale = remap(speed_gene, 0.5, 4.0, 0.85, 1.15)
 	_injury = clampf(float(data.get("injury", 0.0)), 0, 1)
 	_behavior = str(data.get("behavior", "explore")).to_lower()
 	var resting := _behavior in ["rest", "care"]
@@ -139,7 +146,7 @@ func update_state(data: Dictionary, delta: float, scale_factor: float = -1.0, wo
 	_gait_phase = fposmod(_gait_phase + delta * clampf(_speed * 5.5, 0, 13), TAU)
 	var locomotion := clampf(_speed / 1.8, 0, 1) * (1.0 - _pose_blend)
 	for index in legs.size():
-		var swing := sin(_gait_phase + (PI if index == 1 or index == 2 else 0.0)) * 0.45 * locomotion
+		var swing := sin(_gait_phase + (PI if index == 1 or index == 2 else 0.0)) * 0.45 * gait_stride_scale * locomotion
 		legs[index].rotation.z = lerpf(legs[index].rotation.z, swing, clampf(delta * 8, 0, 1))
 	if body:
 		var breath := sin(Time.get_ticks_msec() * 0.002 + float(creature_id % 19)) * 0.018
@@ -156,7 +163,9 @@ func update_state(data: Dictionary, delta: float, scale_factor: float = -1.0, wo
 	if injury_mark: injury_mark.visible = _injury > 0.12
 	if body and body.material_override is StandardMaterial3D:
 		var material := body.material_override as StandardMaterial3D
-		material.albedo_color = material.albedo_color.lerp(Color("#55534a"), (1.0 - _energy_ratio) * 0.30)
+		# Always derive from the genome-linked coat. Repeated low-energy polls
+		# must not accumulate gray tint and permanently erase the phenotype.
+		material.albedo_color = _base_body_color.lerp(Color("#55534a"), (1.0 - _energy_ratio) * 0.30)
 
 func set_selected(value: bool) -> void:
 	_selected = value
