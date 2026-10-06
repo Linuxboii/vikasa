@@ -458,7 +458,9 @@ class BehaviorController:
                 )
                 contest = max(danger, creature.hunger, rival.hunger)
                 rewards[ActionName.CHALLENGE] = creature.temperament.aggression * (
-                    0.20 * territory + 0.55 * contest
+                    0.20 * territory
+                    + 0.55 * contest
+                    + 0.25 * _clamp(creature.satisfaction_vector[3])
                 )
         scores = {}
         for action, (_, _, position) in targets.items():

@@ -44,6 +44,14 @@ def test_fractional_food_spawn_accumulator_is_tick_stable(tiny_config) -> None:
     assert len(engine.resources) == 1
 
 
+def test_repeat_winners_raise_fight_risk_but_keep_it_low() -> None:
+    ordinary_risk = SimulationEngine._fight_risk(0.8, 0.8, True, 0.0)
+    alpha_risk = SimulationEngine._fight_risk(0.8, 0.8, True, 1.0)
+
+    assert 0.0 < ordinary_risk < 0.01
+    assert ordinary_risk < alpha_risk < 0.03
+
+
 def test_drought_reduces_food_spawn_without_changing_base_config(tiny_config) -> None:
     config = replace(
         tiny_config,

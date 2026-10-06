@@ -86,7 +86,7 @@ Thus high need does not guarantee a corresponding action: opportunity, travel, d
 
 Hunger is `clip(1−E/Emax)`. At nonpositive energy, starvation duration increases one tick; when energy is positive it decreases by one, to a floor of zero. Starvation death occurs at 12 accumulated ticks. Old age and severe injury are separate death causes.
 
-Fight chance is low and gated by close range plus hunger pressure (at least `0.48`) or an active challenge; fleeing prevents a contest. Encounter risk is capped at `0.09` and uses `0.004 × (0.25+pressure) × (0.3+mean_aggression)`, with a `1.5` multiplier for a challenge. Strength combines size, aggression and current energy; defense combines size and resilience. A loss causes injury and greater energy cost. Lethal risk is bounded by `0.42` and increases with low post-contest energy and injury. Victory gives alpha status and increments fight wins.
+Fight chance is low and gated by close range plus hunger pressure (at least `0.48`) or an active challenge; fleeing prevents a contest. Encounter risk is capped at `0.09` and starts with `0.004 × (0.25+pressure) × (0.3+mean_aggression)`, with a `1.5` multiplier for a challenge. For an active challenger it is multiplied by `1 + 0.75 × fights_satisfaction`, where `fights_satisfaction` is the fourth component below; ordinary maximum-pressure challenge risk therefore remains below `0.03`. Strength combines size, aggression and current energy; defense combines size and resilience. A loss causes injury and greater energy cost. Lethal risk is bounded by `0.42` and increases with low post-contest energy and injury. Victory gives alpha status and increments fight wins.
 
 Satisfaction has four saturating components:
 
@@ -98,7 +98,7 @@ fights    = 1 − exp(−fights_won/2)
 score     = 0.34×energy + 0.18×offspring + 0.22×food + 0.26×fights
 ```
 
-The scalar informs only some challenge behavior; it is not used as universal fitness or a selection objective.
+The fight-wins component modestly increases utility for an eligible repeat challenge and raises the low encounter risk. The scalar is an inspectable summary, not universal fitness, reproductive selection, or a selection objective.
 
 For an eligible parent, effective mating cooldown is `max(1, round(base_cooldown × (1 − 0.5×fertility)))`. Both partners must be mutually selected, within mate radius, sufficiently old/energetic, off cooldown, and below the population cap. Each contributes half the offspring-energy amount. Three temperament traits are inherited with seeded Gaussian variation and clipping, separate from the six body genes.
 
