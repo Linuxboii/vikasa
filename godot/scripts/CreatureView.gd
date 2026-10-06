@@ -44,41 +44,58 @@ func configure(data: Dictionary, scale_factor: float, world_width: float, world_
 	var underside := hide.lightened(0.20)
 	var accent := Color.from_hsv(fposmod(hue + 0.10, 1.0), 0.38, 0.64)
 	var dark := hide.darkened(0.32)
-	body = _ellipsoid("Body", Vector3(-0.02, _base_body_y, 0), Vector3(1.30, 0.49, 0.59), _mat(hide), 24, 16)
-	_ellipsoid("Flank", Vector3(0.02, _base_body_y - 0.22, 0), Vector3(0.92, 0.28, 0.49), _mat(underside), 20, 12)
-	var shoulder := _ellipsoid("Shoulder", Vector3(0.65, _base_body_y + 0.03, 0), Vector3(0.54, 0.43, 0.49), _mat(hide), 18, 12)
+	body = _ellipsoid("Body", Vector3(-0.02, _base_body_y, 0), Vector3(1.46, 0.37, 0.51), _mat(hide), 18, 12)
+	_ellipsoid("Belly", Vector3(0.0, _base_body_y - 0.23, 0), Vector3(0.88, 0.22, 0.42), _mat(underside), 16, 10)
+	var shoulder := _ellipsoid("Shoulder", Vector3(0.70, _base_body_y + 0.01, 0), Vector3(0.44, 0.37, 0.43), _mat(hide), 16, 10)
 	shoulder.rotation.z = -0.10
-	var haunch := _ellipsoid("Haunch", Vector3(-0.72, _base_body_y - 0.01, 0), Vector3(0.58, 0.47, 0.53), _mat(hide), 18, 12)
+	var haunch := _ellipsoid("Haunch", Vector3(-0.79, _base_body_y - 0.01, 0), Vector3(0.49, 0.39, 0.45), _mat(hide), 16, 10)
 	haunch.rotation.z = 0.08
-	neck = _ellipsoid("Neck", Vector3(0.83, _base_body_y + 0.08, 0), Vector3(0.48, 0.32, 0.36), _mat(hide), 18, 12)
-	head = _ellipsoid("Head", Vector3(1.12, _base_body_y + 0.20, 0), Vector3(0.40, 0.31, 0.38), _mat(hide), 20, 14)
-	muzzle = _ellipsoid("Muzzle", Vector3(1.43, _base_body_y + 0.06, 0), Vector3(0.36, 0.18, 0.25), _mat(underside), 16, 10)
+	neck = _ellipsoid("Neck", Vector3(0.91, _base_body_y + 0.09, 0), Vector3(0.39, 0.28, 0.31), _mat(hide), 16, 10)
+	head = _ellipsoid("Head", Vector3(1.20, _base_body_y + 0.19, 0), Vector3(0.31, 0.25, 0.30), _mat(hide), 16, 10)
+	muzzle = _ellipsoid("Muzzle", Vector3(1.50, _base_body_y + 0.08, 0), Vector3(0.41, 0.14, 0.21), _mat(underside), 16, 10)
+	_ellipsoid("Jaw", Vector3(1.43, _base_body_y - 0.01, 0), Vector3(0.32, 0.105, 0.18), _mat(dark.lightened(0.12)), 14, 8)
+	_ellipsoid("Nose", Vector3(1.84, _base_body_y + 0.10, 0), Vector3(0.10, 0.085, 0.15), _mat(dark), 12, 8)
 	for side in [-1.0, 1.0]:
-		_ellipsoid("Eye", Vector3(1.20, _base_body_y + 0.27, side * 0.335), Vector3(0.075, 0.09, 0.045), _mat(Color("#27332b")), 12, 8)
-		var ear := _cone("SensoryEar", Vector3(0.92, _base_body_y + 0.45, side * 0.22), 0.16 + perception * 0.08, 0.38 + perception * 0.20, _mat(accent), 10)
-		ear.rotation.z = -0.18
+		_ellipsoid("Eye", Vector3(1.27, _base_body_y + 0.25, side * 0.255), Vector3(0.052, 0.064, 0.036), _mat(Color("#222720")), 12, 8)
+		_ellipsoid("Nostril", Vector3(1.89, _base_body_y + 0.12, side * 0.091), Vector3(0.035, 0.026, 0.018), _mat(Color("#211d18")), 8, 6)
+		var ear := _cone("SensoryEar", Vector3(1.03, _base_body_y + 0.39, side * 0.19), 0.105 + perception * 0.045, 0.24 + perception * 0.17, _mat(dark.lightened(0.18)), 9)
+		ear.rotation.z = -0.42
 		ear.rotation.x = side * 0.35
+		# Small flattened coat marks provide gene-linked pattern variation, not jewelry.
+		for mark_index in range(2 + roundi(sociability * 2.0)):
+			var mark_x := -0.76 + mark_index * 0.25
+			var mark_color := dark.lightened(0.20 if mark_index % 2 == 0 else 0.0)
+			var coat_mark := _ellipsoid("CoatMark", Vector3(mark_x, _base_body_y + 0.15, side * 0.485), Vector3(0.095 + perception * 0.025, 0.075, 0.028), _mat(mark_color), 10, 6)
+			coat_mark.rotation.z = 0.18
 	for fore in [true, false]:
 		for side in [-1.0, 1.0]:
 			var hip := Node3D.new()
 			hip.name = ("Fore" if fore else "Hind") + ("Near" if side > 0.0 else "Far") + "Leg"
-			hip.position = Vector3(0.82 if fore else -0.81, _base_body_y - 0.18, side * 0.39)
+			hip.position = Vector3(0.84 if fore else -0.84, _base_body_y - 0.12, side * 0.34)
 			add_child(hip)
 			legs.append(hip)
-			var upper := _ellipsoid("UpperLimb", Vector3(0, -0.14, 0), Vector3(0.15, 0.31, 0.15), _mat(dark), 14, 10)
-			remove_child(upper)
-			hip.add_child(upper)
-			_ellipsoid_under(hip, "LowerLimb", Vector3(0.015, -0.24, 0), Vector3(0.105, 0.25, 0.11), _mat(dark))
-			_ellipsoid_under(hip, "Foot", Vector3(0.09, -0.34, 0), Vector3(0.22, 0.105, 0.155), _mat(dark))
+			var upper := _capsule_under(hip, "UpperLimb", 0.125, 0.43, _mat(dark))
+			upper.position.y = -0.16
+			upper.rotation.z = 0.10 if fore else -0.16
+			_ellipsoid_under(hip, "Knee", Vector3(0.015, -0.30, 0), Vector3(0.13, 0.13, 0.125), _mat(dark.lightened(0.12)))
+			var lower := _capsule_under(hip, "LowerLimb", 0.085, 0.34, _mat(dark))
+			lower.position = Vector3(0.025, -0.31, 0)
+			lower.rotation.z = -0.06 if fore else 0.12
+			_ellipsoid_under(hip, "Foot", Vector3(0.10, -0.41, 0), Vector3(0.25, 0.095, 0.16), _mat(dark))
+			for toe in [-1.0, 0.0, 1.0]:
+				_ellipsoid_under(hip, "Toe", Vector3(0.25, -0.405, toe * 0.084), Vector3(0.085, 0.045, 0.052), _mat(dark.lightened(0.08)))
+				var claw := _cone_under(hip, "Claw", Vector3(0.315, -0.415, toe * 0.084), 0.035, 0.11, _mat(Color("#352e24")), 7)
+				claw.rotation.z = -PI / 2.0
 	tail = Node3D.new()
 	tail.name = "TailRoot"
-	tail.position = Vector3(-1.03, _base_body_y + 0.04, 0)
+	var tail_length := 0.48 + (1.0 - sociability) * 0.38
+	tail.position = Vector3(-1.11, _base_body_y + 0.03, 0)
 	add_child(tail)
-	_ellipsoid_under(tail, "Tail", Vector3(-0.36, -0.08, 0), Vector3(0.52, 0.12, 0.14), _mat(dark)).rotation.z = -0.12
-	_ellipsoid_under(tail, "TailTip", Vector3(-0.78, -0.14, 0), Vector3(0.22, 0.10, 0.12), _mat(accent)).rotation.z = -0.25
-	for i in range(3):
-		var ridge := _cone("BackRidge", Vector3(-0.28 + i * 0.29, _base_body_y + 0.40, 0), 0.11 + aggression * 0.035, 0.20 + sociability * 0.08, _mat(accent), 8)
-		ridge.rotation.z = PI
+	_ellipsoid_under(tail, "Tail", Vector3(-tail_length * 0.62, -0.07, 0), Vector3(tail_length, 0.105, 0.12), _mat(dark)).rotation.z = -0.12
+	_ellipsoid_under(tail, "TailTip", Vector3(-tail_length * 1.18, -0.12, 0), Vector3(0.20, 0.085, 0.10), _mat(accent)).rotation.z = -0.25
+	for i in range(2 + roundi(aggression * 3.0)):
+		var ridge := _ellipsoid("DorsalRidge", Vector3(-0.36 + i * 0.20, _base_body_y + 0.31, 0), Vector3(0.105, 0.10 + aggression * 0.075, 0.15), _mat(accent.darkened(0.10)), 10, 6)
+		ridge.rotation.z = -0.15
 	alpha_mark = _ellipsoid("AlphaMark", Vector3(-0.19, _base_body_y + 0.36, 0), Vector3(0.20, 0.045, 0.39), _mat(Color("#d3ad69")), 14, 8)
 	alpha_mark.visible = false
 	injury_mark = _ellipsoid("InjuryMark", Vector3(0.26, _base_body_y + 0.22, 0.40), Vector3(0.25, 0.035, 0.09), _mat(Color("#a85d48")), 14, 8)
@@ -163,6 +180,26 @@ func _ellipsoid(node_name: String, at: Vector3, dimensions: Vector3, material: M
 
 func _ellipsoid_under(parent: Node3D, node_name: String, at: Vector3, dimensions: Vector3, material: Material) -> MeshInstance3D:
 	var instance := _ellipsoid(node_name, at, dimensions, material, 14, 10)
+	remove_child(instance)
+	parent.add_child(instance)
+	return instance
+
+func _capsule_under(parent: Node3D, node_name: String, radius: float, height: float, material: Material) -> MeshInstance3D:
+	var instance := MeshInstance3D.new()
+	instance.name = node_name
+	var mesh := CapsuleMesh.new()
+	mesh.radius = radius
+	mesh.height = height
+	mesh.radial_segments = 10
+	mesh.rings = 4
+	instance.mesh = mesh
+	instance.material_override = material
+	instance.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+	parent.add_child(instance)
+	return instance
+
+func _cone_under(parent: Node3D, node_name: String, at: Vector3, radius: float, height: float, material: Material, radial: int) -> MeshInstance3D:
+	var instance := _cone(node_name, at, radius, height, material, radial)
 	remove_child(instance)
 	parent.add_child(instance)
 	return instance
