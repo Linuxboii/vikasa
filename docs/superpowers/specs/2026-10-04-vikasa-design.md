@@ -1,5 +1,7 @@
 # Vikasa Design
 
+> **Status: historical/superseded.** This records the original 2026-10-04 intent, not the current product contract. The accepted replacement is [the 2026-10-05 wildlife experience spec](2026-10-05-vikasa-wildlife-experience-design.md); delivered runtime behavior and limits are described in [the scientific model](../../SCIENTIFIC_MODEL.md), [architecture](../../ARCHITECTURE.md), and [the README](../../../README.md). The notes below are retained for project history.
+
 ## Intent
 
 Build a demonstration-ready artificial-life laboratory where evolution is visible, measurable, reproducible, and explorable. The application must run as a polished desktop simulation and as a faster-than-real-time headless experiment engine. A viewer should be able to begin with 100 genetically varied creatures, apply environmental pressure, watch traits shift, inspect ancestry, save the state, and export evidence without editing code.

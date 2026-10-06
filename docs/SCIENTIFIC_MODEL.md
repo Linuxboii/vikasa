@@ -1,111 +1,45 @@
 # Scientific model
 
-## Purpose
+## Scope
 
-The simulator is an explanatory model of variation, inheritance, selection, and trade-offs. It is not a molecular, ecological, or population-genetics claim about a real species. Its value is that every major equation has an observable consequence and every stochastic decision is reproducible.
+Vikasa is an explanatory artificial-life model for exploring variation, resource pressure, behavior, inheritance and survival. It is not calibrated to a real species or a validated ecological forecast. Each tick is an abstract step with no fixed conversion to seconds, days, or generations.
 
-## State
+## Organism and inheritance
 
-An organism carries identity, 2D position/velocity, age, energy, hunger, injury, a six-gene body genome, three inherited behavioral traits, parents, birth tick, last reproduction tick, offspring count, food acquired, fight outcomes, alpha status, satisfaction components, and cultural affiliation. A resource carries identity, position, radius, and energy value. Removed organisms remain represented in lineage edges and historical metrics.
+The ordered body genome is `[size, speed, perception, metabolism, reproduction_threshold, fertility]`; each value is bounded by configuration. Founder values are sampled uniformly. Mating uses the configured arithmetic or uniform crossover, followed by independent per-gene mutation, `Normal(0, sigma × gene span)` when the Bernoulli mutation trial succeeds, then clamping to configured bounds.
 
-## Genome and phenotype
+Aggression, resilience, and sociability are separate inherited behavioral traits rather than extra body-gene coordinates. Their offspring values combine parental values with seeded Gaussian variation and are clamped to `[0, 1]`. Larger/faster creatures incur higher costs; perception expands sensing but does not guarantee access; metabolism changes basal cost; fertility shortens cooldown but does not guarantee a mate or child.
 
-The ordered genome is:
+## Tick and action arbitration
 
-```text
-[size, speed, perception, metabolism, reproduction_threshold, fertility]
-```
+The engine updates seasonal and scheduled environment pressures, regenerates resources, constructs spatial indexes, forms local perceptions, decides/executes actions, resolves fights, resolves food contention, resolves paired reproduction, applies deaths, advances the tick, then updates culture, satisfaction, and sampled metrics.
 
-Order is part of the checkpoint/export contract. Configuration provides a strict minimum and maximum for every gene. New founders sample each range uniformly.
+Six normalized drives are recalculated from current reserves, injury, nearby opportunities, dependents, threats, hazards, home-range displacement and temperament: survival, foraging, mating, offspring care, danger avoidance, territory. They feed eight candidate actions: explore, forage, rest, seek mate, care, flee, patrol, and challenge. Each action's utility is a bounded drive-affinity reward minus travel, exposure, and conflict costs. Unavailable actions are excluded. Danger over threshold preempts with flight; critical survival/injury pressure preempts with foraging/rest. Otherwise hysteresis preserves a current action when close to the best score, and seeded softmax breaks near ties. Selection is reproducible for a fixed engine state and RNG stream.
 
-Phenotype mappings in the UI—radius, hue, brightness, and fertility accents—do not feed back into the engine. The engine reads the original numeric genes.
+## Energy, food, and mortality
 
-## Movement
+Food supplies a configured energy amount and can be consumed only once; competing organisms resolve access by squared distance then stable ID. Basal and movement expenditure depend on traits and current environment/weather costs. Hunger rises as energy falls. Energy at or below zero increments a starvation counter; positive energy reduces the counter by one each tick. Death occurs after 12 accumulated starvation ticks, at configured maximum age, or at severe fight injury. Thus starvation is delayed and potentially reversible, not a single-tick deletion.
 
-An organism queries food within its perception radius through a spatial hash. It steers toward the nearest candidate, breaking equal-distance ties by resource ID. With no sensed food, it follows a persistent wander heading that changes according to the configured probability and a seeded Gaussian turn.
+Reproduction requires both partners to meet age, energy threshold and cooldown requirements, be in mate range, mutually select each other, and remain under the population cap. Each parent invests half the configured offspring energy. Children inherit body genome and behavioral temperament; parentage and birth ticks remain in lineage records after deaths.
 
-Velocity approaches desired velocity by a fixed 0.3 steering factor and is capped by the speed gene. Collision boundaries clamp position and reflect the corresponding velocity component. The optional wrap boundary applies coordinate modulo.
+## Home range, care and migration
 
-## Energy
+Each creature has a center and radius for a small home range. Patrol actions choose a persistent waypoint near the range edge. Parents can care for living offspring younger than the configured dependent age and within care radius; care transfers limited energy while protecting a parent reserve. If an animal remains outside its range while foraging and perceived outside food reward exceeds inside reward by the configured migration margin, its center shifts toward its position by 0.5% after 24 consecutive qualifying ticks. The rule is a small local-resource response, not a realistic dispersal model.
 
-Basal and movement costs are:
+## Conflict and satisfaction
 
-```text
-basal = basal_cost × (1 + size/8) ÷ metabolism
-        × event_metabolism × season_metabolism × injury_cost × health_pressure
-movement = movement_cost × distance × (0.5 + size/8) × (0.5 + speed/4) × weather_cost
-```
+Close encounters only roll for fights under hunger pressure or an explicit challenge, and flee suppresses the encounter. Aggression modulates a low baseline probability; size, energy, and resilience affect winning. Winners gain alpha status; both participants pay energy, the loser gains injury, and a weakened/injured loser has a bounded nonzero fatal chance. There is no permanent rank hierarchy: alpha is a retained victory marker, and challengers must still meet behavioral opportunity/risk conditions.
 
-Food increases energy up to `energy.maximum`. Contention for a resource is resolved by squared distance and then stable organism ID. A resource can be consumed once.
+The four satisfaction components are energy security, saturating offspring history, saturating food acquired, and saturating fight wins. Their current weighted scalar is `0.34 energy + 0.18 offspring + 0.22 food + 0.26 fights`. It is an inspectable summary used as part of some alpha challenge selection, not a global evolutionary fitness function and not a measure of subjective welfare.
 
-Hunger rises as energy falls. When reserves remain depleted, starvation accumulates rather than deleting an organism on the first negative-energy tick; a meal can still reverse the decline. Repeated adverse exposure and fight injuries add to the same survival burden. Temperature, seasonal food productivity, rain, and scheduled hazards change costs, resources, or health pressure.
+## Environment and shared traditions
 
-## Satisfaction and conflict
+Seasons advance every 96 ticks, changing temperature, rainfall, food productivity and metabolic demand. Scheduled drought/abundance alter food supply; heat/cold change metabolism and health pressure; storms affect movement and pressure; flood/wildfire alter food and pressure; disease adds health pressure. These values are deliberately coarse. There is no fluid simulation, terrain-dependent ecology, explicit contagion graph, or detailed resource-food web.
 
-Satisfaction is an inspectable vector with four normalized components:
+Repeated shared cues (season turns, drought, heat, storms, or victories) can accumulate observations. With sufficient repeated signals and exposed living population, a seeded chance can found a named tradition; low-probability contact spreads affiliation, and gatherings can record rituals. Names/practices come from a small fixed vocabulary. This demonstrates rule-based cultural transmission only; it does not model language, agency, theology, symbolic reasoning, or human religion. A tradition may not emerge in a particular run.
 
-```text
-[energy security, offspring history, food acquired, fights won]
-score = 0.34 energy + 0.18 offspring + 0.22 food + 0.26 fights
-```
+## Determinism and evidence
 
-Offspring, food, and victories use saturating curves, so one additional event matters less after a long successful history. Nearby creatures only consider conflict under hunger pressure or an existing alpha challenge. Each encounter has a low baseline chance, moderated by aggression and hunger; size, reserves, and resilience affect the winner. Injuries raise later energy cost. A badly weakened loser has a nonzero fatality risk. A victor retains alpha status, and sufficiently satisfied alphas sometimes steer toward nearby rivals. This is a coarse behavioral model, not a claim that one formula represents real animal aggression.
+One NumPy PCG64 generator owns stochastic outcomes. Stable IDs order updates and ties; rendering reads snapshots only. Checkpoint version 3 stores RNG state and fractional resource-spawn remainder and can continue bit-for-bit on the same software/numerical platform. Loader migrations from versions 1 and 2 are in-memory. See [architecture and compatibility](ARCHITECTURE.md#persistence-and-reproducibility).
 
-## Shared traditions
-
-The cultural ledger records repeated shared cues—season turns, drought, heat, storms, or victories. After a cue has recurred and several living creatures have observed it, the seeded simulation may found a named belief group. Contact spreads membership according to inherited sociability; gatherings recur and enter the event chronicle. Names and practices come from a small cue vocabulary. This is an emergent collective ritual system, not a model of language, theology, reflective belief, or human religion.
-
-## Reproduction
-
-Both parents must satisfy minimum age, their own reproduction-threshold gene, the effective cooldown, mate radius, and the population cap.
-
-```text
-effective_cooldown = round(base_cooldown × (1 - 0.5 × fertility))
-```
-
-Pairs are chosen by stable organism order and nearest eligible mate. Each parent contributes half the configured offspring energy. The child receives arithmetic or uniform crossover, then mutation, and starts near the parental midpoint. Both parent IDs and the birth tick are recorded.
-
-## Mutation
-
-For every child gene, a seeded Bernoulli trial decides whether mutation occurs. Applied noise is:
-
-```text
-Normal(0, mutation_sigma) × (gene_maximum - gene_minimum)
-```
-
-The result is clamped. Mutation therefore never violates the configured simulation range.
-
-## Environment
-
-Seasons advance every 96 ticks and change relative temperature, rainfall, food productivity, and metabolic demand. Scheduled drought and abundance events change food productivity; heat and cold add metabolic and health pressure; storms raise movement cost; floods reduce food and raise stress; wildfire reduces food and raises injury pressure; disease raises health pressure. These are deliberately coarse environmental signals, not detailed weather or pathogen models.
-
-Overlapping multipliers compose. An event is active in the half-open interval from start tick through the tick before its end.
-
-## Statistics
-
-At each sample interval, the recorder stores population, food, births, deaths, cumulative vital events, normalized pairwise genome diversity, analytical fitness, environmental multipliers, and mean/median/population variance/population standard deviation for every gene.
-
-Trait/offspring Pearson correlation is recorded only when at least two values exist and both variables have non-zero variance. Otherwise it is `null`, not a fabricated zero.
-
-For large populations, diversity uses evenly spaced organisms from stable ID order up to the configured sample size. Each genome dimension is normalized to its configured span before Euclidean distance is calculated.
-
-## Determinism
-
-- One NumPy `Generator(PCG64)` owns all simulation randomness.
-- Stable IDs order updates and break conflicts.
-- Wall-clock time never enters state.
-- Checkpoints preserve RNG state and fractional food-spawn remainder.
-- Rendering reads snapshots and commands but never chooses outcomes.
-
-Equal configuration, seed, event schedule, tick count, and version produce equivalent canonical summaries on the same numerical platform.
-
-## Interpretation limits
-
-- One seeded run is illustrative, not statistical evidence.
-- Analytical fitness is descriptive and scale-dependent.
-- The ecology has one resource type and no predator species; conspecific fights model injury and occasional fatal outcomes.
-- The six body genes are quantitative values. Aggression, resilience, and sociability are inherited secondary traits; there is no dominance, recombination map, or molecular DNA.
-- Shared traditions arise from repeated cues and social contact, but the cultural model has no language, reflective theology, or human-like religious cognition.
-- Selection can be confounded by finite population drift and the initial random sample.
-- Compare treatments with matched seeds and multiple replicates, then report distributions rather than a preferred screenshot.
-
+Population and trait changes alone do not prove adaptation. Compare replicated, matched-seed treatments and inspect actual offspring inheritance and survival. Report config, version, seed set, tick count, event timing, extinction, invariant errors and distributions. For a compact experiment recipe, see [EXPERIMENTS.md](EXPERIMENTS.md).

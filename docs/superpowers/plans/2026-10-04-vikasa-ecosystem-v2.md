@@ -1,5 +1,7 @@
 # Vikasa Ecosystem v2 Implementation Plan
 
+> **Status: historical/superseded.** This plan is preserved for context, not execution. The approved replacement is [the 2026-10-05 wildlife experience spec](../specs/2026-10-05-vikasa-wildlife-experience-design.md); see [the scientific model](../../SCIENTIFIC_MODEL.md), [architecture](../../ARCHITECTURE.md), and [README](../../../README.md) for the delivered implementation. Any release/deploy/tag/remote-push steps below were proposed only; they are not claims that deployment or publication occurred.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Build Vikasa v2 as a deterministic, visually rich ecosystem simulator with behavioral instincts, persistent species and territories, expanded environments, real-time calendar profiles, a live species leaderboard, and matching GUI/CLI capabilities.
