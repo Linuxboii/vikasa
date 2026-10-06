@@ -22,10 +22,10 @@ func _run() -> void:
 	client._request.cancel_request()
 	client._busy = false
 	for contract in [
-		[world, ["set_state", "set_selected", "set_follow", "reset_camera"], ["world_clicked"]],
-		[hud, ["set_state", "set_selection"], ["pause_requested", "step_requested", "speed_requested", "inspect_requested", "world_tools_requested"]],
+		[world, ["set_state", "set_selected", "set_follow", "reset_camera", "clear_snapshot"], ["world_clicked", "creature_clicked"]],
+		[hud, ["set_state", "set_selection"], ["pause_requested", "step_requested", "speed_requested", "inspect_requested", "world_tools_requested", "reset_requested", "follow_requested"]],
 		[inspector, ["set_creature", "set_open"], ["closed"]],
-		[tools, ["set_state", "set_open"], ["command_requested"]],
+		[tools, ["set_state", "set_open"], ["command_requested", "placement_changed"]],
 		[client, ["request_state", "send_command"], ["state_updated", "connection_changed", "command_completed"]]
 	]:
 		for method in contract[1]: check(contract[0].has_method(method), "Missing method " + method)
@@ -51,6 +51,22 @@ func _run() -> void:
 	check(hud.title.text.contains("#3") and hud.reason.text.contains("hunger"), "Action explanation mismatch")
 	main._toggle_follow()
 	check(world.follow_id == 3, "Follow failed")
+	main._on_ground(Vector2(0.3, 0.3))
+	check(main.selected_id == -1 and not main.following and world.follow_id == -1, "Empty click did not dismiss selection/follow")
+	main._select(3)
+	main._toggle_follow()
+	var death_state: Dictionary = state.duplicate(true)
+	death_state.creatures = death_state.creatures.filter(func(animal: Dictionary): return int(animal.id) != 3)
+	main._on_state(death_state)
+	check(main.selected_id == -1 and not main.following and hud.notice.text.contains("no longer alive"), "Selected death did not clear follow/explain")
+	main._on_state(state)
+	main._select(3)
+	var running: Dictionary = state.duplicate(true)
+	running.paused = false
+	running.ticks_per_second = 24
+	main._on_state(running)
+	check(hud.status.text == "Running" and hud.step_button.disabled and hud.speed_buttons[24].button_pressed, "Running/speed state mismatch")
+	main._on_state(state)
 	var payloads: Array = []
 	tools.command_requested.connect(func(payload: Dictionary): payloads.append(payload))
 	tools.placing_food = true
@@ -71,8 +87,10 @@ func _run() -> void:
 	main._on_connection(false, "Simulation offline · Reconnecting")
 	check(hud.pause_button.disabled and tools.food_button.disabled, "Offline controls not disabled")
 	check(hud.notice.text.contains("offline"), "Offline message missing")
+	check(world.creature_views.is_empty() and main.latest_state.is_empty(), "Offline snapshot remained selectable")
 	main._on_state({"world": state.world, "seed": 2026, "population": 0, "creatures": [], "resources": [], "paused": true})
 	check(world.creature_views.is_empty() and not hud.needs.visible, "Empty world did not clear selection")
+	check(hud.notice.text.contains("extinct"), "Extinction recovery prompt missing")
 	# Optional presentation capture: fixture, never described as a natural outcome.
 	var args := OS.get_cmdline_user_args()
 	if "--capture" in args:

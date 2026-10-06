@@ -68,11 +68,17 @@ func _ready() -> void:
 	_resize()
 
 func _resize() -> void:
-	offset_left = -minf(396, get_viewport_rect().size.x * 0.43)
-	offset_bottom = -278 if get_viewport_rect().size.x < 1150 else -240
+	offset_left = -minf(390, get_viewport_rect().size.x - 32)
+	offset_right = -16
+	offset_top = 82
+	offset_bottom = -256 if get_viewport_rect().size.x < 1150 else -212
 
 func _describe() -> void:
 	explanation.text = str(events[weather_choice.selected].description) + "\nStarts next tick; lasts 48 ticks."
+
+func _process(_delta: float) -> void:
+	var dock := get_parent().get_node_or_null("HUD/ObservationDock") as Control
+	if dock: offset_bottom = dock.offset_top - 12
 
 func _schedule() -> void:
 	cancel_placement()

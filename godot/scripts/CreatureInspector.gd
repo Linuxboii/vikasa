@@ -7,6 +7,8 @@ var summary: Label
 var sections: Dictionary = {}
 var drive_bars: Dictionary = {}
 var drive_labels: Dictionary = {}
+var drive_descriptions: Dictionary = {}
+var scores_label: Label
 
 func _ready() -> void:
 	anchor_left = 1
@@ -37,7 +39,7 @@ func _ready() -> void:
 	content.add_child(action_label)
 	summary = BiomeUI.paragraph("", 16)
 	content.add_child(summary)
-	for title in ["Instincts", "Genome", "Encounters", "Lineage"]:
+	for title in ["Instincts", "Action choices", "Genome", "Encounters", "Lineage"]:
 		var toggle := BiomeUI.button(title + "  +", "Show " + title.to_lower() + " details")
 		toggle.toggle_mode = true
 		content.add_child(toggle)
@@ -47,14 +49,20 @@ func _ready() -> void:
 		content.add_child(detail)
 		toggle.toggled.connect(func(open: bool): detail.visible = open; toggle.text = title + ("  −" if open else "  +"))
 		if title == "Instincts":
-			for key in ["survival", "foraging", "mating", "offspring_care", "danger_avoidance", "territory"]:
-				var caption := BiomeUI.label(key.replace("_", " ").capitalize(), 15, BiomeUI.MUTED)
+			detail.add_child(BiomeUI.paragraph("0–44% low · 45–74% rising · 75–100% urgent. Pressures compete; a high need does not guarantee an action.", 14))
+			for key in BehaviorPresentation.DRIVES:
+				var caption := BiomeUI.label(BehaviorPresentation.DRIVES[key].label, 15, BiomeUI.INK)
 				detail.add_child(caption)
 				drive_labels[key] = caption
-				var bar := BiomeUI.meter(Color("#b8bc88"))
+				var bar := BiomeUI.meter(BehaviorPresentation.DRIVES[key].color)
 				detail.add_child(bar)
 				drive_bars[key] = bar
-			detail.add_child(BiomeUI.paragraph("These pressures compete for attention; a high drive does not guarantee an action.", 14))
+				var description := BiomeUI.paragraph(BehaviorPresentation.DRIVES[key].description, 13)
+				detail.add_child(description)
+				drive_descriptions[key] = description
+		elif title == "Action choices":
+			scores_label = BiomeUI.paragraph("No action scores available.", 15)
+			detail.add_child(scores_label)
 		else:
 			var text := BiomeUI.paragraph("", 15)
 			detail.add_child(text)
@@ -64,11 +72,18 @@ func _ready() -> void:
 	_resize()
 
 func _resize() -> void:
-	offset_left = -minf(396, get_viewport_rect().size.x * 0.43)
-	offset_bottom = -278 if get_viewport_rect().size.x < 1150 else -240
+	var narrow := get_viewport_rect().size.x < 1150
+	offset_left = -minf(390, get_viewport_rect().size.x - 32)
+	offset_right = -16
+	offset_top = 82
+	offset_bottom = -256 if narrow else -212
 
 func set_open(open: bool) -> void:
 	visible = open
+
+func _process(_delta: float) -> void:
+	var dock := get_parent().get_node_or_null("HUD/ObservationDock") as Control
+	if dock: offset_bottom = dock.offset_top - 12
 
 func set_creature(data: Dictionary) -> void:
 	if data.is_empty():
@@ -77,17 +92,21 @@ func set_creature(data: Dictionary) -> void:
 		summary.text = ""
 		return
 	name_label.text = "Animal #%d" % int(data.get("id", -1))
-	action_label.text = str(data.get("behavior", "explore")).replace("_", " ").capitalize() + "\n" + str(data.get("behavior_reason", ""))
+	action_label.text = BehaviorPresentation.action(data) + "\n" + BehaviorPresentation.reason(data)
 	summary.text = "Energy %s · Hunger %s\nInjury %s · Age %s ticks\nNearby dependent young: %d" % [
-		BiomeUI.percent(data.get("energy_ratio", 0)),
-		BiomeUI.percent(data.get("hunger", 0)),
-		BiomeUI.percent(data.get("injury", 0)),
+		BehaviorPresentation.percent(BehaviorPresentation.ratio(data, "energy_ratio")),
+		BehaviorPresentation.percent(BehaviorPresentation.ratio(data, "hunger")),
+		BehaviorPresentation.percent(BehaviorPresentation.ratio(data, "injury")),
 		str(int(data.get("age", 0))), data.get("dependent_ids", []).size()]
-	var drives: Dictionary = data.get("drives", {})
+	var raw_drives: Variant = data.get("drives", {})
+	var drives: Dictionary = raw_drives if raw_drives is Dictionary else {}
 	for key in drive_bars:
-		var value := clampf(float(drives.get(key, 0)), 0, 1)
-		drive_bars[key].value = value
-		drive_labels[key].text = key.replace("_", " ").capitalize() + " · " + BiomeUI.percent(value)
+		var value: Variant = BehaviorPresentation.ratio(drives, key)
+		BehaviorPresentation.meter(drive_bars[key], value, BehaviorPresentation.DRIVES[key].color)
+		drive_labels[key].text = str(BehaviorPresentation.DRIVES[key].label) + " · " + BehaviorPresentation.percent(value) + " · " + BehaviorPresentation.urgency(value)
+		drive_labels[key].add_theme_color_override("font_color", BehaviorPresentation.DRIVES[key].color if value != null and float(value) >= 0.75 else BiomeUI.INK)
+	var raw_scores: Variant = data.get("behavior_scores", {})
+	_update_scores(raw_scores if raw_scores is Dictionary else {})
 	sections["Genome"].text = "Size %.2f · Speed %.2f\nPerception %.2f · Metabolism %.2f\nAggression %s · Resilience %s\nSociability %s" % [
 		float(data.get("size", 0)), float(data.get("speed", 0)), float(data.get("perception", 0)),
 		float(data.get("metabolism", 0)),
@@ -102,3 +121,15 @@ func _ids(values: Array) -> String:
 	var labels: PackedStringArray = []
 	for id in values: labels.append("#%d" % int(id))
 	return ", ".join(labels) if not labels.is_empty() else "None"
+
+func _update_scores(scores: Dictionary) -> void:
+	var candidates: Array = []
+	for key in scores:
+		var value: Variant = scores[key]
+		if (value is int or value is float) and is_finite(float(value)):
+			candidates.append({"name": str(key), "value": float(value)})
+	candidates.sort_custom(func(a: Dictionary, b: Dictionary): return a.value > b.value if a.value != b.value else a.name < b.name)
+	var lines: PackedStringArray = []
+	for candidate in candidates.slice(0, 2):
+		lines.append("%s · %.2f" % [BehaviorPresentation.ACTIONS.get(candidate.name, candidate.name.capitalize()), candidate.value])
+	scores_label.text = ("No action scores available." if lines.is_empty() else "Top perceived choices\n" + "\n".join(lines)) + "\nScores compare reward, effort and risk. An urgent need or a persistent action can override the highest score."

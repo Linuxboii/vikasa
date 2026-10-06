@@ -27,6 +27,7 @@ var follow_id := -1
 var environment: Environment
 var sun: DirectionalLight3D
 var _paused := false
+var _weather_kind := ""
 
 func _ready() -> void:
 	environment = Environment.new()
@@ -107,6 +108,25 @@ func set_state(state: Dictionary) -> void:
 	_sync_resources(state.get("resources", []))
 	var conditions: Dictionary = state.get("environment", {})
 	sun.light_energy = lerpf(0.75, 0.95, clampf(float(conditions.get("temperature", 0.5)), 0, 1))
+	var events: Array = conditions.get("active_events", [])
+	_weather_kind = str(events[0].get("kind", "")) if not events.is_empty() else ""
+	environment.background_color = Color("#8b9e9b") if _weather_kind == "storm" else Color("#a6b79b")
+	sun.light_color = Color("#b8c9d2") if _weather_kind == "storm" else (Color("#efd1a6") if _weather_kind in ["heat", "wildfire", "drought"] else Color("#ffe7bb"))
+	sun.light_energy *= 0.7 if _weather_kind == "storm" else 1.0
+
+func clear_snapshot() -> void:
+	_paused = true
+	_weather_kind = ""
+	environment.background_color = Color("#a6b79b")
+	sun.light_color = Color("#ffe7bb")
+	sun.light_energy = 0.85
+	data_by_id.clear()
+	for view in creature_views.values(): view.queue_free()
+	creature_views.clear()
+	for view in resource_views.values(): view.queue_free()
+	resource_views.clear()
+	set_selected(-1)
+	set_follow(-1)
 
 func _sync_resources(items: Array) -> void:
 	var seen: Dictionary = {}
