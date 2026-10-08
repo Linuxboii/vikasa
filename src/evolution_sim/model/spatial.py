@@ -19,7 +19,7 @@ class SpatialHash:
             raise ValueError("cell_size must be finite and positive")
         self.cell_size = float(cell_size)
         self._cells: dict[Cell, list[int]] = defaultdict(list)
-        self._positions: dict[int, Vector] = {}
+        self._positions: dict[int, tuple[float, float]] = {}
 
     def _cell(self, position: Vector) -> Cell:
         return (
@@ -32,18 +32,32 @@ class SpatialHash:
         self._positions.clear()
 
     def insert(self, entity_id: int, position: Vector) -> None:
-        point = np.asarray(position, dtype=np.float64).copy()
-        if point.shape != (2,) or not np.isfinite(point).all():
+        point = np.asarray(position, dtype=np.float64)
+        if point.shape != (2,):
+            raise ValueError("position must contain two finite values")
+        x, y = float(point[0]), float(point[1])
+        if not math.isfinite(x) or not math.isfinite(y):
             raise ValueError("position must contain two finite values")
         if entity_id in self._positions:
             raise ValueError(f"Entity {entity_id} already exists in spatial index")
-        self._positions[entity_id] = point
+        self._positions[entity_id] = (x, y)
         self._cells[self._cell(point)].append(entity_id)
 
     def rebuild(self, positions: Mapping[int, Vector]) -> None:
         self.clear()
-        for entity_id in sorted(positions):
-            self.insert(entity_id, positions[entity_id])
+        ids = sorted(positions)
+        if not ids:
+            return
+        points = np.asarray([positions[key] for key in ids], dtype=np.float64)
+        if points.shape != (len(ids), 2) or not np.isfinite(points).all():
+            raise ValueError("positions must contain two finite values per entity")
+        # One finite reduction for the cloud, immutable scalar copies for queries.
+        # Stable IDs and arithmetic/order match the individual insertion path.
+        for entity_id, point in zip(ids, points.tolist(), strict=True):
+            x, y = point
+            self._positions[entity_id] = (x, y)
+            self._cells[(math.floor(x / self.cell_size),
+                         math.floor(y / self.cell_size))].append(entity_id)
 
     def query_radius(self, position: Vector, radius: float) -> list[int]:
         center = (
@@ -51,14 +65,17 @@ class SpatialHash:
             if isinstance(position, np.ndarray)
             else np.asarray(position, dtype=np.float64)
         )
-        if center.shape != (2,) or not np.isfinite(center).all():
+        if center.shape != (2,):
+            raise ValueError("position must contain two finite values")
+        if np.iscomplexobj(center) and not np.isfinite(center).all():
+            raise ValueError("position must contain two finite values")
+        center_x, center_y = float(center[0]), float(center[1])
+        if not math.isfinite(center_x) or not math.isfinite(center_y):
             raise ValueError("position must contain two finite values")
         if not math.isfinite(radius) or radius < 0:
             raise ValueError("radius must be finite and non-negative")
         if not self._positions:
             return []
-        center_x = float(center[0])
-        center_y = float(center[1])
         minimum_x = math.floor((center_x - radius) / self.cell_size)
         maximum_x = math.floor((center_x + radius) / self.cell_size)
         minimum_y = math.floor((center_y - radius) / self.cell_size)
@@ -69,8 +86,8 @@ class SpatialHash:
             for y in range(minimum_y, maximum_y + 1):
                 for entity_id in self._cells.get((x, y), ()):
                     candidate = self._positions[entity_id]
-                    dx = center_x - float(candidate[0])
-                    dy = center_y - float(candidate[1])
+                    dx = center_x - candidate[0]
+                    dy = center_y - candidate[1]
                     if dx * dx + dy * dy <= radius_sq:
                         result.append(entity_id)
         result.sort()

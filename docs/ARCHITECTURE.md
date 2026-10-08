@@ -1,5 +1,10 @@
 # Architecture
 
+The spatial hash rebuild validates a full float64 cloud once, retaining sorted
+IDs and immutable coordinate copies for scalar radius checks. The historical
+comparison tool checks complete checkpoint equality and guards source/config
+provenance; see [performance contracts](PERFORMANCE.md).
+
 `analytics/trait_space.py` computes observer-only six-trait geometry at export.
 `io/export.py` joins stable IDs/generations and hashes `trait-space.json`;
 `experiments/charts.py` renders the fifth static figure, `trait_space.png`.

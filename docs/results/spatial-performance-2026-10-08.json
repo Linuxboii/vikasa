@@ -1,0 +1,252 @@
+{
+  "baseline_commit": "5874e01113b7d4492de277ba1cf282fd9a6d89df",
+  "caveat": "Sequential local timings under shared system load; not a universal FPS guarantee. Digests cover complete checkpoint state including RNG.",
+  "comparison": "Only SpatialHash differs; all other engine modules are current.",
+  "config": {
+    "behavior": {
+      "care_energy_rate": 0.25,
+      "care_radius": 24.0,
+      "danger_preempt_threshold": 0.75,
+      "dependent_age_ticks": 240,
+      "hysteresis_margin": 0.08,
+      "softmax_temperature": 0.08,
+      "territory_migration_margin": 0.15
+    },
+    "demography": {
+      "background_hazard": 2e-05,
+      "mode": "gompertz",
+      "senescence_age": 1800,
+      "senescence_rate": 0.002
+    },
+    "ecology": {
+      "biomass_diffusion": 0.008,
+      "capacity": 100.0,
+      "columns": 24,
+      "enabled": true,
+      "evaporation_rate": 0.002,
+      "growth_rate": 0.006,
+      "initial_fraction": 0.65,
+      "rainfall_rate": 0.004,
+      "rows": 16,
+      "transpiration_rate": 0.03,
+      "water_diffusion": 0.06,
+      "water_half_saturation": 0.25
+    },
+    "energy": {
+      "basal_cost": 0.09,
+      "initial": 125.0,
+      "maximum": 230.0,
+      "movement_cost": 0.026
+    },
+    "genome": {
+      "crossover": "arithmetic",
+      "mutation_probability": 0.1,
+      "mutation_sigma": 0.075,
+      "traits": {
+        "fertility": [
+          0.15,
+          0.55
+        ],
+        "metabolism": [
+          0.65,
+          1.5
+        ],
+        "perception": [
+          25.0,
+          150.0
+        ],
+        "reproduction_threshold": [
+          70.0,
+          150.0
+        ],
+        "size": [
+          2.5,
+          8.0
+        ],
+        "speed": [
+          0.5,
+          4.0
+        ]
+      }
+    },
+    "initial_population": 64,
+    "maximum_age": 12000,
+    "metrics": {
+      "diversity_sample": 48,
+      "sample_interval": 8
+    },
+    "reproduction": {
+      "cooldown": 100,
+      "mate_radius": 90.0,
+      "minimum_age": 90,
+      "offspring_energy": 60.0,
+      "population_cap": 180
+    },
+    "resources": {
+      "energy_value": 30.0,
+      "initial_count": 180,
+      "maximum_count": 400,
+      "spawn_rate": 0.9
+    },
+    "wander_change_probability": 0.03,
+    "world": {
+      "boundary": "collision",
+      "height": 480,
+      "width": 720
+    }
+  },
+  "measured_ticks": 300,
+  "numpy": "2.5.3",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "python": "3.12.14",
+  "runs": [
+    {
+      "exact_checkpoint_match": true,
+      "order": [
+        "baseline",
+        "optimized"
+      ],
+      "results": {
+        "baseline": {
+          "births": 68,
+          "checkpoint_hashes": [
+            "8437983aa9a7fff2dfabcf5c81512f1f0369c481d7d52e2b7c8f3fd8d0384d40",
+            "da303616bfc2341462cd28dcbc7b9392b952337b760f6c04086d83de553db6d1"
+          ],
+          "deaths": 1,
+          "invariant_errors": [],
+          "population": 131,
+          "seconds": 14.975330599998415,
+          "ticks_per_second": 20.032946718387088
+        },
+        "optimized": {
+          "births": 68,
+          "checkpoint_hashes": [
+            "8437983aa9a7fff2dfabcf5c81512f1f0369c481d7d52e2b7c8f3fd8d0384d40",
+            "da303616bfc2341462cd28dcbc7b9392b952337b760f6c04086d83de553db6d1"
+          ],
+          "deaths": 1,
+          "invariant_errors": [],
+          "population": 131,
+          "seconds": 12.515191900005448,
+          "ticks_per_second": 23.97086695888933
+        }
+      },
+      "seed": 2026,
+      "speedup": 1.1965721915931546
+    },
+    {
+      "exact_checkpoint_match": true,
+      "order": [
+        "optimized",
+        "baseline"
+      ],
+      "results": {
+        "baseline": {
+          "births": 47,
+          "checkpoint_hashes": [
+            "f4490cdb34648fba03c610428dcc4316d7cbda55715e84c3f4a7c7d868e81e6b",
+            "34f13a4d7300f56af4db901bb18e63c67734d59021553ed564b2aa46144ddfeb"
+          ],
+          "deaths": 0,
+          "invariant_errors": [],
+          "population": 111,
+          "seconds": 13.812326699997357,
+          "ticks_per_second": 21.719729522474836
+        },
+        "optimized": {
+          "births": 47,
+          "checkpoint_hashes": [
+            "f4490cdb34648fba03c610428dcc4316d7cbda55715e84c3f4a7c7d868e81e6b",
+            "34f13a4d7300f56af4db901bb18e63c67734d59021553ed564b2aa46144ddfeb"
+          ],
+          "deaths": 0,
+          "invariant_errors": [],
+          "population": 111,
+          "seconds": 12.027725400002964,
+          "ticks_per_second": 24.942371896844772
+        }
+      },
+      "seed": 7,
+      "speedup": 1.1483739643735094
+    },
+    {
+      "exact_checkpoint_match": true,
+      "order": [
+        "baseline",
+        "optimized"
+      ],
+      "results": {
+        "baseline": {
+          "births": 60,
+          "checkpoint_hashes": [
+            "a58415bfc25bb87916d488fc56f0a96c5cf59b39b29edeb416185910bad6ed39",
+            "1ff16ad076c98f59e3fd54c9e2d1d0e8f6de4b77a0cdd8ecacd5e13b0d86dd0d"
+          ],
+          "deaths": 0,
+          "invariant_errors": [],
+          "population": 124,
+          "seconds": 14.388315100004547,
+          "ticks_per_second": 20.850252299513873
+        },
+        "optimized": {
+          "births": 60,
+          "checkpoint_hashes": [
+            "a58415bfc25bb87916d488fc56f0a96c5cf59b39b29edeb416185910bad6ed39",
+            "1ff16ad076c98f59e3fd54c9e2d1d0e8f6de4b77a0cdd8ecacd5e13b0d86dd0d"
+          ],
+          "deaths": 0,
+          "invariant_errors": [],
+          "population": 124,
+          "seconds": 12.587983400000667,
+          "ticks_per_second": 23.832252590989604
+        }
+      },
+      "seed": 41,
+      "speedup": 1.1430198660735273
+    }
+  ],
+  "source_hashes": {
+    "C:/Users/paran/Documents/Codex/2026-10-04/i-x20/outputs/vikasa/tools/benchmark_spatial.py": "c2b8c299c59cb6acc01b6a1aefd63ebad9facad2fb3dd072795de69afb46aea0",
+    "src/evolution_sim/__init__.py": "384eda4b13ed0f6abe080a0e6c9e3cb8265d279dd7eeb4c2d544d3eb63dd0e86",
+    "src/evolution_sim/analytics/__init__.py": "3ff62e45fe5216cc134863313839cf149304b1b0b095f20a49309a084aed4d54",
+    "src/evolution_sim/analytics/metrics.py": "91964df5042e43ed4bf913baf0f556299388bafd1299547d48594052421dfd16",
+    "src/evolution_sim/analytics/trait_space.py": "1e3d1fdb762f535ba1bc0e3a870835526e217208d273d876843154a3a820e8a6",
+    "src/evolution_sim/bridge.py": "a992e944c56117407c0a43a90772b0735f7d3d8eacadfa060f09435a512f1f16",
+    "src/evolution_sim/cli.py": "d873ce11110f8a185421d34e832f4df6043257eb7cf8321c106d2eb555dcc0d0",
+    "src/evolution_sim/config.py": "4bcc3afc311798fa6c43e47ea86a5d736c9718bc19f660a481a80b7d25c3408c",
+    "src/evolution_sim/experiments/__init__.py": "dbe5f89ed9d20332264a55172562e71c9403144ed5b736f71fc5a0f00e965336",
+    "src/evolution_sim/experiments/charts.py": "aa4208f955fee66812b62acbfa9f8b42a041f8ac4587785550a5776e8fb02d34",
+    "src/evolution_sim/experiments/contrast.py": "ea86c7a8e122938452ce724b7ec391b6edd3016f6043b0e2f8950d9de81c01ff",
+    "src/evolution_sim/experiments/dashboard.py": "fa8a6b2d23cfdf46c36a459081914d777dbe5436d4c146eeb015ccfe26ca4f86",
+    "src/evolution_sim/experiments/runner.py": "54eab4e63e89f38a603c553bd69f503f18130ed6396da8fd9038b740e07b850c",
+    "src/evolution_sim/experiments/scenarios.py": "e9c4afdaf86dd6ae902680eaefb6689fbbdacc550c85c26580f2f302e9746e98",
+    "src/evolution_sim/io/__init__.py": "36e1e0ec77300edfb55650d9aaad565fc65579a93a43a7a8d6bcbe79f2699681",
+    "src/evolution_sim/io/checkpoints.py": "a02e19360236013d8650931689d1ee29cfb5eb86edc585fff695eef9b5e67d96",
+    "src/evolution_sim/io/export.py": "d438887a47358c6cc3caad79b1631f6aa2783bf6a66d8cf7f959ff26d7a1c4bd",
+    "src/evolution_sim/model/__init__.py": "1d2b198affb7ce3736367bd0aa46ce3559776b9dba1724d7f60ba9439bb3f182",
+    "src/evolution_sim/model/entities.py": "2ae7b6ef42e248e81fba1208c9c5be9b291aa0b68db9e7b51b88235d813fe715",
+    "src/evolution_sim/model/genetics.py": "a3b60a225f495b94e8036ee49f99a2901f85a8e1091123cf99c9d299bfef8b94",
+    "src/evolution_sim/model/genome.py": "cf21b006429e948553c201ab4859de1319cccdf609fbda8775b8adc694d8420c",
+    "src/evolution_sim/model/lineage.py": "2a83db679aae99d1adba2965bbeca4cae25998ccea8474d21e1a5fdaa10ba235",
+    "src/evolution_sim/model/math2d.py": "ec36df4a5b76ef7db82d1ee587353ed030ecc39f39e5f36530d9b6c89990fa69",
+    "src/evolution_sim/model/spatial.py": "57962eb5768ad072759af262612a333d5b6b346c1189c1d1797aa88bc0352b20",
+    "src/evolution_sim/model/temperament.py": "f30614613fab6b33177f2b3e7c6301d2d9c9ea73cd37c60b4460d8c881fe1b18",
+    "src/evolution_sim/shortcut.py": "e30926215ab4998a8d5d6ed52f3fd67684f76904bc6fd353dd2bffad18f8bc3f",
+    "src/evolution_sim/simulation/__init__.py": "e62bb866555e59fea884cf467b82251d82bd69cb1ecc1aac2e40185e2785287e",
+    "src/evolution_sim/simulation/behavior.py": "af60fa57d90a422bc3258d41613d2e4e62eb7563a81d7f0f14b94668d7c9873d",
+    "src/evolution_sim/simulation/culture.py": "ac87edadfbb698d6f4090956655132a613c86ff59f04ce9644c1e09c2d9914c4",
+    "src/evolution_sim/simulation/engine.py": "4749a3c8408688b625575dda63a534623b0d3343b2b49dff98a4c5f8a8a4ecf5",
+    "src/evolution_sim/simulation/environment.py": "b5f12e312e66d2111507009446ca73b8e93542f02d0919e7481542bef5220301",
+    "src/evolution_sim/simulation/snapshots.py": "80da8401eacb172e4c784bf76466425345126139a98b41b13feeb0c6e5f3b200",
+    "src/evolution_sim/ui/__init__.py": "d56723ac2b32b0c4ed76263a2cac3d19101ceaa2ab997f168b22dd7b74f4d255",
+    "src/evolution_sim/ui/app.py": "0635205856353084a61e351bbfb451898ece46ed89d46026cc784f0db61d3c99",
+    "src/evolution_sim/ui/charts.py": "311d5e4d0e4b92518c478b83370022e79c235c5303c04bf4dfe6aa2b7155b010",
+    "src/evolution_sim/ui/customization.py": "cac1e546fdf848d18cfdf4d7b45296aa105c97882f3c2e784fd2d5a214dd1eee",
+    "src/evolution_sim/ui/layout.py": "164003f7f172794a595b41f19794b9291bd19cc0490b67acb5709ff4b76c2055",
+    "src/evolution_sim/ui/renderer.py": "c1b48acf658274160da7173e711dba28a31f74e88f508ccc24b46a5e1efbd859",
+    "src/evolution_sim/ui/theme.py": "78a53186e5b5534ffaa7728f91e9510c51088f0f3efcfb074e973b22c32fc298",
+    "src/evolution_sim/ui/widgets.py": "7c21dc3a1ff98aeeeb7ed2b9760c2c443acd0a28220873ee97b61acadfa2f5d8"
+  },
+  "warmup": 150
+}
