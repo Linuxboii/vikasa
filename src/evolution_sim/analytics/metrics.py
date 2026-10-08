@@ -70,6 +70,12 @@ class MetricSample:
     founder_fraction: float | None = None
     juvenile_fraction: float | None = None
     mean_age: float | None = None
+    plant_energy: float | None = None
+    mean_water: float | None = None
+    biomass_fraction: float | None = None
+    grown_energy: float | None = None
+    harvested_energy: float | None = None
+    weather_loss: float | None = None
 
     def to_row(self) -> dict[str, float | int | None]:
         row: dict[str, float | int | None] = {
@@ -94,6 +100,12 @@ class MetricSample:
             "founder_fraction": self.founder_fraction,
             "juvenile_fraction": self.juvenile_fraction,
             "mean_age": self.mean_age,
+            "plant_energy": self.plant_energy,
+            "mean_water": self.mean_water,
+            "biomass_fraction": self.biomass_fraction,
+            "grown_energy": self.grown_energy,
+            "harvested_energy": self.harvested_energy,
+            "weather_loss": self.weather_loss,
         }
         for trait in (item.value for item in TRAITS):
             row[f"{trait}_mean"] = self.trait_mean[trait]
@@ -251,6 +263,9 @@ class MetricsRecorder:
             temperature=engine.environment.temperature,
             rainfall=engine.environment.rainfall,
             **self.development(engine),
+            **({key: engine.habitat.summary()[key] for key in
+                ("plant_energy", "mean_water", "biomass_fraction", "grown_energy",
+                 "harvested_energy", "weather_loss")} if engine.habitat is not None else {}),
         )
         self.samples.append(sample)
         return sample

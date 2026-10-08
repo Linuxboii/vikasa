@@ -47,6 +47,14 @@ func vertical_bounds() -> Vector2:
 	var high: float = ceilf(magnitude / scale) * scale
 	return Vector2(-high if signed_values else 0.0, high)
 
+func axis_label(value: float) -> String:
+	if normalized: return "%d" % roundi(value * 100)
+	if absf(value) >= 1000000: return "%.1fM" % (value / 1000000)
+	if absf(value) >= 10000: return "%.0fk" % (value / 1000)
+	if absf(value) >= 1000: return "%.1fk" % (value / 1000)
+	if signed_values: return "%.2f" % value
+	return "%.1f" % value if absf(value) < 5 else "%d" % roundi(value)
+
 func _draw() -> void:
 	var font := get_theme_default_font()
 	draw_string(font, Vector2(0, 14), heading, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, BiomeUI.INK)
@@ -57,7 +65,7 @@ func _draw() -> void:
 		var y := area.position.y + area.size.y * float(i) / 2.0
 		draw_line(Vector2(area.position.x, y), Vector2(area.end.x, y), Color("#93b2b51e"), 1)
 		var value := limits.y - float(i) / 2.0 * span
-		var label := "%.2f" % value if signed_values else ("%.1f" % value if not normalized and limits.y < 5 else "%d" % roundi(value * (100 if normalized else 1)))
+		var label := axis_label(value)
 		draw_string(font, Vector2(0, y + 4), label, HORIZONTAL_ALIGNMENT_LEFT, 28, 10, BiomeUI.MUTED)
 	if samples.is_empty():
 		draw_string(font, area.position + Vector2(8, 25), "Sampling the living world…", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, BiomeUI.MUTED)

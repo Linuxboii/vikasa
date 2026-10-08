@@ -73,3 +73,18 @@ def test_export_includes_inspectable_birth_cohorts_and_generation_depth(tiny_con
         creatures = list(csv.DictReader(stream))
     for creature in creatures:
         assert int(creature["generation"]) == engine.lineage.generation_of(int(creature["id"]))
+
+
+def test_export_contains_actual_spatial_field_and_balanced_budget(tiny_config, tmp_path):
+    from dataclasses import replace
+
+    from evolution_sim.config import EcologyConfig
+    engine = SimulationEngine(replace(tiny_config, ecology=EcologyConfig(enabled=True)), 4)
+    engine.step(10)
+    manifest = export_experiment(engine, tmp_path / "spatial")
+    path = manifest.root / "habitat.json"
+    assert path.exists(), "Export omitted the finite ecological state"
+    assert "habitat.json" in manifest.files
+    habitat = json.loads(path.read_text())
+    assert habitat["field"] == engine.habitat.to_dict()
+    assert abs(habitat["summary"]["biomass_balance_residual"]) < 1e-8

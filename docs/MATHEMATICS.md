@@ -1,5 +1,10 @@
 # Mathematics of Vikasa
 
+The optional spatial profile adds exact logistic plant growth, water-limited
+transpiration, conservative finite-grid transport and audited reservoir balances.
+See [Spatial Ecology](SPATIAL_ECOLOGY.md) for equations, stability bounds,
+hand-derived checks, dimensionless units and limits on scientific interpretation.
+
 This reference documents the executable model, not a biological law. Parameters are dimensionless/project-specific unless explicitly identified as ticks. The detailed caveats are in [SCIENTIFIC_MODEL.md](SCIENTIFIC_MODEL.md).
 
 ## Genome, inheritance and energy

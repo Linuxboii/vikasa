@@ -42,6 +42,15 @@ An unavailable action is excluded rather than assigned a competing fabricated sc
 
 ## Persistence and reproducibility
 
+The optional `HabitatField` owns bounded plant/water arrays and cumulative flux
+ledgers. It evolves independently of rendering and supplies energy for natural
+resource placement; low-density cells yield accurately sized partial patches.
+`SimulationEngine.add_food` records intentional external provisioning separately.
+The bridge publishes bounded grid observations and the Ecology tab exposes real
+histories and cell values. Checkpoint restoration validates arrays, immutable
+initialization totals, reservoir balances and external input records.
+See [spatial ecology equations and limitations](SPATIAL_ECOLOGY.md).
+
 The current checkpoint is format `vikasa`, **version 3**. It stores configuration, seed, tick, NumPy PCG64 state, entities, lineage, environment, culture, behavior/home-range state, metrics and counters. Saving writes a temporary sibling, flushes it, then atomically replaces the destination.
 
 The loader accepts **versions 1 and 2** and migrates them in memory to the current representation, supplying behavior/home-range defaults and deterministic home-radius migration where missing. Version 3 requires its new behavior/home fields and strict JSON integer IDs/references; unsupported versions and invalid invariants fail closed. Saving a migrated run writes v3; source files are not rewritten during loading.

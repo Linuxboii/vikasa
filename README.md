@@ -4,6 +4,11 @@
 
 [Compact-window screenshot](docs/images/research-evolution-compact.png). The observatory scrolls on smaller screens; unavailable legacy measurements are not plotted as zero.
 
+The [spatial ecology research profile](docs/SPATIAL_ECOLOGY.md) adds finite plant reserves,
+soil-water dynamics, an interactive cell map, and auditable natural/external food inputs.
+It is available through `--config config/spatial-biome.json`; the sustained showcase
+remains the default pending long-horizon validation of this new model.
+
 The research upgrade is underway: sustained replacement, age-dependent mortality,
 generational development and inspectable quantitative evolution are implemented.
 See [current evidence and the full remaining scope](docs/RESEARCH_STATUS.md).

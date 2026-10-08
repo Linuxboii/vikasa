@@ -20,7 +20,7 @@ from evolution_sim.model.temperament import Temperament
 from evolution_sim.simulation.behavior import ActionName, BehaviorState, InstinctVector
 from evolution_sim.simulation.culture import CultureLedger
 from evolution_sim.simulation.engine import SimulationEngine
-from evolution_sim.simulation.environment import EnvironmentState
+from evolution_sim.simulation.environment import EnvironmentState, HabitatField
 
 FORMAT = "vikasa"
 VERSION = 3
@@ -133,6 +133,9 @@ def checkpoint_payload(engine: SimulationEngine) -> dict[str, Any]:
         "recent_events": list(engine.recent_events),
         "metrics": [asdict(sample) for sample in engine.metrics.samples],
         "birth_cohorts": engine.metrics.birth_cohorts,
+        "habitat": engine.habitat.to_dict() if engine.habitat is not None else None,
+        "external_food_energy": engine.external_food_energy,
+        "interventions": engine.interventions,
         "next_creature_id": engine.next_creature_id,
         "next_resource_id": engine.next_resource_id,
         "spawn_accumulator": engine.spawn_accumulator,
@@ -318,6 +321,14 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
             raise CheckpointError("next_resource_id must exceed every saved resource ID")
         engine = SimulationEngine(config, seed=int(payload["seed"]))
         engine.tick = int(payload["tick"])
+        external_food = payload.get("external_food_energy", 0.)
+        if isinstance(external_food, bool) or not isinstance(external_food, (int, float)):
+            raise CheckpointError("External food energy must be a numeric input counter")
+        engine.external_food_energy = float(external_food)
+        records = payload.get("interventions", [])
+        if not isinstance(records, list) or not all(isinstance(entry, dict) for entry in records):
+            raise CheckpointError("Interventions must be an array of records")
+        engine.interventions = [dict(entry) for entry in records]
         engine.rng.bit_generator.state = payload["rng_state"]
         creatures = [
             _restore_creature(item, strict_v3=version == VERSION)
@@ -340,6 +351,12 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
             raise CheckpointError("Checkpoint contains duplicate resource IDs")
         engine.lineage = LineageStore.from_records(payload["lineage"])
         engine.environment = EnvironmentState.from_dict(payload["environment"])
+        if config.ecology.enabled:
+            engine.habitat = HabitatField.from_dict(
+                payload["habitat"], config.ecology, width=config.world.width,
+                height=config.world.height, boundary=config.world.boundary)
+        elif payload.get("habitat") is not None:
+            raise CheckpointError("Disabled ecology cannot contain an active habitat field")
         engine.culture = CultureLedger.from_dict(payload.get("culture"))
         engine.death_causes = {
             str(key): int(value) for key, value in payload.get("death_causes", {}).items()

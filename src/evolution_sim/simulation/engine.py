@@ -21,7 +21,7 @@ from evolution_sim.simulation.behavior import (
     BehaviorPerception,
 )
 from evolution_sim.simulation.culture import CultureLedger
-from evolution_sim.simulation.environment import EnvironmentState
+from evolution_sim.simulation.environment import EnvironmentState, HabitatField
 from evolution_sim.simulation.snapshots import (
     CreatureSnapshot,
     ResourceSnapshot,
@@ -50,6 +50,9 @@ class SimulationEngine:
         self.resources: dict[int, Resource] = {}
         self.lineage = LineageStore()
         self.environment = EnvironmentState()
+        self.habitat = (HabitatField(config.ecology, width=config.world.width,
+                                    height=config.world.height, boundary=config.world.boundary)
+                        if config.ecology.enabled else None)
         self.culture = CultureLedger()
         self.combat_events: list[dict[str, int | float | str]] = []
         self.recent_events: list[dict[str, int | str | None]] = []
@@ -57,6 +60,8 @@ class SimulationEngine:
         self.next_creature_id = 0
         self.next_resource_id = 0
         self.spawn_accumulator = 0.0
+        self.external_food_energy = 0.0
+        self.interventions: list[dict[str, int | float | str]] = []
         self.tick_births = 0
         self.tick_deaths = 0
         self.total_births = 0
@@ -107,22 +112,52 @@ class SimulationEngine:
             ),
         )
 
-    def _spawn_resource(self) -> None:
+    def _spawn_resource(self) -> bool:
         if len(self.resources) >= self.config.resources.maximum_count:
-            return
+            return False
+        energy = self.config.resources.energy_value
+        if self.habitat is not None:
+            harvest = self.habitat.harvest_patch(energy, self.rng)
+            if harvest is None:
+                return False
+            position, energy = harvest
+        else:
+            position = self._random_position()
         resource_id = self.next_resource_id
         self.next_resource_id += 1
         self.resources[resource_id] = Resource(
             resource_id,
-            self._random_position(),
-            self.config.resources.energy_value,
+            position,
+            energy,
         )
+        return True
 
     def step(self, count: int = 1) -> None:
         if not isinstance(count, int) or count < 0:
             raise ValueError("count must be a non-negative integer")
         for _ in range(count):
             self._step_once()
+
+    def add_food(self, position: np.ndarray, energy: float) -> None:
+        """Audited external provisioning, deliberately not plant photosynthesis."""
+        point = np.asarray(position, dtype=float)
+        if (point.shape != (2,) or not np.isfinite(point).all()
+                or not 0 <= point[0] <= self.config.world.width
+                or not 0 <= point[1] <= self.config.world.height):
+            raise ValueError("Food position must be finite and within the habitat")
+        if not math.isfinite(energy) or not 0 < energy <= self.config.energy.maximum:
+            raise ValueError("Food energy is outside the valid range")
+        if len(self.resources) >= self.config.resources.maximum_count:
+            raise ValueError("The configured food-patch limit has been reached")
+        cid = self.next_resource_id
+        self.resources[cid] = Resource(cid, point.copy(), energy)
+        self.next_resource_id += 1
+        self.external_food_energy += energy
+        self.interventions.append({"tick": self.tick, "kind": "external_food",
+                                   "energy": energy, "x": float(point[0]), "y": float(point[1])})
+        del self.interventions[:-256]
+        self.recent_events.append({"tick": self.tick, "kind": "food",
+            "text": f"External provisioning added {energy:g} food energy.", "creature_id": None})
 
     def _step_once(self) -> None:
         self.tick_births = 0
@@ -132,6 +167,8 @@ class SimulationEngine:
         for creature in self.creatures.values():
             creature.fight_wins_tick = 0
         self.environment.update(self.tick)
+        if self.habitat is not None:
+            self.habitat.step(self.environment)
         self._weather_resource_loss()
         self._regenerate_resources()
         resource_index = self._resource_index()
@@ -165,14 +202,15 @@ class SimulationEngine:
     def _regenerate_resources(self) -> None:
         self.spawn_accumulator += (
             self.config.resources.spawn_rate
-            * self.environment.food_multiplier
-            * self.environment.seasonal_food_multiplier
+            * (1.0 if self.habitat is not None else
+               self.environment.food_multiplier * self.environment.seasonal_food_multiplier)
         )
         spawn_count = int(self.spawn_accumulator)
         self.spawn_accumulator -= spawn_count
         available = self.config.resources.maximum_count - len(self.resources)
         for _ in range(min(spawn_count, max(0, available))):
-            self._spawn_resource()
+            if not self._spawn_resource():
+                break
 
     def _resource_index(self) -> SpatialHash:
         maximum_perception = self.config.genome.traits["perception"].maximum
@@ -840,4 +878,25 @@ class SimulationEngine:
             if not np.isfinite(resource.position).all() or not math.isfinite(resource.energy):
                 errors.append(f"resource {key} has non-finite state")
         errors.extend(self.lineage.validate())
+        if not math.isfinite(self.external_food_energy) or self.external_food_energy < 0:
+            errors.append("External food-energy input must be finite and non-negative")
+        retained_energy = 0.0
+        for entry in self.interventions:
+            try:
+                valid = (entry["kind"] == "external_food"
+                         and isinstance(entry["tick"], int) and not isinstance(entry["tick"], bool)
+                         and 0 <= entry["tick"] <= self.tick
+                         and math.isfinite(entry["energy"]) and entry["energy"] > 0
+                         and 0 <= entry["x"] <= width and 0 <= entry["y"] <= height)
+                retained_energy += entry["energy"]
+            except (KeyError, TypeError, ValueError):
+                valid = False
+            if not valid:
+                errors.append("Invalid external food intervention record")
+        if len(self.interventions) > 256 or retained_energy > self.external_food_energy + 1e-9:
+            errors.append("External food intervention history is inconsistent")
+        if self.habitat is not None:
+            errors.extend(self.habitat.audit())
+            if self.habitat.steps != self.tick:
+                errors.append("Habitat update count does not match engine tick")
         return errors

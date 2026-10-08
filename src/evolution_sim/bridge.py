@@ -290,7 +290,16 @@ class GodotSimulationServer:
                 },
                 "creatures": creatures,
                 "resources": resources,
+                "habitat": ({"summary": engine.habitat.summary(),
+                             "columns": engine.config.ecology.columns,
+                             "rows": engine.config.ecology.rows,
+                             "capacity": engine.config.ecology.capacity,
+                             "biomass": engine.habitat.biomass.tolist(),
+                             "water": engine.habitat.water.tolist()}
+                            if engine.habitat is not None else None),
                 "fights": list(engine.combat_events),
+                "external_food_energy": engine.external_food_energy,
+                "interventions": list(engine.interventions[-24:]),
                 "traditions": traditions,
                 "chronicle": chronicles,
                 "history": [sample.to_row() for sample in engine.metrics.samples[-240:]],
@@ -357,17 +366,10 @@ class GodotSimulationServer:
                     raise ValueError("the configured food-patch limit has been reached")
                 if energy <= 0.0 or energy > self.engine.config.energy.maximum:
                     raise ValueError("food energy is outside the valid range")
-                self.engine.next_resource_id += 1
-                from evolution_sim.model.entities import Resource
-
-                resource = Resource(
-                    self.engine.next_resource_id - 1,
-                    np.array(
-                        [x * self.engine.config.world.width, y * self.engine.config.world.height]
-                    ),
-                    energy,
-                )
-                self.engine.resources[resource.id] = resource
+                self.engine.add_food(
+                    np.array([x * self.engine.config.world.width,
+                              y * self.engine.config.world.height]),
+                    energy)
         else:
             raise ValueError("action must be pause, resume, restart, speed, step, weather, or food")
         self._published_state = self._build_state()
