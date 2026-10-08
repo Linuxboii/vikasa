@@ -1,5 +1,9 @@
 # Scientific model
 
+The [trait geometry export](TRAIT_GEOMETRY.md) measures joint variation among
+living inherited scalar traits. It is not an additive genetic G matrix,
+heritability estimate, multilocus mechanism or causal adaptation test.
+
 For the optional spatial plant/water research profile, see
 [Spatial Ecology](SPATIAL_ECOLOGY.md). Its finite field supplies natural food
 energy and records photosynthesis, water flows and harvests explicitly; it does

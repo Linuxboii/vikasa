@@ -190,6 +190,15 @@ Validate a config, run one scenario, run seeded replicates, or perform a long in
 
 All commands accept `--help`. Scenario/config files are the protocol; use matched settings and multiple seeds before interpreting a treatment. Read [experiment recipes](docs/EXPERIMENTS.md) and [the demonstration walkthrough](docs/DEMO_SCRIPT.md).
 
+## Individual variation, not only averages
+
+Exports now include hashed `trait-space.json` and `trait_space.png`: individuals
+colored by generation, six-trait correlations and the PCA variance spectrum.
+These are export-time snapshots, not a live Godot panel. See
+[commands and mathematical interpretation](docs/TRAIT_GEOMETRY.md).
+
+![Inherited trait geometry, showcase seed 2026 at tick 800](docs/images/trait-geometry.png)
+
 ## Limitations
 
 Ticks have no calibrated real-time meaning. Space is two-dimensional in the engine even when the renderer presents terrain in 3D. There is no food web, sex differentiation, genetic drift calibration, explicit disease transmission, hydrology, learned language, or validated real-species parameterization. Combat, starvation, inheritance, environment, and culture are intentionally simplified rules; plausible-looking animation does not validate them. A belief group may arise through the implemented cue/ritual rules, but users should not interpret that as the simulation independently developing human-like religion.
