@@ -94,6 +94,15 @@ There is no causal ablation claim for this multi-parameter showcase change.
 
 ## Full requested upgrade remains active
 
+The optional spatial profile now has a [source-verified 6,000-tick report](results/spatial-biome-study-6000-2026-10-08.json):
+seeds 2026/7/41 finished with populations 131/130/129, births 448/374/362,
+deaths 381/308/297 and deepest living generations 16/11/12. No recorded invariant
+failures occurred, and no rescue or restart was used. Survival uncertainty remains
+wide (95% Wilson interval [0.4385, 1.0000]); these selected seeds are exploratory.
+The Ecology tab now includes reservoir graphs and a cell-level plant/water map.
+This result does not replace the longer showcase study or establish a controlled
+weather effect, indefinite persistence or empirically meaningful adaptation.
+
 | Research dimension | Required end state | Current evidence / gap |
 |---|---|---|
 | Sustained development | Long-horizon replicated runs with genuine reproduction, generational turnover and transparent extinction risk | 6,000-tick regression passes and three 12,000-tick probes persist; larger predeclared seed-set/horizon and sensitivity analysis still needed |
