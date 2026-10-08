@@ -9,6 +9,13 @@ soil-water dynamics, an interactive cell map, and auditable natural/external foo
 It is available through `--config config/spatial-biome.json`; the sustained showcase
 remains the default pending long-horizon validation of this new model.
 
+![Measured plant reserves, soil water and interactive habitat map](docs/images/spatial-ecology.png)
+
+The [6,000-tick spatial study](docs/results/spatial-biome-study-6000-2026-10-08.json)
+recorded deepest living ancestral generations of 11–16 across three selected seeds, with 297–381 deaths
+per run and no recorded invariant failures. This is finite-horizon exploratory
+evidence, not a guarantee of survival or proof of adaptation.
+
 The research upgrade is underway: sustained replacement, age-dependent mortality,
 generational development and inspectable quantitative evolution are implemented.
 See [current evidence and the full remaining scope](docs/RESEARCH_STATUS.md).

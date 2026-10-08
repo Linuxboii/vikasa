@@ -97,6 +97,33 @@ measurements; absent legacy measurements remain unavailable.
 
 ## Evidence and limitations
 
+The corrected living profile was tested for 6,000 ticks with seeds 2026, 7 and
+41, without rescue or restart. The [complete report](results/spatial-biome-study-6000-2026-10-08.json)
+includes each run's sampled trajectory, aggregated death causes, invariant-failure
+summary and source/config hashes.
+Its Python source hash matches the published spatial implementation.
+
+| Seed | Living at tick 6,000 | Births | Deaths | Deepest living generation |
+|---|---:|---:|---:|---:|
+| 2026 | 131 | 448 | 381 | 16 |
+| 7 | 130 | 374 | 308 | 11 |
+| 41 | 129 | 362 | 297 | 12 |
+
+All three runs survived with no recorded invariant failures. Deaths included
+starvation, senescence and fight injuries; stable population does not mean that
+individual animals are immortal. The 95% Wilson survival interval is
+[0.4385, 1.0000], conditional on independent seed outcomes. These three selected
+exploratory seeds do not establish indefinite survival, adaptation or a causal
+weather effect. A longer horizon and controlled weather comparisons remain open.
+
+Reproduce this exact protocol from the repository root:
+
+```powershell
+.\.venv\Scripts\python.exe -m evolution_sim.cli study --config config/spatial-biome.json --seeds 2026 7 41 --ticks 6000 --sample-interval 500 --output exports/spatial-biome-study-6000.json
+```
+
+On macOS/Linux use `.venv/bin/python` in place of the Windows interpreter path.
+
 The first seed-2026, 1,000-tick pilot had 175 living animals, 130 births and living
 generation depth 5, with no invariant failures. That short exploratory run does
 not establish long-term persistence, adaptation or resistance to perturbations.
