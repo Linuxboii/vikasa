@@ -178,6 +178,13 @@ and [the causal-analysis limitations](https://pmc.ncbi.nlm.nih.gov/articles/PMC7
 
 ## Replicate survival uncertainty
 
+For controlled multi-condition comparisons, see the [seed-blocked experiment derivation](CONTROLLED_EXPERIMENTS.md#mathematics):
+exact per-tick population integration, treatment-minus-control paired differences,
+unbiased between-seed variance, analytical standard error and whole-pair bootstrap
+percentile intervals. Ribbons on trajectory plots are between-seed quartiles, not
+intervals for the mean. A single seed or unavailable outcome cannot fabricate
+uncertainty; execution/invariant failures invalidate the affected comparisons.
+
 For `k` nonextinct runs out of `n` distinct seeds at a declared horizon, the study
 reports `p=k/n` and a Wilson score interval, with `z=1.959963984540054`:
 

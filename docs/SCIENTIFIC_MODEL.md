@@ -73,6 +73,13 @@ Repeated shared cues (season turns, drought, heat, storms, or victories) can acc
 
 ## Determinism and evidence
 
+The `contrast` laboratory predeclares seed blocks, conditions and interventions,
+keeps each run to the same horizon even after extinction, and reports paired
+endpoint/integrated outcomes with exploratory uncertainty. A configured drought
+or storm is a bundle of modeled effects, not an isolated rainfall coefficient or
+empirical causal result. Failed runs remain visible and invalidate affected
+comparisons; they are not omitted as inconvenient seeds. See [the protocol and mathematical limits](CONTROLLED_EXPERIMENTS.md).
+
 Above 40 creatures, intent decisions are staggered by `(tick + creature_id) % 6` after the initial tick. Movement and vital processes still advance each tick. Combat opportunities are evaluated every four ticks. These schedules are deterministic and apply to GUI and headless runs equally. The changed coefficients/schedules change trajectories relative to older software versions even for the same seed.
 
 One NumPy PCG64 generator owns stochastic outcomes. Stable IDs order updates and ties; rendering reads snapshots only. Checkpoint version 3 stores RNG state and fractional resource-spawn remainder and can continue bit-for-bit on the same software/numerical platform. Loader migrations from versions 1 and 2 are in-memory. See [architecture and compatibility](ARCHITECTURE.md#persistence-and-reproducibility).
