@@ -98,6 +98,8 @@ def export_experiment(engine: SimulationEngine, directory: str | Path) -> Export
         {
             "scheduled": [event.to_dict() for event in engine.environment.events],
             "history": engine.environment.history,
+            "external_food_energy": engine.external_food_energy,
+            "interventions": engine.interventions,
         },
     )
     _write_json(
@@ -111,6 +113,10 @@ def export_experiment(engine: SimulationEngine, directory: str | Path) -> Export
         },
     )
     final_sample = metric_rows[-1]
+    if engine.habitat is not None:
+        _write_json(root / "habitat.json", {"field": engine.habitat.to_dict(),
+                                          "summary": engine.habitat.summary(),
+                                          "units": "illustrative plant energy and bucket water"})
     _write_json(
         root / "summary.json",
         {
@@ -137,4 +143,6 @@ def export_experiment(engine: SimulationEngine, directory: str | Path) -> Export
         "summary.json",
         "evolution.json",
     ]
+    if engine.habitat is not None:
+        names.append("habitat.json")
     return ExportManifest(root=root, files={name: _sha256(root / name) for name in names})

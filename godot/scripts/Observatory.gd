@@ -10,6 +10,7 @@ var sample_label: Label
 var latest: Dictionary = {}
 var stats: Dictionary = {}
 var development_heading: Label
+var habitat_map: Control
 
 func _ready() -> void:
 	name = "Observatory"
@@ -43,8 +44,8 @@ func _ready() -> void:
 	tab_row.columns = 2
 	tab_row.add_theme_constant_override("separation", 4)
 	content.add_child(tab_row)
-	for i in range(4):
-		var button := BiomeUI.button(["Population", "Survival", "Genetics", "Evolution"][i])
+	for i in range(5):
+		var button := BiomeUI.button(["Population", "Survival", "Genetics", "Evolution", "Ecology"][i])
 		button.add_theme_font_size_override("font_size", 12)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.toggle_mode = true
@@ -55,6 +56,8 @@ func _ready() -> void:
 		var graph = Chart.new()
 		content.add_child(graph)
 		graphs.append(graph)
+	habitat_map = preload("res://scripts/HabitatMap.gd").new()
+	content.add_child(habitat_map)
 	pressure = BiomeUI.paragraph("Seasonal conditions", 13, BiomeUI.ACCENT)
 	content.add_child(pressure)
 	vitality = BiomeUI.paragraph("", 12)
@@ -77,6 +80,7 @@ func _process(_delta: float) -> void:
 	if dock: offset_bottom = dock.offset_top - 12
 
 func _configure() -> void:
+	habitat_map.visible = tab == 4
 	for i in tabs.size(): tabs[i].set_pressed_no_signal(i == tab)
 	var mint := Color("#7be0c2")
 	var gold := Color("#e9c786")
@@ -93,13 +97,18 @@ func _configure() -> void:
 		graphs[0].configure("Inherited size & speed · means", [{"key": "size_mean", "label": "Size", "color": gold}, {"key": "speed_mean", "label": "Speed", "color": mint}])
 		graphs[1].configure("Generational development", [{"key": "max_generation", "label": "Deepest", "color": gold}, {"key": "mean_generation", "label": "Mean", "color": mint}])
 		graphs[2].configure("Genetic diversity · normalized", [{"key": "diversity", "label": "Diversity", "color": gold}], true)
-	else:
+	elif tab == 3:
 		graphs[0].configure("Generational development", [{"key": "max_generation", "label": "Deepest", "color": gold}, {"key": "mean_generation", "label": "Mean", "color": mint}])
 		graphs[1].configure("Size · birth-cohort Price equation", [{"key": "size_selection", "label": "Selection", "color": mint}, {"key": "size_transmission", "label": "Transmission", "color": coral}], false, true)
 		graphs[2].configure("Population renewal · %", [{"key": "founder_fraction", "label": "Founders", "color": gold}, {"key": "juvenile_fraction", "label": "Young", "color": mint}], true)
+	else:
+		graphs[0].configure("Living habitat · %", [{"key": "biomass_fraction", "label": "Plants", "color": mint}, {"key": "mean_water", "label": "Water", "color": gold}], true)
+		graphs[1].configure("Finite plant-energy reservoir", [{"key": "plant_energy", "label": "Energy", "color": mint}])
+		graphs[2].configure("Plant budget · cumulative energy", [{"key": "grown_energy", "label": "Growth", "color": mint}, {"key": "harvested_energy", "label": "Food", "color": gold}, {"key": "weather_loss", "label": "Loss", "color": coral}])
 
 func set_state(state: Dictionary) -> void:
 	latest = state
+	habitat_map.set_habitat(state.get("habitat"))
 	for key in stats: stats[key].text = str(int(state.get(key, 0)))
 	for graph in graphs: graph.set_samples(state.get("history", []))
 	if tab == 3:
@@ -116,6 +125,15 @@ func set_state(state: Dictionary) -> void:
 	if not development.is_empty():
 		vitality.text += "\nGeneration %d · mean %.1f · founders %.0f%%" % [int(development.get("max_generation", 0)), float(development.get("mean_generation", 0)), float(development.get("founder_fraction", 0)) * 100]
 		vitality.text += "\nYoung %.0f%% · mean age %.0f ticks" % [float(development.get("juvenile_fraction", 0)) * 100, float(development.get("mean_age", 0))]
+	if tab == 4:
+		var habitat = state.get("habitat")
+		if habitat is Dictionary:
+			var balance: Dictionary = habitat.get("summary", {})
+			vitality.text += "\nPlant energy %.0f · soil water %.0f%%" % [float(balance.get("plant_energy", 0)), float(balance.get("mean_water", 0)) * 100]
+			vitality.text += "\nExternal food %.0f energy · recorded interventions" % float(state.get("external_food_energy", 0))
+			sample_label.text = "Finite reservoir · energy-balance residual %.8f" % float(balance.get("biomass_balance_residual", 0))
+		else:
+			sample_label.text = "Legacy patch model · select config/spatial-biome.json for soil and plant dynamics"
 	var causes: Dictionary = state.get("death_causes", {})
 	var loss: Array[String] = []
 	for cause in causes: loss.append("%s %d" % [str(cause).capitalize(), int(causes[cause])])

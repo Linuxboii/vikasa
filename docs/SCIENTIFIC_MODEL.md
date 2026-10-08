@@ -1,5 +1,11 @@
 # Scientific model
 
+For the optional spatial plant/water research profile, see
+[Spatial Ecology](SPATIAL_ECOLOGY.md). Its finite field supplies natural food
+energy and records photosynthesis, water flows and harvests explicitly; it does
+not turn the existing global hazards into a localized weather or disease model.
+The sustained showcase and older configurations retain their patch-spawn model.
+
 ## Scope
 
 Vikasa is an explanatory artificial-life model for exploring variation, resource pressure, behavior, inheritance and survival. It is not calibrated to a real species or a validated ecological forecast. Each tick is an abstract step with no fixed conversion to seconds, days, or generations.

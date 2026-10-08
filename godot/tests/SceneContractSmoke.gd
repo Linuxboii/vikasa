@@ -78,7 +78,7 @@ func _run() -> void:
 	main._on_state(running)
 	check(hud.status.text == "Running" and hud.step_button.disabled and hud.speed_buttons[48].button_pressed, "Running/speed state mismatch")
 	check(hud.observatory.visible and hud.observatory.graphs.size() == 3, "Live observatory graphs missing")
-	check(hud.observatory.tabs.size() == 4, "Evolution navigation missing")
+	check(hud.observatory.tabs.size() == 5, "Ecology navigation missing")
 	var evolution_state: Dictionary = state.duplicate(true)
 	evolution_state.development = {"max_generation": 7, "mean_generation": 4.2, "founder_fraction": 0.1, "juvenile_fraction": 0.2, "mean_age": 900}
 	evolution_state.birth_history = [{"tick": 200, "size_selection": -1.4, "size_transmission": 1.1}]
@@ -96,6 +96,26 @@ func _run() -> void:
 	check(irregular.hover_index == 0, "Irregular history hover selected wrong time")
 	irregular.set_samples([{"tick": 0, "size_selection": null}, {"tick": 10, "size_selection": -1.4}])
 	check(irregular.vertical_bounds() == Vector2(-2, 2), "Unavailable history must not distort bounds")
+	check(irregular.has_method("axis_label"), "Compact numeric axes missing")
+	if irregular.has_method("axis_label"):
+		check(irregular.axis_label(30000) == "30k", "Large axis values must not be truncated")
+	evolution_state.habitat = {"summary": {"plant_energy": 12500, "mean_water": 0.6, "biomass_balance_residual": 0}, "columns": 2, "rows": 1, "capacity": 100, "biomass": [[50, 80]], "water": [[0.2, 0.6]]}
+	evolution_state.external_food_energy = 30
+	hud.observatory.tab = 4
+	hud.observatory._configure()
+	hud.observatory.set_state(evolution_state)
+	check(hud.observatory.vitality.text.contains("12500"), "Real habitat energy not explained")
+	check(hud.observatory.vitality.text.contains("External food 30"), "Provisioning must not be presented as natural growth")
+	check(hud.observatory.graphs[0].series[0].key == "biomass_fraction", "Ecology graph missing")
+	var habitat_map = hud.observatory.habitat_map
+	check(habitat_map != null, "Spatial habitat map missing")
+	if habitat_map != null:
+		motion.position = Vector2(10, 40)
+		habitat_map._gui_input(motion)
+		check(habitat_map.tooltip_text.contains("50.0") and habitat_map.tooltip_text.contains("20%"), "Habitat cell tooltip must show observed biomass and moisture")
+		evolution_state.habitat.biomass[0][0] = 45
+		habitat_map.set_habitat(evolution_state.habitat)
+		check(habitat_map.tooltip_text.contains("45.0"), "Stationary cell hover must survive live updates")
 	hud.observatory.tab = 0
 	hud.observatory._configure()
 	main._on_state(state)

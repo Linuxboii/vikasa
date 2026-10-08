@@ -97,7 +97,7 @@ There is no causal ablation claim for this multi-parameter showcase change.
 | Research dimension | Required end state | Current evidence / gap |
 |---|---|---|
 | Sustained development | Long-horizon replicated runs with genuine reproduction, generational turnover and transparent extinction risk | 6,000-tick regression passes and three 12,000-tick probes persist; larger predeclared seed-set/horizon and sensitivity analysis still needed |
-| Mechanistic ecology | Spatial renewable biomass, water/nutrients, localized exposure, refuges, resource competition and explicit disease transmission | Current global weather/patch-spawn model remains simplified |
+| Mechanistic ecology | Spatial renewable biomass, water/nutrients, localized exposure, refuges, resource competition and explicit disease transmission | Optional spatial plant/water field, finite natural food transfer and audited interventions implemented; nutrient cycles, local hazards/refuges and disease transmission still needed |
 | Quantitative genetics | Inspectable inheritance, trait covariance, constrained trade-offs, plasticity and measurements distinguishing drift, selection and transmission | Six inherited scalar traits and exact birth-event decomposition; multilocus/covariance mechanisms still needed |
 | Behavioral development | Energy-budget lifecycle, learned local information and defensible social/cultural transmission | Existing fixed utility behavior/care remains; learning and richer lifecycle mechanisms still needed |
 | Scientific visualization | Lineage exploration, developmental life stages, ecological heatmaps, trait distributions, historical comparisons and clear controls | Generation/Price graphs implemented; deeper exploration and spatial overlays still needed |

@@ -169,6 +169,42 @@ class DemographyConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class EcologyConfig:
+    """Bounded dimensionless plant-water dynamics; disabled for legacy models."""
+
+    enabled: bool = False
+    columns: int = 24
+    rows: int = 16
+    capacity: float = 100.0
+    initial_fraction: float = 0.65
+    growth_rate: float = 0.006
+    rainfall_rate: float = 0.004
+    evaporation_rate: float = 0.002
+    water_diffusion: float = 0.06
+    biomass_diffusion: float = 0.008
+    water_half_saturation: float = 0.25
+    transpiration_rate: float = 0.03
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.enabled, bool):
+            raise ConfigError("ecology.enabled must be boolean")
+        for name in ("columns", "rows"):
+            value = _integer(getattr(self, name), f"ecology.{name}")
+            if value > 64:
+                raise ConfigError(f"ecology.{name} must not exceed 64")
+            object.__setattr__(self, name, value)
+        if _number(self.capacity, "ecology.capacity", minimum=0.001) > 1_000_000:
+            raise ConfigError("ecology.capacity must not exceed 1000000 energy units per cell")
+        for name in ("initial_fraction", "growth_rate", "rainfall_rate", "evaporation_rate",
+                     "water_half_saturation", "transpiration_rate"):
+            if _number(getattr(self, name), f"ecology.{name}", minimum=0) > 1:
+                raise ConfigError(f"ecology.{name} must not exceed 1")
+        for name in ("water_diffusion", "biomass_diffusion"):
+            if _number(getattr(self, name), f"ecology.{name}", minimum=0) > 0.25:
+                raise ConfigError(f"ecology.{name} exceeds the explicit diffusion stability limit")
+
+
+@dataclass(frozen=True, slots=True)
 class SimulationConfig:
     world: WorldConfig
     genome: GenomeConfig
@@ -181,6 +217,7 @@ class SimulationConfig:
     wander_change_probability: float
     behavior: BehaviorConfig = field(default_factory=BehaviorConfig)
     demography: DemographyConfig = field(default_factory=DemographyConfig)
+    ecology: EcologyConfig = field(default_factory=EcologyConfig)
 
     ROOT_KEYS: ClassVar[set[str]] = {
         "world",
@@ -194,6 +231,7 @@ class SimulationConfig:
         "wander_change_probability",
         "behavior",
         "demography",
+        "ecology",
     }
 
     @classmethod
@@ -208,7 +246,7 @@ class SimulationConfig:
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> SimulationConfig:
         data = _mapping(raw, "config")
-        _keys(data, cls.ROOT_KEYS, "", optional={"behavior", "demography"})
+        _keys(data, cls.ROOT_KEYS, "", optional={"behavior", "demography", "ecology"})
 
         world_data = _mapping(data["world"], "world")
         _keys(world_data, {"width", "height", "boundary"}, "world")
@@ -319,6 +357,10 @@ class SimulationConfig:
         demography_keys = set(DemographyConfig.__dataclass_fields__)
         _keys(demography_data, demography_keys, "demography", optional=demography_keys)
         demography = DemographyConfig(**demography_data)
+        ecology_data = _mapping(data.get("ecology", {}), "ecology")
+        ecology_keys = set(EcologyConfig.__dataclass_fields__)
+        _keys(ecology_data, ecology_keys, "ecology", optional=ecology_keys)
+        ecology = EcologyConfig(**ecology_data)
 
         return cls(
             world=world,
@@ -332,6 +374,7 @@ class SimulationConfig:
             wander_change_probability=wander,
             behavior=behavior,
             demography=demography,
+            ecology=ecology,
         )
 
     def to_dict(self) -> dict[str, Any]:
