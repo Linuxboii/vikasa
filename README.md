@@ -20,6 +20,25 @@ The research upgrade is underway: sustained replacement, age-dependent mortality
 generational development and inspectable quantitative evolution are implemented.
 See [current evidence and the full remaining scope](docs/RESEARCH_STATUS.md).
 
+The [controlled experiment laboratory](docs/CONTROLLED_EXPERIMENTS.md) compares
+baseline, drought and storm conditions across complete seed blocks. It exports an
+offline interactive viewer with development curves, paired effects, uncertainty,
+every replicate and inspectable provenance. Run the preview from the repository root:
+
+```powershell
+.\.venv\Scripts\python.exe -m evolution_sim.cli contrast --protocol experiments/weather-contrast-preview.json --output exports/weather-preview
+Start-Process (Resolve-Path exports/weather-preview/index.html).Path
+```
+
+Use a new output directory for each run; on macOS/Linux use `.venv/bin/python`
+and the platform opening commands in the guide. This observer does not reset the
+separately running 3D world or silently discard extinct/failed seeds.
+
+[Measured nine-run weather preview](docs/results/weather-laboratory-2026-10-08/report.json):
+baseline finished with 160–175 living animals; drought with 22–24; the configured
+severe storm caused extinction at ticks 348–370. These are short-horizon model
+counterfactuals, not empirical validation. [See the actual interactive viewer screenshot](docs/images/controlled-experiments.jpg).
+
 Vikasa is a deterministic artificial-life sandbox. Watch small wild creatures forage, rest, flee, seek mates, care for young, patrol a home range, and sometimes challenge a rival. Their decisions emerge from changing needs and local opportunities; the interface exposes the action and its reason so the habitat stays readable rather than becoming a wall of statistics.
 
 ![Live Observatory: population, life/death and energy histories](docs/images/presentation-overview.png)

@@ -1,0 +1,20 @@
+{
+  "name": "Replicated weather perturbation study",
+  "description": "A predeclared model counterfactual study of seasonal development, drought and storm exposure across eight seed blocks. This experiment measures the complete configured weather bundle, not a single isolated rainfall mechanism.",
+  "config": "../config/spatial-biome.json",
+  "control": "baseline",
+  "seeds": [2026, 7, 41, 73, 109, 251, 503, 997],
+  "ticks": 3000,
+  "sample_interval": 50,
+  "bootstrap_seed": 271828,
+  "bootstrap_samples": 9999,
+  "arms": [
+    {"id": "baseline", "label": "Seasonal baseline", "overrides": {}, "events": []},
+    {"id": "drought", "label": "Drought then recovery", "overrides": {},
+     "events": [{"kind": "drought", "start_tick": 500, "duration": 700, "intensity": 0.25,
+                 "label": "Reduced rainfall and productivity"}]},
+    {"id": "storm", "label": "Storm then recovery", "overrides": {},
+     "events": [{"kind": "storm", "start_tick": 500, "duration": 240, "intensity": 1.8,
+                 "label": "Movement cost and exposure"}]}
+  ]
+}

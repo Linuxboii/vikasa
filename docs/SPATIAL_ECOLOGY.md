@@ -101,7 +101,8 @@ The corrected living profile was tested for 6,000 ticks with seeds 2026, 7 and
 41, without rescue or restart. The [complete report](results/spatial-biome-study-6000-2026-10-08.json)
 includes each run's sampled trajectory, aggregated death causes, invariant-failure
 summary and source/config hashes.
-Its Python source hash matches the published spatial implementation.
+Its Python source hash matches the spatial implementation at commit `c9e0ab6`
+(unchanged in the documentation-only commit `003d929`), not later laboratory code.
 
 | Seed | Living at tick 6,000 | Births | Deaths | Deepest living generation |
 |---|---:|---:|---:|---:|

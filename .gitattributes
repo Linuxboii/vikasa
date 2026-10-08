@@ -1,0 +1,4 @@
+# Frozen evidence manifests hash exact bytes; preserve LF on every platform.
+docs/results/**/report.json text eol=lf
+docs/results/**/index.html text eol=lf
+docs/results/**/manifest.json text eol=lf

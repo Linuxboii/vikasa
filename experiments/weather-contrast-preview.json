@@ -1,0 +1,20 @@
+{
+  "name": "Weather, survival and recovery",
+  "description": "An exploratory short-horizon comparison of a seasonal biome, drought and storm exposure. Every condition uses the same three initial seed labels; the viewer retains every replicate, including extinction.",
+  "config": "../config/spatial-biome.json",
+  "control": "baseline",
+  "seeds": [2026, 7, 41],
+  "ticks": 800,
+  "sample_interval": 20,
+  "bootstrap_seed": 271828,
+  "bootstrap_samples": 4096,
+  "arms": [
+    {"id": "baseline", "label": "Seasonal baseline", "overrides": {}, "events": []},
+    {"id": "drought", "label": "Drought then recovery", "overrides": {},
+     "events": [{"kind": "drought", "start_tick": 160, "duration": 400, "intensity": 0.25,
+                 "label": "Reduced rainfall and productivity"}]},
+    {"id": "storm", "label": "Storm then recovery", "overrides": {},
+     "events": [{"kind": "storm", "start_tick": 160, "duration": 240, "intensity": 1.8,
+                 "label": "Movement cost and exposure"}]}
+  ]
+}

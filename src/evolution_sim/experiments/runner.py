@@ -15,6 +15,9 @@ import numpy as np
 
 from evolution_sim.config import SimulationConfig
 from evolution_sim.experiments.charts import export_charts
+from evolution_sim.experiments.contrast import ContrastProtocol as ContrastProtocol
+from evolution_sim.experiments.contrast import paired_effect_statistics as paired_effect_statistics
+from evolution_sim.experiments.contrast import run_contrast as run_contrast
 from evolution_sim.experiments.scenarios import ScenarioError, deep_merge, load_json
 from evolution_sim.io.export import ExportManifest, export_experiment
 from evolution_sim.simulation.engine import SimulationEngine

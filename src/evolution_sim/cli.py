@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import sys
 from collections.abc import Sequence
@@ -10,8 +11,10 @@ from pathlib import Path
 
 from evolution_sim.config import ConfigError, SimulationConfig
 from evolution_sim.experiments.runner import (
+    ContrastProtocol,
     ExperimentSpec,
     run_batch,
+    run_contrast,
     run_development_study,
     run_experiment,
     run_stress,
@@ -47,6 +50,11 @@ def build_parser() -> argparse.ArgumentParser:
     study.add_argument("--ticks", type=int, default=12_000)
     study.add_argument("--sample-interval", type=int, default=500)
     study.add_argument("--output", type=Path, required=True)
+
+    contrast = commands.add_parser("contrast", help="Compare predeclared seed-blocked conditions")
+    contrast.add_argument("--protocol", type=Path, required=True)
+    contrast.add_argument("--output", type=Path, required=True,
+                          help="New evidence directory containing JSON and an offline viewer")
 
     stress = commands.add_parser("stress", help="Run invariant-audited headless ticks")
     stress.add_argument("--config", type=Path, required=True)
@@ -108,6 +116,40 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"Study: {aggregate['survivors']}/{aggregate['replicates']} survived; "
                   f"report={args.output}")
             return 1 if aggregate["invariant_failure_replicates"] else 0
+        if args.command == "contrast":
+            from evolution_sim.experiments.dashboard import render_dashboard
+
+            if args.output.exists():
+                raise ValueError("Evidence directory already exists; choose a new output directory")
+            protocol = ContrastProtocol.from_json(args.protocol)
+            # mkdir is an exclusive claim, not a check-then-overwrite promise.
+            args.output.mkdir(parents=True, exist_ok=False)
+            marker = args.output / "INCOMPLETE.txt"
+            marker.write_text("Run in progress or interrupted. Only a verified manifest certifies "
+                              "a complete package. Choose a new directory to rerun.\n",
+                              encoding="utf-8")
+
+            def progress(row):
+                print(f"Run {row['completed_runs']}/{row['total_runs']}: "
+                      f"seed={row['seed']} arm={row['arm']} {row['status']}", flush=True)
+
+            report = run_contrast(protocol, progress=progress)
+            artifacts = {"report.json": json.dumps(report, indent=2, sort_keys=True,
+                                                     allow_nan=False) + "\n",
+                         "index.html": render_dashboard(report)}
+            for filename, content in artifacts.items():
+                with (args.output / filename).open("x", encoding="utf-8", newline="\n") as handle:
+                    handle.write(content)
+            manifest = {"schema": "vikasa-contrast-package-v1",
+                        "sha256": {name: hashlib.sha256(content.encode("utf-8")).hexdigest()
+                                   for name, content in artifacts.items()}}
+            with (args.output / "manifest.json").open("x", encoding="utf-8",
+                                                      newline="\n") as handle:
+                handle.write(json.dumps(manifest, indent=2) + "\n")
+            marker.unlink()
+            print(f"Compared {len(report['replicates'])} runs; viewer={args.output / 'index.html'}")
+            return 1 if (report["invariant_failure_replicates"]
+                         or report["execution_failure_replicates"]) else 0
         if args.command == "stress":
             report = run_stress(
                 SimulationConfig.from_json(args.config),

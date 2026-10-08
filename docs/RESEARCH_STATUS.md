@@ -94,6 +94,19 @@ There is no causal ablation claim for this multi-parameter showcase change.
 
 ## Full requested upgrade remains active
 
+The [controlled experiment laboratory](CONTROLLED_EXPERIMENTS.md) now supports
+predeclared seed-blocked conditions, exact per-tick population integrals, retained
+failures/extinctions, paired uncertainty and a portable interactive evidence viewer.
+The larger eight-seed weather protocol is provided for prospective execution;
+providing that protocol is not evidence that the study has been completed.
+Mechanism-isolating ablations, sensitivity analysis and empirical validation remain open.
+
+The archived [800-tick weather preview](results/weather-laboratory-2026-10-08/report.json)
+has nine completed runs, zero recorded failures, baseline populations 160–175,
+drought populations 22–24 and storm extinction at ticks 348–370. This establishes
+a measured response to the configured weather bundles in these three selected
+seed blocks; it does not validate species-level effects or isolate rainfall.
+
 The optional spatial profile now has a [source-verified 6,000-tick report](results/spatial-biome-study-6000-2026-10-08.json):
 seeds 2026/7/41 finished with populations 131/130/129, births 448/374/362,
 deaths 381/308/297 and deepest living generations 16/11/12. No recorded invariant
@@ -110,7 +123,7 @@ weather effect, indefinite persistence or empirically meaningful adaptation.
 | Quantitative genetics | Inspectable inheritance, trait covariance, constrained trade-offs, plasticity and measurements distinguishing drift, selection and transmission | Six inherited scalar traits and exact birth-event decomposition; multilocus/covariance mechanisms still needed |
 | Behavioral development | Energy-budget lifecycle, learned local information and defensible social/cultural transmission | Existing fixed utility behavior/care remains; learning and richer lifecycle mechanisms still needed |
 | Scientific visualization | Lineage exploration, developmental life stages, ecological heatmaps, trait distributions, historical comparisons and clear controls | Generation/Price graphs implemented; deeper exploration and spatial overlays still needed |
-| Experiment laboratory | Replicates, perturbation/ablation studies, sensitivity analysis, uncertainty intervals and portable evidence packages | Batch/export and replicated development reports with Wilson uncertainty implemented; ablation/sensitivity and richer workflows still needed |
+| Experiment laboratory | Replicates, perturbation/ablation studies, sensitivity analysis, uncertainty intervals and portable evidence packages | Seed-blocked protocols, measured weather preview, paired uncertainty, failure retention and offline interactive packages implemented; mechanism-isolating ablations, larger prospective studies and sensitivity analysis still needed |
 | Research communication | Derived equations, assumptions, units, numerical checks, verified screenshots and reproducible results | Mathematics/model notes updated for this foundation; full upgraded system is not yet documented or validated |
 
 Complexity must earn its place by answering a scientific question. Sustained

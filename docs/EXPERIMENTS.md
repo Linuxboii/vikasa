@@ -67,6 +67,12 @@ Compare normalized diversity, trait distributions, variance, extinction, births/
 
 ## Reporting and checks
 
+For predeclared multi-condition studies, use the [controlled experiment laboratory](CONTROLLED_EXPERIMENTS.md).
+The `contrast` command supplies fixed-horizon seed blocks, retained failures and
+extinctions, paired effect estimates and an offline viewer. Its published weather
+preview shows actual population differences; larger protocols and sensitivity
+studies still require execution rather than inference from a demonstration.
+
 1. Validate a config before launching custom experiments: `vikasa validate --config config/showcase.json`.
 2. Record scenario/config contents, package version, seed list, ticks, event schedule and output hash.
 3. Check `invariant_errors` is empty; report extinction and sample timing.

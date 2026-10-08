@@ -59,4 +59,12 @@ Determinism depends on equal configuration, seed, scheduled events, tick count, 
 
 ## Runtime caveats
 
+The headless `contrast` runner validates a complete multi-condition protocol
+before execution, retains fixed-horizon trajectories and failed runs, and uses a
+separate observer RNG for paired bootstrap statistics. It caps automatic metric
+history independently of the biological state. Source/protocol changes reject
+publication. The CLI exclusively claims a new output directory and publishes a
+hashed JSON/HTML evidence package; the offline viewer cannot change the engine.
+See [controlled experiment contracts](CONTROLLED_EXPERIMENTS.md).
+
 The engine's world is 2D. Godot supplies a 3D presentation rather than a three-dimensional physics/ecology engine. Seasonal weather cues and hazard pressure are simplified parameters, not fluid/terrain simulation. Culture is a small seeded rule system. Behavior scores are explanatory utilities, not empirically fitted probabilities of real animal action.
