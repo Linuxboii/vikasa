@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from evolution_sim.analytics.metrics import MetricsRecorder
+from evolution_sim.analytics.trait_space import engine_trait_space
 from evolution_sim.model.genome import TRAITS
 from evolution_sim.simulation.engine import SimulationEngine
 
@@ -86,6 +87,7 @@ def export_experiment(engine: SimulationEngine, directory: str | Path) -> Export
         *(trait.value for trait in TRAITS),
     ]
     _write_csv(root / "creatures.csv", creature_rows, creature_fields)
+    _write_json(root / "trait-space.json", engine_trait_space(engine))
 
     lineage_rows = engine.lineage.to_records()
     _write_csv(
@@ -142,6 +144,7 @@ def export_experiment(engine: SimulationEngine, directory: str | Path) -> Export
         "events.json",
         "summary.json",
         "evolution.json",
+        "trait-space.json",
     ]
     if engine.habitat is not None:
         names.append("habitat.json")

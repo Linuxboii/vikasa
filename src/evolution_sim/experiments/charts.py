@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from evolution_sim.analytics.metrics import MetricsRecorder
+from evolution_sim.analytics.trait_space import engine_trait_space
 from evolution_sim.model.genome import TRAITS
 from evolution_sim.simulation.engine import SimulationEngine
 
@@ -104,4 +105,51 @@ def export_charts(engine: SimulationEngine, directory: str | Path) -> tuple[Path
             axis.text(0.5, 0.5, "Population extinct", color=TEXT, ha="center", va="center")
         axis.set_ylabel("Creatures", color=TEXT)
     distributions_path = _save(figure, root / "distributions.png")
-    return population_path, traits_path, vital_path, distributions_path
+    space = engine_trait_space(engine)
+    geometry = space["geometry"]
+    figure, axes = plt.subplots(1, 3, figsize=(15, 5))
+    figure.suptitle(f"Inherited trait geometry | tick {engine.tick:,} | "
+                   f"{len(engine.creatures)} living creatures", color=TEXT, fontsize=16)
+    for axis, title in zip(axes, ["Individuals · generation", "Trait correlations",
+                                  "Variation spectrum"], strict=True):
+        _style(axis, title)
+    if geometry["explained_fraction"] is not None:
+        scores = np.asarray(geometry["scores"])
+        scatter = axes[0].scatter(scores[:, 0], scores[:, 1], s=22, alpha=.8,
+                                  c=[row["generation"] for row in space["individuals"]],
+                                  cmap="viridis", edgecolors="none")
+        bar = figure.colorbar(scatter, ax=axes[0], shrink=.7)
+        bar.ax.tick_params(colors=TEXT)
+        for i, label in enumerate(["PC1", "PC2"]):
+            text = f"{label} ({geometry['explained_fraction'][i]:.1%})"
+            (axes[0].set_xlabel if i == 0 else axes[0].set_ylabel)(text, color=TEXT)
+        if geometry["degenerate_axes"]:
+            axes[0].text(.03, .97, "Tied axes: orientation is not unique",
+                         transform=axes[0].transAxes, color=AMBER, va="top", fontsize=8)
+        matrix = np.array([[np.nan if value is None else value for value in row]
+                           for row in geometry["correlation"]])
+        axes[1].grid(False)
+        image = axes[1].imshow(np.ma.masked_invalid(matrix), cmap="coolwarm", vmin=-1, vmax=1)
+        short = ["Size", "Speed", "Sense", "Metab.", "Repro.", "Fertility"]
+        axes[1].set_xticks(range(6), short, rotation=50, ha="right")
+        axes[1].set_yticks(range(6), short)
+        bar = figure.colorbar(image, ax=axes[1], shrink=.7)
+        bar.ax.tick_params(colors=TEXT)
+        axes[2].bar(range(1, 7), geometry["explained_fraction"], color=CYAN)
+        axes[2].set_ylim(0, 1)
+        axes[2].set_xlabel("Principal component", color=TEXT)
+        axes[2].set_ylabel("Fraction of normalized variance", color=TEXT)
+        axes[2].text(.97, .94, f"Effective dimension {geometry['effective_dimension']:.2f}",
+                     transform=axes[2].transAxes, color=AMBER, ha="right")
+    else:
+        for axis in axes:
+            axis.text(.5, .5, "Unavailable: fewer than two individuals\nor no trait variation",
+                      transform=axis.transAxes, color=TEXT, ha="center", va="center")
+    figure.text(.5, .01, "Snapshot-local PCA · fixed configured trait spans · descriptive, "
+                "not heritability or proof of adaptation", color=TEXT, ha="center", fontsize=9)
+    figure.subplots_adjust(bottom=.25, top=.82, wspace=.5)
+    figure.patch.set_facecolor(BACKGROUND)
+    space_path = root / "trait_space.png"
+    figure.savefig(space_path, dpi=150, facecolor=BACKGROUND, bbox_inches="tight")
+    plt.close(figure)
+    return population_path, traits_path, vital_path, distributions_path, space_path

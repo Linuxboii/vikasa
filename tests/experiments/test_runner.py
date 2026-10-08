@@ -8,7 +8,7 @@ from evolution_sim.experiments.runner import ExperimentSpec, run_batch, run_expe
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def test_baseline_run_exports_data_and_four_charts(tmp_path) -> None:
+def test_baseline_run_exports_data_and_five_charts(tmp_path) -> None:
     spec = ExperimentSpec.from_json(ROOT / "experiments" / "baseline.json")
     spec = spec.with_runtime(ticks=40, seed=17)
 
@@ -21,6 +21,7 @@ def test_baseline_run_exports_data_and_four_charts(tmp_path) -> None:
         "traits.png",
         "births_deaths.png",
         "distributions.png",
+        "trait_space.png",
     }
     assert all(path.stat().st_size > 1_000 for path in result.charts)
     assert (tmp_path / "baseline" / "summary.json").exists()

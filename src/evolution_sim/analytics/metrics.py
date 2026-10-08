@@ -8,6 +8,7 @@ from typing import Any
 
 import numpy as np
 
+from evolution_sim.analytics.trait_space import trait_geometry as trait_geometry
 from evolution_sim.model.entities import Creature
 from evolution_sim.model.genome import TRAITS, Trait
 

@@ -23,6 +23,7 @@ def test_export_writes_complete_machine_readable_package(tiny_config, tmp_path) 
         "events.json",
         "summary.json",
         "evolution.json",
+        "trait-space.json",
     }
     assert set(manifest.files) == expected
     assert all((manifest.root / name).exists() for name in expected)

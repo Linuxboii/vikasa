@@ -1,5 +1,9 @@
 # Mathematics of Vikasa
 
+Export-time normalized sample covariance, PCA, correlation and effective
+dimension are derived in [trait geometry](TRAIT_GEOMETRY.md), including undefined
+cases, numerical limits and snapshot-local axis interpretation.
+
 The optional spatial profile adds exact logistic plant growth, water-limited
 transpiration, conservative finite-grid transport and audited reservoir balances.
 See [Spatial Ecology](SPATIAL_ECOLOGY.md) for equations, stability bounds,
