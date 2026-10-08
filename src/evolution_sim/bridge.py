@@ -272,6 +272,7 @@ class GodotSimulationServer:
                 "deaths": engine.tick_deaths,
                 "total_births": engine.total_births,
                 "total_deaths": engine.total_deaths,
+                "development": engine.metrics.development(engine),
                 "mean_satisfaction": round(mean_satisfaction, 3),
                 "alpha_count": sum(item.alpha for item in engine.creatures.values()),
                 "starving_count": starving,
@@ -293,6 +294,7 @@ class GodotSimulationServer:
                 "traditions": traditions,
                 "chronicle": chronicles,
                 "history": [sample.to_row() for sample in engine.metrics.samples[-240:]],
+                "birth_history": list(engine.metrics.birth_cohorts[-180:]),
                 "weather_history": list(engine.environment.history[-24:]),
             }
 

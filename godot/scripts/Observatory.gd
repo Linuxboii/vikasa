@@ -9,6 +9,7 @@ var events_label: Label
 var sample_label: Label
 var latest: Dictionary = {}
 var stats: Dictionary = {}
+var development_heading: Label
 
 func _ready() -> void:
 	name = "Observatory"
@@ -26,7 +27,8 @@ func _ready() -> void:
 	content.add_theme_constant_override("separation", 12)
 	scroll.add_child(content)
 	content.add_child(BiomeUI.label("THE OBSERVATORY", 12, BiomeUI.ACCENT))
-	content.add_child(BiomeUI.label("A world in motion", 24))
+	development_heading = BiomeUI.label("A world in motion", 24)
+	content.add_child(development_heading)
 	var counts := HBoxContainer.new()
 	counts.add_theme_constant_override("separation", 18)
 	content.add_child(counts)
@@ -37,11 +39,12 @@ func _ready() -> void:
 		stats[spec.key] = BiomeUI.label("0", 28, spec.color)
 		box.add_child(stats[spec.key])
 		box.add_child(BiomeUI.label(spec.name, 12, BiomeUI.MUTED))
-	var tab_row := HBoxContainer.new()
+	var tab_row := GridContainer.new()
+	tab_row.columns = 2
 	tab_row.add_theme_constant_override("separation", 4)
 	content.add_child(tab_row)
-	for i in range(3):
-		var button := BiomeUI.button(["Population", "Survival", "Genetics"][i])
+	for i in range(4):
+		var button := BiomeUI.button(["Population", "Survival", "Genetics", "Evolution"][i])
 		button.add_theme_font_size_override("font_size", 12)
 		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.toggle_mode = true
@@ -86,19 +89,33 @@ func _configure() -> void:
 		graphs[0].configure("Reserves & exposure · %", [{"key": "mean_energy_ratio", "label": "Energy", "color": mint}, {"key": "mean_injury", "label": "Injury", "color": coral}], true)
 		graphs[1].configure("Temperature & rainfall · %", [{"key": "temperature", "label": "Heat", "color": coral}, {"key": "rainfall", "label": "Rain", "color": mint}], true)
 		graphs[2].configure("Food & metabolic pressure", [{"key": "food_multiplier", "label": "Food ×", "color": mint}, {"key": "metabolic_multiplier", "label": "Cost ×", "color": coral}])
-	else:
+	elif tab == 2:
 		graphs[0].configure("Inherited size & speed · means", [{"key": "size_mean", "label": "Size", "color": gold}, {"key": "speed_mean", "label": "Speed", "color": mint}])
-		graphs[1].configure("Perception · mean radius", [{"key": "perception_mean", "label": "Sensing", "color": mint}])
+		graphs[1].configure("Generational development", [{"key": "max_generation", "label": "Deepest", "color": gold}, {"key": "mean_generation", "label": "Mean", "color": mint}])
 		graphs[2].configure("Genetic diversity · normalized", [{"key": "diversity", "label": "Diversity", "color": gold}], true)
+	else:
+		graphs[0].configure("Generational development", [{"key": "max_generation", "label": "Deepest", "color": gold}, {"key": "mean_generation", "label": "Mean", "color": mint}])
+		graphs[1].configure("Size · birth-cohort Price equation", [{"key": "size_selection", "label": "Selection", "color": mint}, {"key": "size_transmission", "label": "Transmission", "color": coral}], false, true)
+		graphs[2].configure("Population renewal · %", [{"key": "founder_fraction", "label": "Founders", "color": gold}, {"key": "juvenile_fraction", "label": "Young", "color": mint}], true)
 
 func set_state(state: Dictionary) -> void:
 	latest = state
 	for key in stats: stats[key].text = str(int(state.get(key, 0)))
 	for graph in graphs: graph.set_samples(state.get("history", []))
+	if tab == 3:
+		graphs[1].set_samples(state.get("birth_history", []))
+		sample_label.text = "Birth-event identity · not a causal estimate of adaptation"
+	else:
+		sample_label.text = "Real simulation data · Hover a graph to inspect"
 	var env: Dictionary = state.get("environment", {})
 	var active: Array = env.get("active_events", [])
 	pressure.text = "%s · productivity %.2f× · cost %.2f×" % [str(active[0].kind).capitalize() if not active.is_empty() else "Seasonal cycle", float(env.get("food_pressure", 1)), float(env.get("metabolic_pressure", 1))]
 	vitality.text = "%d starving · %d alphas · %d fights won" % [int(state.get("starving_count", 0)), int(state.get("alpha_count", 0)), int(state.get("fight_count", 0))]
+	var development: Dictionary = state.get("development", {})
+	development_heading.text = "Generation %d" % int(development.get("max_generation", 0)) if not development.is_empty() else "A world in motion"
+	if not development.is_empty():
+		vitality.text += "\nGeneration %d · mean %.1f · founders %.0f%%" % [int(development.get("max_generation", 0)), float(development.get("mean_generation", 0)), float(development.get("founder_fraction", 0)) * 100]
+		vitality.text += "\nYoung %.0f%% · mean age %.0f ticks" % [float(development.get("juvenile_fraction", 0)) * 100, float(development.get("mean_age", 0))]
 	var causes: Dictionary = state.get("death_causes", {})
 	var loss: Array[String] = []
 	for cause in causes: loss.append("%s %d" % [str(cause).capitalize(), int(causes[cause])])

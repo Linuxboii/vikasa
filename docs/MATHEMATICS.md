@@ -126,3 +126,64 @@ For an eligible parent, effective mating cooldown is `max(1, round(base_cooldown
 ## Checkpoint compatibility
 
 Checkpoint format `vikasa` **version 3** serializes RNG state, entities, current action/drive/utility and targets, home-range/migration state, culture, event state and accumulated counters. It atomically replaces the destination after writing a flushed temporary file. **Versions 1 and 2** migrate in memory; new behavior/home fields receive migration defaults, with deterministic per-creature home-radius sampling when absent. The v3 loader strictly validates required fields and JSON integer IDs/references; loading does not rewrite the old file. An unchanged config/seed/event schedule and tick count reproduce equivalent state on the same software/numerical platform.
+
+## Age-dependent survival
+
+For optional Gompertz mortality, age `a` is in ticks, `mu0` is baseline hazard per
+tick, `b` is inverse ticks and `a0` is the senescence onset:
+
+```text
+mu(a) = mu0 * exp(b * max(0, a-a0))
+p(death in a tick | alive) = 1-exp(-mu(a))
+S(A) = product over age ticks a<A of exp(-mu(a))
+```
+
+This uses a piecewise-constant per-tick hazard, not a constant probability copied
+across ages. The engine computes in log space and caps hazard at 50 for numerical
+safety, where survival per tick is already below 2e-22. With `mu0=0`, stochastic
+senescence is disabled but starvation, injury and the hard age ceiling still apply.
+The showcase uses `mu0=0.00002`, `b=0.002`, `a0=1800`; these are illustrative model
+parameters. A Gompertz age schedule is a standard demographic model, not validation
+for an invented species. See [mortality model research](https://pmc.ncbi.nlm.nih.gov/articles/PMC5336383/).
+
+## Exact birth-event Price identity
+
+For a source population of `n` living pre-birth animals, let `zi` be one trait,
+`wi` its attributable offspring contribution (0.5 per child for each parent), and
+`z'i` its weighted descendant mean. Nonparents have `wi=0`. Bars and covariance
+use the entire source population, not only successful parents:
+
+```text
+selection    = Cov(w,z) / mean(w)
+transmission = mean(w * (z'-z)) / mean(w)
+total_change = sum(w*z') / sum(w) - mean(z)
+residual     = total_change - selection - transmission
+```
+
+Each offspring is counted once overall despite having two parents. The identity
+is exact up to floating-point rounding. Example: `z=[1,3]`, `w=[1,3]`, `z'=[2,4]`
+gives selection 0.5, transmission 1.0 and total change 1.5. If total descendant
+weight is zero, change is undefined, not a fabricated zero result.
+
+For Vikasa these are birth-event observations of each inherited scalar trait;
+they are not an overlapping-generation survival decomposition or an estimate of
+the causal effect of a trait. Mutation, crossover and mate choice can all affect
+the terms. See [Price's equation made clear](https://pmc.ncbi.nlm.nih.gov/articles/PMC7133504/)
+and [the causal-analysis limitations](https://pmc.ncbi.nlm.nih.gov/articles/PMC7133506/).
+
+## Replicate survival uncertainty
+
+For `k` nonextinct runs out of `n` distinct seeds at a declared horizon, the study
+reports `p=k/n` and a Wilson score interval, with `z=1.959963984540054`:
+
+```text
+center = (p + z²/(2n)) / (1 + z²/n)
+radius = z * sqrt(p(1-p)/n + z²/(4n²)) / (1 + z²/n)
+interval = [max(0,center-radius), min(1,center+radius)]
+```
+
+This avoids reporting zero uncertainty when all few runs survive or go extinct.
+It assumes independent Bernoulli seed outcomes and is not a confidence statement
+about a real species. Chosen demonstration seeds can bias estimates. The sampling
+horizon, complete seed list, configuration and source hash must accompany results.
+For the interval method and its variants, see [SciPy's statistical-method reference](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats._result_classes.BinomTestResult.proportion_ci.html).

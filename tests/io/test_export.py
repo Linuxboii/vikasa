@@ -22,6 +22,7 @@ def test_export_writes_complete_machine_readable_package(tiny_config, tmp_path) 
         "lineage.csv",
         "events.json",
         "summary.json",
+        "evolution.json",
     }
     assert set(manifest.files) == expected
     assert all((manifest.root / name).exists() for name in expected)
@@ -58,3 +59,17 @@ def test_summary_is_canonical_for_equal_seeded_runs(tiny_config, tmp_path) -> No
     parsed = json.loads(first_summary)
     assert parsed["seed"] == 88
     assert parsed["tick"] == 25
+
+
+def test_export_includes_inspectable_birth_cohorts_and_generation_depth(tiny_config, tmp_path):
+    engine = SimulationEngine(tiny_config, seed=61)
+    engine.step(20)
+    manifest = export_experiment(engine, tmp_path / "run")
+    evolution = json.loads((manifest.root / "evolution.json").read_text(encoding="utf-8"))
+    assert evolution["basis"] == "birth-event Price decomposition"
+    assert evolution["cohorts"] == engine.metrics.birth_cohorts
+    assert evolution["cohort_retention_limit"] == 512
+    with (manifest.root / "creatures.csv").open(newline="", encoding="utf-8") as stream:
+        creatures = list(csv.DictReader(stream))
+    for creature in creatures:
+        assert int(creature["generation"]) == engine.lineage.generation_of(int(creature["id"]))

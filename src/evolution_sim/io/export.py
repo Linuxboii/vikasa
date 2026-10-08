@@ -67,6 +67,7 @@ def export_experiment(engine: SimulationEngine, directory: str | Path) -> Export
             "offspring_count": creature.offspring_count,
             "food_acquired": creature.food_acquired,
             "birth_tick": creature.birth_tick,
+            "generation": engine.lineage.generation_of(creature.id),
         }
         row.update(creature.genome.to_mapping())
         creature_rows.append(row)
@@ -81,6 +82,7 @@ def export_experiment(engine: SimulationEngine, directory: str | Path) -> Export
         "offspring_count",
         "food_acquired",
         "birth_tick",
+        "generation",
         *(trait.value for trait in TRAITS),
     ]
     _write_csv(root / "creatures.csv", creature_rows, creature_fields)
@@ -96,6 +98,16 @@ def export_experiment(engine: SimulationEngine, directory: str | Path) -> Export
         {
             "scheduled": [event.to_dict() for event in engine.environment.events],
             "history": engine.environment.history,
+        },
+    )
+    _write_json(
+        root / "evolution.json",
+        {
+            "basis": "birth-event Price decomposition",
+            "cohort_retention_limit": 512,
+            "cohorts": engine.metrics.birth_cohorts,
+            "total_births": engine.total_births,
+            "caveat": "Reproductive contributions only; not causal evidence of adaptation.",
         },
     )
     final_sample = metric_rows[-1]
@@ -123,5 +135,6 @@ def export_experiment(engine: SimulationEngine, directory: str | Path) -> Export
         "lineage.csv",
         "events.json",
         "summary.json",
+        "evolution.json",
     ]
     return ExportManifest(root=root, files={name: _sha256(root / name) for name in names})

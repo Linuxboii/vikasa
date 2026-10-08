@@ -27,6 +27,15 @@ The bridge publishes a completed snapshot about every 160 milliseconds. HTTP rea
 
 The presentation configuration begins with 64 creatures and a population cap of 180. Above 40 creatures, cognition is deterministically staggered across six ticks; movement and vital processes execute each tick. Contest opportunities are evaluated every four ticks. Rendered creatures use shared low-detail meshes and one simple body shadow; instanced vegetation and a 30 FPS ceiling preserve GPU headroom.
 
+The optional validated `DemographyConfig` supplies a seeded age-dependent hazard;
+old configurations retain fixed-age mortality. `LineageStore.generation_of` uses
+iterative, cycle-detecting ancestry traversal. Its derived cache invalidates only
+the newly defined child and its descendants, retaining unaffected ancestry.
+`MetricsRecorder.record_birth_cohort` observes the entire pre-birth population and
+real child genomes without consuming simulation RNG. Its last 512 exact Price
+observations persist in checkpoints and `evolution.json`; the bridge publishes
+180. The Evolution tab uses a signed chart axis and exposes the observation scope.
+
 `BehaviorController` receives tick-local perceived resources, threats, eligible mates, dependents, and hazard/terrain pressures. It calculates normalized drives in a stable presentation order: survival, foraging, mating, offspring care, danger avoidance, territory. Eight candidate actions—explore, forage, rest, seek mate, care, flee, patrol, challenge—are scored from weighted drive affinity plus action reward minus travel, exposure, and conflict costs.
 
 An unavailable action is excluded rather than assigned a competing fabricated score. Danger at or above the configured preemption threshold forces flee; severe survival/injury pressure forces forage or rest. Otherwise an action persists when the alternative is within the configured hysteresis margin; near ties use seeded softmax selection. A creature's fight-wins satisfaction component modestly strengthens eligible repeat-challenge utility and the low encounter probability. The state includes the actual action, target, start tick, utility breakdown, and a human-readable reason. See [mathematical definitions](MATHEMATICS.md).
