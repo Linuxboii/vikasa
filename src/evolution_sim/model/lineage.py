@@ -12,6 +12,7 @@ class LineageStore:
         self._parents: dict[int, tuple[int, int]] = {}
         self._children: dict[int, set[int]] = defaultdict(set)
         self._birth_ticks: dict[int, int] = {}
+        self._generations: dict[int, int] = {}
 
     def record(self, child: int, parents: tuple[int, int], *, birth_tick: int) -> None:
         if child in self._parents:
@@ -23,8 +24,32 @@ class LineageStore:
             raise ValueError("Lineage IDs and birth tick must be non-negative")
         self._parents[child] = tuple(parents)
         self._birth_ticks[child] = birth_tick
+        for affected in {child, *self.descendants(child)}:
+            self._generations.pop(affected, None)
         for parent in parents:
             self._children[parent].add(child)
+
+    def generation_of(self, creature_id: int) -> int:
+        """Maximum ancestral depth; founders are generation zero, not age cohorts."""
+        pending = [(creature_id, False)]
+        visiting: set[int] = set()
+        while pending:
+            current, expanded = pending.pop()
+            if current in self._generations:
+                continue
+            parents = self._parents.get(current)
+            if parents is None:
+                self._generations[current] = 0
+            elif expanded:
+                self._generations[current] = 1 + max(self._generations[p] for p in parents)
+                visiting.remove(current)
+            else:
+                if current in visiting:
+                    raise ValueError("Cyclic lineage cannot have a generation depth")
+                visiting.add(current)
+                pending.append((current, True))
+                pending.extend((parent, False) for parent in parents)
+        return self._generations[creature_id]
 
     def parents_of(self, creature_id: int) -> tuple[int, int] | None:
         return self._parents.get(creature_id)

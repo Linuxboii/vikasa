@@ -36,7 +36,30 @@ The four satisfaction components are energy security, saturating offspring histo
 
 ## Environment and shared traditions
 
-The presentation showcase uses 64 founders, an 180-animal cap and 1,100-tick maximum age for visible turnover. Drought intensity is a food-growth multiplier below 1, reducing rainfall and increasing metabolic cost. Other hazard intensities increase pressure; heat/cold alter temperature and storms increase rainfall. Sustained hazards can injure and kill within a 160-tick experiment. Coefficients are illustrative; wildfire represents whole-biome exposure rather than a moving fire front, and disease is pressure rather than explicit contagion.
+The showcase uses 64 founders, an 180-animal cap and seeded age-dependent mortality with a 12,000-tick hard ceiling. The earlier 1,100-tick cutoff produced a founder die-off and is preserved in `config/extinction-control.json` for comparison. Drought intensity is a food-growth multiplier below 1, reducing rainfall and increasing metabolic cost. Other hazard intensities increase pressure; heat/cold alter temperature and storms increase rainfall. Sustained hazards can injure and kill within a 160-tick experiment. Coefficients are illustrative; wildfire represents whole-biome exposure rather than a moving fire front, and disease is pressure rather than explicit contagion.
+
+## Age structure and quantitative evolutionary observations
+
+Optional `demography.mode="gompertz"` applies a per-tick piecewise-constant hazard
+`mu(a)=background_hazard*exp(senescence_rate*max(0,a-senescence_age))`, with probability
+`1-exp(-mu(a))`. A seeded uniform draw decides mortality after injury/starvation
+checks. The hard age ceiling remains. Missing demography settings retain the fixed
+model and consume no extra mortality draws. The Gompertz form is an illustrative
+age schedule, not an empirically fitted lifespan for these invented organisms.
+
+Living generation is maximum ancestral depth, not a discrete temporal cohort.
+An animal is generation zero if it has no recorded parents; otherwise its depth
+is one plus the maximum parent depth. Ancestry remains after deaths. Mean living
+depth, founder fraction, juvenile fraction and mean age expose actual renewal.
+
+Each birth event observes all pre-birth living animals. Each offspring contributes
+half a descendant weight to each parent. Six-trait Price terms separate the shift
+in reproductive contributions from offspring-parent trait differences. These
+include mating opportunity and transmission effects; the identity alone does not
+identify causal selection or prove adaptation. Survival between birth events is
+not included. The GUI labels this scope and retains at most 180 recent cohorts;
+checkpoints/exports retain at most 512. See the mathematical derivation and
+[research status](RESEARCH_STATUS.md) for the full upgrade's remaining scope.
 
 Seasons advance every 96 ticks, changing temperature, rainfall, food productivity and metabolic demand. Scheduled drought/abundance alter food supply; heat/cold change metabolism and health pressure; storms affect movement and pressure; flood/wildfire alter food and pressure; disease adds health pressure. These values are deliberately coarse. There is no fluid simulation, terrain-dependent ecology, explicit contagion graph, or detailed resource-food web.
 

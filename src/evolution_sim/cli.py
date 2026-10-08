@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -11,6 +12,7 @@ from evolution_sim.config import ConfigError, SimulationConfig
 from evolution_sim.experiments.runner import (
     ExperimentSpec,
     run_batch,
+    run_development_study,
     run_experiment,
     run_stress,
 )
@@ -38,6 +40,13 @@ def build_parser() -> argparse.ArgumentParser:
     batch.add_argument("--output", type=Path, required=True)
     batch.add_argument("--replicates", type=int, default=3)
     batch.add_argument("--ticks", type=int)
+
+    study = commands.add_parser("study", help="Measure replicated generational development")
+    study.add_argument("--config", type=Path, required=True)
+    study.add_argument("--seeds", type=int, nargs="+", default=[2026, 7, 41])
+    study.add_argument("--ticks", type=int, default=12_000)
+    study.add_argument("--sample-interval", type=int, default=500)
+    study.add_argument("--output", type=Path, required=True)
 
     stress = commands.add_parser("stress", help="Run invariant-audited headless ticks")
     stress.add_argument("--config", type=Path, required=True)
@@ -88,6 +97,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             results = run_batch(spec, output_dir=args.output, replicates=args.replicates)
             print(f"Completed {len(results)} replicates in {args.output}")
             return 0
+        if args.command == "study":
+            report = run_development_study(SimulationConfig.from_json(args.config),
+                                           seeds=args.seeds, ticks=args.ticks,
+                                           sample_interval=args.sample_interval)
+            args.output.parent.mkdir(parents=True, exist_ok=True)
+            args.output.write_text(json.dumps(report, indent=2, sort_keys=True,
+                                              allow_nan=False) + "\n", encoding="utf-8")
+            aggregate = report["aggregate"]
+            print(f"Study: {aggregate['survivors']}/{aggregate['replicates']} survived; "
+                  f"report={args.output}")
+            return 1 if aggregate["invariant_failure_replicates"] else 0
         if args.command == "stress":
             report = run_stress(
                 SimulationConfig.from_json(args.config),

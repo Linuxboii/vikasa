@@ -1,5 +1,13 @@
 # Vikasa — Living Biome
 
+![Live generational development and birth-cohort evolutionary change](docs/images/research-evolution.png)
+
+[Compact-window screenshot](docs/images/research-evolution-compact.png). The observatory scrolls on smaller screens; unavailable legacy measurements are not plotted as zero.
+
+The research upgrade is underway: sustained replacement, age-dependent mortality,
+generational development and inspectable quantitative evolution are implemented.
+See [current evidence and the full remaining scope](docs/RESEARCH_STATUS.md).
+
 Vikasa is a deterministic artificial-life sandbox. Watch small wild creatures forage, rest, flee, seek mates, care for young, patrol a home range, and sometimes challenge a rival. Their decisions emerge from changing needs and local opportunities; the interface exposes the action and its reason so the habitat stays readable rather than becoming a wall of statistics.
 
 ![Live Observatory: population, life/death and energy histories](docs/images/presentation-overview.png)
@@ -91,7 +99,7 @@ These are real seeded bridge states, including an explicitly applied storm. See 
 - Click a creature to open its readable profile: current action and reason, energy, hunger, injury, instincts, top action choices, genes, encounters, satisfaction, and lineage.
 - Use **Follow** to track the selected animal; **Reset view** returns to the whole habitat. Right-drag orbits, and the wheel zooms.
 - **Space** pauses/resumes; **Step** advances one tick while paused. **Observe · 16**, **Present · 48**, and **Accelerate · 120** request those tick rates. Present is the default; the HUD displays actual speed. Excess catch-up work is discarded on slower hardware. With the complete 3D window open, this Intel Iris Xe development laptop sustained about 43 ticks/second in a 12-second Accelerate sample; this is an example, not a guarantee for all devices.
-- **Graphs** toggles the Observatory. **Population**, **Survival**, and **Genetics** show real engine histories; hover to inspect values at a tick. Shaded periods show weather exposure. Birth/death totals retain outcomes between GUI polls.
+- **Graphs** toggles the Observatory. **Population**, **Survival**, **Genetics**, and **Evolution** show real engine histories; hover to inspect values at a tick. Evolution shows generational depth, founder replacement and signed birth-cohort Price decomposition. Shaded periods show weather exposure. Birth/death totals retain outcomes between GUI polls.
 - **World tools** offers drought, heat, storm, wildfire, cold, disease, a food bloom, and food placement. Adjust pressure and duration, then **Apply weather**. Drought intensity is food growth retained (lower is harsher); other hazards strengthen as intensity increases. Default duration is 160 ticks.
 - **Restart biome** resets the population and histories with the same seed after an experiment or extinction.
 - **Escape** cancels placement/closes a panel. The HUD reports offline state and clears stale creature data if the bridge disconnects.
@@ -102,7 +110,22 @@ The model tracks six drives—survival, foraging, mating, offspring care, danger
 
 The client uses shared meshes, one simple body shadow per visible animal, static habitat shadows, instanced vegetation, a 30 FPS ceiling, at most 180 visible creatures and 240 food patches, and bounded chart histories. The full population lives in Python; drawing alone is capped. Above 40 creatures, decisions are deterministically staggered across six ticks while movement, hunger, consumption, births and deaths advance every tick. Combat opportunities are checked every four ticks. Completed GUI snapshots publish about six times/second, so polling does not wait for a simulation tick. Diversity analysis is vectorized.
 
-The showcase starts with 64 founders, a cap of 180 and a maximum age of 1,100 ticks. Reserve costs permit scarcity and generational turnover within a presentation. Weather depletes existing food and causes resilience-dependent exposure injury. Prolonged hazards can kill creatures; exposure deaths are reported separately from starvation and fight injuries. These coefficients are illustrative rather than calibrated to real species.
+The showcase starts with 64 founders in a 720×480 habitat and a cap of 180. It uses seeded age-dependent mortality, viable feeding/encounter density and larger newborn reserves for sustained generational replacement. The 12,000-tick maximum age is a hard ceiling, not an expected lifespan. Animals still die from scarcity, fights, senescence and exposure; nothing respawns them. The previous extinction-prone configuration is preserved as `config/extinction-control.json`. See [research status and remaining work](docs/RESEARCH_STATUS.md). These coefficients remain illustrative rather than calibrated to a real species.
+
+## Reproducible development studies
+
+Measure renewal across seeds rather than judging one short GUI run:
+
+```powershell
+.\.venv\Scripts\python.exe -m evolution_sim.cli study --config config/showcase.json --seeds 2026 7 41 --ticks 12000 --output exports/development-study.json
+.\.venv\Scripts\python.exe -m evolution_sim.cli study --config config/extinction-control.json --seeds 2026 7 41 --ticks 12000 --output exports/extinction-control-study.json
+```
+
+The report retains extinct runs, exact extinction times, generation trajectories,
+invariant checks, configuration/source hashes and a Wilson survival interval.
+This can take several minutes. It is exploratory evidence, not species validation.
+Experiment exports also include `evolution.json` (the last 512 birth cohorts) and
+generation depth in `creatures.csv`.
 
 ## Pygame laboratory
 

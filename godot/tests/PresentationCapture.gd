@@ -16,6 +16,10 @@ func _run() -> void:
 		main.hud.observatory.tab = 2
 		main.hud.observatory._configure()
 		main.hud.observatory.set_state(main.latest_state)
+	if "--evolution" in args:
+		main.hud.observatory.tab = 3
+		main.hud.observatory._configure()
+		main.hud.observatory.set_state(main.latest_state)
 	if "--tools" in args: main.tools.set_open(true)
 	if "--selected" in args and not main.latest_state.creatures.is_empty():
 		var subject: Dictionary = main.latest_state.creatures[0]
@@ -30,6 +34,7 @@ func _run() -> void:
 	await create_timer(0.4).timeout
 	await RenderingServer.frame_post_draw
 	var mode := "genetics" if "--genetics" in args else "overview"
+	if "--evolution" in args: mode = "evolution"
 	if "--tools" in args: mode = "weather-tools"
 	if "--selected" in args: mode = "selected"
 	var path := "user://presentation-%dx%d-%s.png" % [root.size.x, root.size.y, mode]

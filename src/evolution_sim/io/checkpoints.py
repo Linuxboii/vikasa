@@ -132,6 +132,7 @@ def checkpoint_payload(engine: SimulationEngine) -> dict[str, Any]:
         "combat_events": list(engine.combat_events),
         "recent_events": list(engine.recent_events),
         "metrics": [asdict(sample) for sample in engine.metrics.samples],
+        "birth_cohorts": engine.metrics.birth_cohorts,
         "next_creature_id": engine.next_creature_id,
         "next_resource_id": engine.next_resource_id,
         "spawn_accumulator": engine.spawn_accumulator,
@@ -347,6 +348,9 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
         engine.recent_events = [dict(item) for item in payload.get("recent_events", [])]
         engine.metrics = MetricsRecorder()
         engine.metrics.samples = [MetricSample(**item) for item in payload.get("metrics", [])]
+        engine.metrics.restore_birth_cohorts(payload.get("birth_cohorts", []),
+                                           current_tick=engine.tick,
+                                           total_births=int(payload["total_births"]))
         engine.next_creature_id = next_creature_id
         engine.next_resource_id = next_resource_id
         engine.spawn_accumulator = float(payload["spawn_accumulator"])

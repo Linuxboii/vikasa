@@ -78,6 +78,26 @@ func _run() -> void:
 	main._on_state(running)
 	check(hud.status.text == "Running" and hud.step_button.disabled and hud.speed_buttons[48].button_pressed, "Running/speed state mismatch")
 	check(hud.observatory.visible and hud.observatory.graphs.size() == 3, "Live observatory graphs missing")
+	check(hud.observatory.tabs.size() == 4, "Evolution navigation missing")
+	var evolution_state: Dictionary = state.duplicate(true)
+	evolution_state.development = {"max_generation": 7, "mean_generation": 4.2, "founder_fraction": 0.1, "juvenile_fraction": 0.2, "mean_age": 900}
+	evolution_state.birth_history = [{"tick": 200, "size_selection": -1.4, "size_transmission": 1.1}]
+	hud.observatory.tab = 3
+	hud.observatory._configure()
+	hud.observatory.set_state(evolution_state)
+	check(hud.observatory.vitality.text.contains("Generation 7"), "Development data not explained")
+	check(hud.observatory.graphs[1].samples.size() == 1, "Real birth cohorts not plotted")
+	check(hud.observatory.graphs[1].vertical_bounds() == Vector2(-2, 2), "Negative evolutionary change clipped")
+	var irregular = hud.observatory.graphs[1]
+	irregular.set_samples([{"tick": 0}, {"tick": 990}, {"tick": 1000}])
+	var motion := InputEventMouseMotion.new()
+	motion.position = Vector2(30 + (irregular.size.x - 38) * 0.3, 50)
+	irregular._gui_input(motion)
+	check(irregular.hover_index == 0, "Irregular history hover selected wrong time")
+	irregular.set_samples([{"tick": 0, "size_selection": null}, {"tick": 10, "size_selection": -1.4}])
+	check(irregular.vertical_bounds() == Vector2(-2, 2), "Unavailable history must not distort bounds")
+	hud.observatory.tab = 0
+	hud.observatory._configure()
 	main._on_state(state)
 	var payloads: Array = []
 	tools.command_requested.connect(func(payload: Dictionary): payloads.append(payload))

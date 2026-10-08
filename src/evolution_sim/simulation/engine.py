@@ -668,10 +668,22 @@ class SimulationEngine:
                     "creature_id": child_id,
                 }
             )
+        self.metrics.record_birth_cohort(self.creatures, newborns, tick=self.tick)
         for child in newborns:
             self.creatures[child.id] = child
         self.tick_births = len(newborns)
         self.total_births += self.tick_births
+
+    def senescence_probability(self, age: int) -> float:
+        """Integrate a per-tick Gompertz hazard: p = 1 - exp(-hazard)."""
+        model = self.config.demography
+        if model.mode != "gompertz" or model.background_hazard == 0:
+            return 0.0
+        log_hazard = math.log(model.background_hazard) + model.senescence_rate * max(
+            0, age - model.senescence_age
+        )
+        hazard = math.exp(min(math.log(50.0), log_hazard))
+        return -math.expm1(-hazard)
 
     def _resolve_deaths(self) -> None:
         dead: list[tuple[int, str]] = []
@@ -686,6 +698,11 @@ class SimulationEngine:
                 )
             elif creature.starvation_ticks >= 12:
                 cause = "starvation"
+            elif (
+                self.config.demography.mode == "gompertz"
+                and self.rng.random() < self.senescence_probability(creature.age)
+            ):
+                cause = "senescence"
             else:
                 continue
             dead.append((creature_id, cause))

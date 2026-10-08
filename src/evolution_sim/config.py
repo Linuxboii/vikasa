@@ -152,6 +152,23 @@ class BehaviorConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class DemographyConfig:
+    """Optional age-structured mortality; legacy files retain their original model."""
+
+    mode: str = "fixed"
+    background_hazard: float = 0.00002
+    senescence_age: int = 1800
+    senescence_rate: float = 0.002
+
+    def __post_init__(self) -> None:
+        if self.mode not in {"fixed", "gompertz"}:
+            raise ConfigError("demography.mode must be 'fixed' or 'gompertz'")
+        for name in ("background_hazard", "senescence_rate"):
+            _number(getattr(self, name), f"demography.{name}", minimum=0)
+        _integer(self.senescence_age, "demography.senescence_age", minimum=0)
+
+
+@dataclass(frozen=True, slots=True)
 class SimulationConfig:
     world: WorldConfig
     genome: GenomeConfig
@@ -163,6 +180,7 @@ class SimulationConfig:
     maximum_age: int
     wander_change_probability: float
     behavior: BehaviorConfig = field(default_factory=BehaviorConfig)
+    demography: DemographyConfig = field(default_factory=DemographyConfig)
 
     ROOT_KEYS: ClassVar[set[str]] = {
         "world",
@@ -175,6 +193,7 @@ class SimulationConfig:
         "maximum_age",
         "wander_change_probability",
         "behavior",
+        "demography",
     }
 
     @classmethod
@@ -189,7 +208,7 @@ class SimulationConfig:
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> SimulationConfig:
         data = _mapping(raw, "config")
-        _keys(data, cls.ROOT_KEYS, "", optional={"behavior"})
+        _keys(data, cls.ROOT_KEYS, "", optional={"behavior", "demography"})
 
         world_data = _mapping(data["world"], "world")
         _keys(world_data, {"width", "height", "boundary"}, "world")
@@ -296,6 +315,11 @@ class SimulationConfig:
         if behavior.care_energy_rate > energy.maximum:
             raise ConfigError("behavior.care_energy_rate must not exceed energy.maximum")
 
+        demography_data = _mapping(data.get("demography", {}), "demography")
+        demography_keys = set(DemographyConfig.__dataclass_fields__)
+        _keys(demography_data, demography_keys, "demography", optional=demography_keys)
+        demography = DemographyConfig(**demography_data)
+
         return cls(
             world=world,
             genome=genome,
@@ -307,6 +331,7 @@ class SimulationConfig:
             maximum_age=_integer(data["maximum_age"], "maximum_age"),
             wander_change_probability=wander,
             behavior=behavior,
+            demography=demography,
         )
 
     def to_dict(self) -> dict[str, Any]:

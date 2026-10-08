@@ -1,5 +1,5 @@
 {
-  "world": {"width": 1200, "height": 760, "boundary": "collision"},
+  "world": {"width": 720, "height": 480, "boundary": "collision"},
   "genome": {
     "traits": {
       "size": [2.5, 8.0],
@@ -13,11 +13,15 @@
     "mutation_sigma": 0.075,
     "crossover": "arithmetic"
   },
-  "energy": {"initial": 100.0, "basal_cost": 0.09, "movement_cost": 0.026, "maximum": 230.0},
-  "reproduction": {"minimum_age": 90, "cooldown": 100, "mate_radius": 62.0, "offspring_energy": 32.0, "population_cap": 180},
-  "resources": {"initial_count": 150, "spawn_rate": 0.36, "maximum_count": 320, "energy_value": 30.0},
+  "energy": {"initial": 125.0, "basal_cost": 0.09, "movement_cost": 0.026, "maximum": 230.0},
+  "reproduction": {"minimum_age": 90, "cooldown": 100, "mate_radius": 90.0, "offspring_energy": 60.0, "population_cap": 180},
+  "resources": {"initial_count": 180, "spawn_rate": 0.9, "maximum_count": 400, "energy_value": 30.0},
   "metrics": {"sample_interval": 8, "diversity_sample": 48},
   "initial_population": 64,
-  "maximum_age": 1100,
-  "wander_change_probability": 0.03
+  "maximum_age": 12000,
+  "wander_change_probability": 0.03,
+  "demography": {
+    "mode": "gompertz", "background_hazard": 0.00002,
+    "senescence_age": 1800, "senescence_rate": 0.002
+  }
 }

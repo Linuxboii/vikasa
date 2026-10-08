@@ -1,5 +1,9 @@
 # Observatory presentation validation
 
+The evidence below is a historical 2026-10-06 presentation snapshot of the older
+showcase. The 2026-10-08 lifecycle/quantitative-evolution upgrade changes the world,
+configuration and trajectories; see [RESEARCH_STATUS.md](RESEARCH_STATUS.md).
+
 The live UI exposes real histories from the deterministic engine: population/food,
 cumulative births/deaths, mean energy/injury, temperature/rainfall, food/metabolic
 pressure, inherited mean traits and genetic diversity. Weather intervals are shaded.

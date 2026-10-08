@@ -14,6 +14,13 @@ The Python process owns the simulation; the Godot window is its live 3D observer
 
 Choose **Present · 48**. Point out the actual tick rate, animal count and Observatory graphs: population/food, cumulative births/deaths and reserves/injury. Hover to inspect sampled values. The world is three-dimensional in presentation with a deterministic two-dimensional ecological engine.
 
+Open **Evolution** after births accumulate: explain maximum/mean living generation,
+falling founder share and population renewal. The signed Price plot compares
+reproductive selection with transmission in actual birth cohorts; it is an exact
+accounting identity, not causal proof that adaptation occurred. Let several
+generations develop before applying a hazard. The current showcase is intended
+for sustained replacement rather than the former synchronized founder die-off.
+
 Right-drag to orbit and use the wheel to zoom. Click a creature. The bottom observation dock should immediately explain its current action and reason; identify the energy, hunger, health and dominant-instinct meters.
 
 ## 0:45–1:40 — Inspect needs, not a black-box score
