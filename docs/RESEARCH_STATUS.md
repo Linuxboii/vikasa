@@ -1,5 +1,12 @@
 # Research upgrade: evidence and open work
 
+The spatial-index hot path now has a [guarded historical comparison](PERFORMANCE.md):
+three short seed pairs measured 14–20% local tick-rate improvement with matching
+full checkpoint digests and clean invariants. This is a computational optimization,
+not new biological evidence or a universal presentation-speed guarantee. The
+ongoing Godot field study was not restarted; live checkpoint/upgrade continuity
+and late-run throughput remain open work.
+
 Vikasa is being developed into an inspectable eco-evolutionary research platform.
 The goal is sustained development, mechanistic depth, reproducible experiments and
 a presentation that explains the science. It is not yet a validated species model,

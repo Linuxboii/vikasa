@@ -145,6 +145,11 @@ The showcase starts with 64 founders in a 720×480 habitat and a cap of 180. It 
 
 ## Reproducible development studies
 
+Spatial lookup now batches validation and uses copied scalar coordinates. See
+[performance evidence and copy-paste benchmark commands](docs/PERFORMANCE.md).
+Measured tick rate—not the requested speed—is the presentation-speed indicator;
+120 ticks/s is a ceiling, not a hardware-independent guarantee.
+
 Measure renewal across seeds rather than judging one short GUI run:
 
 ```powershell
