@@ -1,5 +1,7 @@
 # Vikasa — Living Biome
 
+[Visual evidence and graph-reading guide](#visual-evidence-and-how-to-read-the-graphs) · [Mathematics PDF](output/pdf/Vikasa_Mathematics_Guide.pdf) · [Desktop setup](#run-the-3d-living-biome)
+
 ![Live generational development and birth-cohort evolutionary change](docs/images/research-evolution.png)
 
 [Compact-window screenshot](docs/images/research-evolution-compact.png). The observatory scrolls on smaller screens; unavailable legacy measurements are not plotted as zero.
@@ -203,6 +205,326 @@ These are export-time snapshots, not a live Godot panel. See
 [commands and mathematical interpretation](docs/TRAIT_GEOMETRY.md).
 
 ![Inherited trait geometry, showcase seed 2026 at tick 800](docs/images/trait-geometry.png)
+
+## Visual evidence and how to read the graphs
+
+This gallery brings the existing screenshots, exported figures and PDF into one
+place. Images are stored in the repository, not the ignored local `exports/`
+folder. Click an image to open it at full resolution. These are **recorded
+snapshots**, not live counters: screenshots from different dates/profiles must
+not be read as consecutive frames of one experiment.
+
+### Start here: axes, units and honest interpretation
+
+- **Ticks** are discrete engine steps, not seconds or days. Requested tick speed
+  is a processing target; actual tick speed depends on hardware and population.
+- **Counts** mean animals, food patches or events as labelled. Food-patch count
+  is not the same quantity as food energy or plant biomass.
+- **Normalized traits** use `(value − configured minimum) / configured span`.
+  A value of 0.8 means 80% through that trait's allowed range, not 80% fitness.
+- **A living-population mean** changes when animals are born or die as well as
+  when inheritance changes. A rising line alone does not prove adaptation.
+- **Missing measurements** are unavailable, not zero. After extinction,
+  population is genuinely zero but living-population trait statistics are undefined.
+- **Weather shading** marks exposure, not proof that the weather caused every
+  change. Matched seed-blocked comparisons below provide a stronger model test.
+
+### 1. Desktop observatory: development and evolutionary accounting
+
+![Generational development, founder replacement and birth-cohort accounting](docs/images/research-evolution.png)
+
+Read the **Generational development** graph from left to right: its horizontal
+axis is tick, and the vertical axis is ancestral generation depth. Founders are
+generation 0; a child is one plus the deepest parent's generation. The deepest
+living generation is not the number of animals or a measure of intelligence.
+The mean gives the whole living population's average depth. Deepest living depth
+can fall when the deepest descendant dies.
+
+The signed **Size · birth-cohort Price equation** graph separates the difference
+between mean newborn size and the entire living pre-birth population's mean into
+**selection** and **transmission** components. Positive values point toward
+larger newborn size; negative values toward smaller size. Transmission includes
+the implemented inheritance/mutation rules. The components sum to the cohort
+change; this accounting identity is not a causal estimate of adaptation. Points
+are birth cohorts, not arbitrary continuous observations.
+
+**Population renewal** shows the fractions of living animals that are original
+founders and that are young. A falling founder fraction with continued births
+indicates replacement, not necessarily population growth. Hover a live chart to
+inspect stored values. [Smaller-window version](docs/images/research-evolution-compact.png)
+shows the same information in a scrolling panel.
+
+The other live graph groups answer different questions:
+
+| Live graph | Axes and interpretation |
+| --- | --- |
+| Population & food | Tick versus counts of living animals and food patches. A patch is not a fixed quantity of energy. |
+| Life & loss · cumulative | Tick versus all births/deaths since the run began. These lines never decrease within one run; restart begins new totals. |
+| Energy & injury / Reserves & exposure | Tick versus population-mean reserve fraction and injury, displayed as percentages. High energy is not the same as a high animal count; injury is not a mortality count. |
+| Temperature & rainfall | Tick versus normalized environmental signals. These are model indices, not degrees Celsius or millimetres. |
+| Food & metabolic pressure | Tick versus multipliers. Food below 1× reduces production relative to the model baseline; metabolic cost above 1× increases expenditure. Read health/exposure and resource reserves as well to understand losses. |
+| Inherited size & speed | Tick versus raw trait means. Their physical units differ; compare each line with itself rather than treating a taller line as a better trait. |
+| Genetic diversity | Tick versus the model's normalized summary of trait variation. It is not locus heterozygosity, a species count or heritability. |
+
+The client retains bounded histories, so the displayed window is not necessarily
+the whole run. Hover gives recorded values; lines between samples are visual
+connections, not additional measurements.
+
+### 2. Spatial ecology: the resource budget behind survival
+
+![Spatial habitat, finite plant reserves and water](docs/images/spatial-ecology.png)
+
+The habitat map is an engine-cell view, not a photograph of terrain. Inspect a
+cell in the live client to distinguish its plant reserves and soil water.
+**Plants** and **Water** are normalized reservoir measurements; **Plant energy**
+is the remaining finite energy available for natural food production.
+The cumulative budget traces total growth, food harvest and weather loss.
+These are accumulated flows, whereas plant energy is a current stock. Growth
+must replenish harvest/loss for reserves to persist; comparing their heights
+without that stock/flow distinction is misleading. The reported balance residual
+checks the resource accounting, not biological realism.
+
+The [three-seed spatial study](docs/results/spatial-biome-study-6000-2026-10-08.json)
+records 6,000 ticks per seed; its recorded 11–16 deepest living generations and
+297–381 deaths are finite-horizon results. [Full resource equations](docs/SPATIAL_ECOLOGY.md).
+
+### 3. Weather laboratory: compare conditions, not just one dramatic screenshot
+
+![Offline controlled-weather evidence viewer](docs/images/controlled-experiments.jpg)
+
+Select population, generation depth, plant energy, water or animal energy in
+the [archived interactive viewer](docs/results/weather-laboratory-2026-10-08/index.html).
+Download/open the HTML locally if GitHub displays its source instead of running
+it. It works offline; the adjacent [report JSON](docs/results/weather-laboratory-2026-10-08/report.json)
+retains the numbers behind the curves.
+
+The horizontal axis is tick; the vertical axis follows the selected outcome.
+Each condition line is the mean across the three selected seeds. The ribbons
+show between-seed quartiles, **not confidence intervals**. Intervention markers
+show when the model treatment begins. Use hover or the tick slider to inspect
+stored sample times rather than guessing values between points.
+
+The paired-effect panel subtracts **baseline from treatment within each seed**.
+A negative population effect means fewer animals than the matched baseline;
+positive is more, not automatically better. The interval is an exploratory paired
+bootstrap interval from only three seed blocks. The replicate table retains
+extinctions and failures instead of hiding unsuccessful runs. Here drought ended
+with 22–24 animals and the configured severe storm with none, versus 160–175 in
+baseline. This demonstrates effects of these model settings, not calibrated
+real-world weather damage. [Protocol, exact results and caveats](docs/CONTROLLED_EXPERIMENTS.md).
+
+### 4. Exported time series: population, traits, births and deaths
+
+The following four figures belong to **one showcase snapshot: seed 2026, tick
+800, 157 living animals, deepest living generation 5**. They are illustrative,
+not the replicated weather experiment above.
+
+![Population and resource-patch counts over ticks](docs/images/trait-snapshot/population.png)
+
+**Population and resources:** cyan counts living animals; amber counts food
+patches. Both share a count axis but represent different things. Look for sustained
+growth, plateaus or decline; do not infer how much food energy exists from the
+number of patches alone. A plateau can include many births and deaths.
+
+![Six mean traits expressed within fixed configured ranges](docs/images/trait-snapshot/traits.png)
+
+**Mean inheritable traits:** each coloured line is a different trait; the vertical
+axis is its normalized mean, 0–1 within fixed configuration bounds. Follow one
+line through time to see distributional shifts. Comparing normalized heights
+does not compare physical units: speed, size and fertility have different meanings.
+A high metabolism value is not automatically beneficial; energy costs matter.
+
+![Birth and death events at sampled ticks](docs/images/trait-snapshot/births_deaths.png)
+
+**Births and deaths:** these exported traces plot events **at the recorded sample
+tick**, not cumulative totals and not sums of all events since the preceding
+sample. Events between metric samples can therefore be absent from this figure.
+Do not sum its points to reconstruct lifetime births/deaths. Use `total_births`
+and `total_deaths` in the export summary/report for complete counts. This differs
+from the desktop **Life & loss · cumulative** graph, whose totals retain outcomes
+between GUI polls. For a run with no immigration, check
+`living = initial founders + total births − total deaths`.
+
+![Final living-population distributions for all six traits](docs/images/trait-snapshot/distributions.png)
+
+**Final trait distributions:** each panel is a histogram of one trait in the
+living population at the final tick. Horizontal position is the raw trait value;
+bar height is the number of animals in a bin. Wide distributions show more
+spread; multiple peaks can indicate subgroups but do not establish separate
+species. This is a final snapshot, not a time series, and excludes animals that
+already died. Bin choices can alter the apparent shape.
+
+### 5. Trait geometry: individual variation beyond the average
+
+![Individual PCA, trait correlations and variation spectrum](docs/images/trait-snapshot/trait_space.png)
+
+The [separately published full-size figure](docs/images/trait-geometry.png) shows
+the same showcase snapshot. Read the three panels as follows:
+
+1. **Individuals · generation:** each dot is a living creature. The horizontal
+   and vertical coordinates are PC1 and PC2: weighted combinations of all six
+   normalized traits, not physical position in the habitat. Nearby points have
+   similar projections, but may differ in the other four dimensions. Colour
+   indicates generation; the axis percentages show the variance represented.
+2. **Trait correlations:** the heatmap ranges from −1 to +1. Positive values mean
+   the two traits tend to be high together in this snapshot; negative values mean
+   one tends to be high when the other is low. Zero means no linear association,
+   not necessarily independence. A constant trait has undefined correlations.
+3. **Variation spectrum:** each bar is a principal component's fraction of total
+   normalized variance. Tall first bars mean variation concentrates in fewer
+   directions. Effective dimension summarizes that concentration; it is neither
+   the number of genes nor a measure of intelligence, fitness or heritability.
+
+PCA is fitted separately to each snapshot. Do not connect coordinates from
+different snapshots as if the axes stayed fixed. Tied axes have no unique
+orientation. Correlation and generation clustering are descriptive, not proof of
+selection or adaptation. [Equations and interpretation](docs/TRAIT_GEOMETRY.md).
+
+### 6. Chromosome research preview: explicitly unreleased
+
+These six figures were generated during development of the **opt-in diploid
+biome**, seed 2026, tick 1,200. The [archived summary](docs/results/diploid-preview-2026-10-08/summary.json)
+records 159 living creatures, 135 births, 40 deaths and no recorded invariant
+errors. The [configuration](docs/results/diploid-preview-2026-10-08/config.json)
+and [phased genotype/trait snapshot](docs/results/diploid-preview-2026-10-08/trait-space.json)
+are included for inspection. This is one development run, not long-horizon
+validation. The default released showcase does **not** acquire explicit
+chromosomes merely by downloading these images.
+
+![Diploid preview: frequencies, heterozygosity, linked associations and individual dosages](docs/images/diploid-preview/chromosomes.png)
+
+- **Allele frequencies:** the x-axis lists the 12 model loci; bar height is the
+  fraction of the population's chromosome copies carrying binary allele 1.
+  Each creature has two copies. Frequency 1 means fixation of allele 1; 0 means
+  allele 1 is absent. Neither allele is universally “better”.
+- **Heterozygosity:** cyan is the fraction of creatures with different alleles
+  at a locus. Amber is `2p(1−p)`, the random-union reference at frequency `p`,
+  not a claim that the population satisfies random mating or equilibrium.
+  The lines can differ because actual paired copies have a different composition.
+- **Linked-locus association · r²:** both axes are locus indices. The colour
+  scale is 0–1 association between alleles on the sampled phased chromosomes.
+  Higher values mean stronger association, not stronger causal effects on traits.
+  Self-association is 1 for a variable locus; fixed loci are undefined/masked,
+  not zero. Linkage, drift and population history can affect this pattern.
+- **Individual allele dosage:** columns are loci and rows are creatures ordered
+  by generation, then ID. The discrete colours mean 0, 1 or 2 allele-1 copies.
+  Rows are not time steps or spatial positions. The display samples at most 180
+  individuals deterministically; the archived snapshot retains all individuals.
+
+<details>
+<summary>All five companion figures from the same diploid preview</summary>
+
+![Diploid preview population and patches](docs/images/diploid-preview/population.png)
+
+Read counts against tick exactly as in section 4; this is the chromosome-profile
+run, not the showcase run. Food patches remain distinct from plant-energy reserves.
+
+![Diploid preview normalized mean traits](docs/images/diploid-preview/traits.png)
+
+The six mean-trait lines are normalized to their configured ranges. The preview
+derives traits from its chromosome architecture; these means still do not prove
+adaptation or measure heritability.
+
+![Diploid preview sampled birth and death events](docs/images/diploid-preview/births_deaths.png)
+
+These are recorded-tick events, not cumulative totals. The summary's 135 births
+and 40 deaths are the complete counts; do not replace them with a sum of points.
+
+![Diploid preview final trait distributions](docs/images/diploid-preview/distributions.png)
+
+Each histogram counts surviving creatures by raw trait value at tick 1,200.
+Discrete loci and shared effects can produce clustered values; this is not proof
+of speciation or a calibrated real-species genetic architecture.
+
+![Diploid preview individual trait geometry](docs/images/diploid-preview/trait_space.png)
+
+Read the PCA, correlation and spectrum panels using section 5. The axes are
+fitted to this population; their coordinates are not directly comparable to the
+showcase snapshot's independently fitted axes.
+
+</details>
+
+### 7. Screenshots: what the remaining views tell you
+
+| Image | What to read |
+| --- | --- |
+| [Population overview](docs/images/presentation-overview.png) | Counts, cumulative births/deaths and energy/injury histories. A stable population need not mean no deaths. |
+| [Applied storm](docs/images/presentation-storm.png) | Active intervention, exposure shading, falling population and cause-of-death totals. This is an explicitly applied storm in an older showcase, not a spontaneous event in the current study. |
+| [Genetic trends](docs/images/presentation-genetics.png) | Historical living-population means and diversity. These are scalar traits, not the unreleased chromosome preview. |
+| [Selected creature](docs/images/presentation-selected.png) | One animal's reserves, actions, ancestry and inherited traits alongside population histories; individual status is not a population average. |
+| [Compact layout](docs/images/presentation-compact.png) | The 960×600 scrolling presentation layout; it is a layout check, not an independent experiment. |
+| [Pygame laboratory](docs/images/laboratory.png) | The 2D engine observer with creatures, resources and lab controls; it is distinct from the 3D Godot client. |
+| [Laboratory inspector](docs/images/inspector.png) | Selected-organism information and lineage in the 2D lab. |
+| [Launch setup](docs/images/setup.png) | Configuration before starting a run, not a measured simulation result. |
+| [Pressure experiment](docs/images/pressure.png) | Earlier experimental view; compare settings and source version before comparing its outcomes with current runs. |
+
+The presentation captures are historical 2026-10-06 evidence; newer research
+figures above are 2026-10-08 snapshots. [Capture conditions and historical runtime measurements](docs/PRESENTATION_VALIDATION.md).
+
+<details>
+<summary>Earlier wildlife-interface captures, retained for completeness</summary>
+
+These show earlier UI states, not a claim that each is the latest visual design.
+
+| Image | Meaning |
+| --- | --- |
+| [Overview](docs/images/wildlife-overview.png) / [1280-wide overview](docs/images/wildlife-overview-1280.png) | Whole habitat and observation panels at different window sizes. |
+| [Selected animal](docs/images/wildlife-selected.png) | Individual profile and selection highlight. |
+| [Instincts](docs/images/wildlife-instincts.png) | Competing normalized drive pressures, not human emotions or percentages of fitness. |
+| [Action choices](docs/images/wildlife-action-choices.png) | Perceived action utilities; urgent danger and action hysteresis can override a simple highest-score interpretation. |
+| [Storm](docs/images/wildlife-storm.png) | Older weather/intervention appearance. |
+| [Narrow layout](docs/images/wildlife-narrow.png) | Responsive layout check, not different biology. |
+| [Offline state](docs/images/wildlife-offline.png) | Disconnected-client messaging; displayed absence of a connection is not population extinction. |
+
+</details>
+
+<details>
+<summary>Empty-population diagnostic figures</summary>
+
+These are rendering checks, not a measured extinction treatment. They verify
+that lack of living data is shown honestly.
+
+| Figure | Interpretation |
+| --- | --- |
+| [Population](docs/images/empty-population/population.png) | A zero population is valid; resource counts, if present, are a separate quantity. |
+| [Mean traits](docs/images/empty-population/traits.png) | There is no living-population mean to interpret after extinction; do not read an empty trace as a zero-valued genotype. |
+| [Births/deaths](docs/images/empty-population/births_deaths.png) | Sampled event counts do not explain an extinction cause without a real run's complete record. |
+| [Distributions](docs/images/empty-population/distributions.png) | “Population extinct” replaces a fabricated histogram. |
+| [Trait geometry](docs/images/empty-population/trait_space.png) | Covariance/PCA require enough individuals and variation; unavailable is not zero correlation. |
+
+</details>
+
+### 8. Mathematics PDF and current references
+
+[Open/download the 13-page Mathematics of Vikasa PDF](output/pdf/Vikasa_Mathematics_Guide.pdf).
+It explains founder draws, scalar crossover/mutation, movement and boundaries,
+energy, reproduction, death/environment rules, spatial lookup, summary statistics,
+lineage, screen coordinates and chart normalization, with equations and worked
+examples. Read the variables and configured bounds before substituting values;
+illustrative defaults are not universal constants.
+
+**Version warning:** the PDF explicitly documents commit `0140311`. It is a
+historical mathematical reference, not an up-to-date specification of the newer
+lifecycle, spatial reservoir, Price/PCA observers or chromosome preview. In
+particular, its older death rules should not be used to explain today's showcase.
+For current implemented equations use [MATHEMATICS.md](docs/MATHEMATICS.md),
+[SCIENTIFIC_MODEL.md](docs/SCIENTIFIC_MODEL.md),
+[spatial ecology](docs/SPATIAL_ECOLOGY.md) and
+[trait geometry](docs/TRAIT_GEOMETRY.md). The PDF is preserved unchanged so its
+explicit implementation version remains auditable.
+
+### 9. Numerical reports behind the visuals
+
+| Evidence | How to read it |
+| --- | --- |
+| [Showcase development study](docs/results/development-study-2026-10-08.json) | Three selected seeds, 12,000 ticks each; inspect renewal, extinction, mortality causes and recorded invariant checks together. |
+| [Extinction control](docs/results/extinction-control-study-2026-10-08.json) | Preserves the earlier extinction-prone settings; compare the resolved configurations, not just the final count. |
+| [Spatial study](docs/results/spatial-biome-study-6000-2026-10-08.json) | Finite-horizon spatial ecology, not indefinite viability. |
+| [Weather report](docs/results/weather-laboratory-2026-10-08/report.json) / [manifest](docs/results/weather-laboratory-2026-10-08/manifest.json) | Per-seed counterfactuals, complete failed/extinct outcomes and byte hashes for the archived evidence. |
+| [Spatial performance comparison](docs/results/spatial-performance-2026-10-08.json) | Measured computational throughput and seeded-state equivalence, not biological improvement. [Benchmark explanation](docs/PERFORMANCE.md). |
+
+These reports retain their original configurations/source hashes. Later code
+changes do not retroactively turn them into measurements of the latest checkout.
 
 ## Limitations
 
