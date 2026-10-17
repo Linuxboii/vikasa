@@ -18,9 +18,7 @@ func _run() -> void:
 	var tools = main.get_node("Interface/WorldTools")
 	var client = main.get_node("SimulationClient")
 	# Keep this fixture smoke independent of any host bridge process.
-	client._timer.stop()
-	client._request.cancel_request()
-	client._busy = false
+	client.stop_polling()
 	for contract in [
 		[world, ["set_state", "set_selected", "set_follow", "reset_camera", "clear_snapshot"], ["world_clicked", "creature_clicked"]],
 		[hud, ["set_state", "set_selection"], ["pause_requested", "step_requested", "speed_requested", "inspect_requested", "world_tools_requested", "reset_requested", "follow_requested"]],
@@ -41,7 +39,7 @@ func _run() -> void:
 		"environment": {"season": "summer", "temperature": 0.7, "active_events": []}}
 	main._on_connection(true, "Connected")
 	main._on_state(state)
-	check(world.creature_views.size() == 18, "Animals did not synchronize")
+	check(world.swarm.count() == 18, "Animals did not synchronize")
 	var crowded: Dictionary = state.duplicate(true)
 	crowded.creatures = []
 	crowded.resources = []
@@ -50,12 +48,14 @@ func _run() -> void:
 	for i in range(400):
 		crowded.resources.append({"id": i, "position": [250 + i % 50, 220 + i % 35]})
 	main._on_state(crowded)
-	check(world.creature_views.size() <= 180, "Population rendering exceeded the safe visual budget")
-	check(world.resource_views.size() <= 240, "Food rendering exceeded the safe visual budget")
+	check(world.swarm.count() == 260, "Instanced population must render every animal")
+	check(world.food.multimesh.visible_instance_count == 400, "Instanced food must render every patch")
+	world._process(0.016)
+	check(world.swarm._near.multimesh.visible_instance_count + world.swarm._far.multimesh.visible_instance_count == 260, "LOD split lost animals")
 	main._on_state(state)
-	var gait_before: float = world.creature_views[0]._gait_phase
+	var gait_before: float = world.swarm.agents[0].gait
 	world._process(0.25)
-	check(is_equal_approx(gait_before, world.creature_views[0]._gait_phase), "Paused gait advanced")
+	check(is_equal_approx(gait_before, world.swarm.agents[0].gait), "Paused gait advanced")
 	check(hud.step_button.disabled == false, "Paused step should be enabled")
 	main._select(3)
 	check(inspector.visible and hud.needs.visible, "Selection summary did not open")
@@ -124,7 +124,7 @@ func _run() -> void:
 	tools.placing_food = true
 	tools.placement_changed.emit(true)
 	main._on_ground(Vector2(0.5, 0.5))
-	check(payloads.size() == 1 and payloads[0].action == "food" and payloads[0].x == 0.5, "Food command contract mismatch")
+	check(payloads.size() == 1 and payloads[0].action == "food_burst" and payloads[0].x == 0.5 and payloads[0].count == 10, "Food command contract mismatch")
 	check(not tools.placing_food and not world.placement_mode, "Placement failed to finish")
 	tools.placing_food = true
 	tools.placement_changed.emit(true)
@@ -136,12 +136,40 @@ func _run() -> void:
 	tools.weather_choice.select(3)
 	tools._schedule()
 	check(payloads.size() == 2 and payloads[1].kind == "wildfire" and payloads[1].duration == 160, "Weather command mismatch")
+	# Showcase features: lenses, director, photo mode, help, legends, radar, feed.
+	main.set_view_mode("dynasty")
+	check(world.swarm.view_mode == "dynasty" and hud.lens_legend.visible, "Dynasty lens did not apply")
+	main.set_view_mode("natural")
+	check(not hud.lens_legend.visible, "Natural lens should hide the legend")
+	main.set_director(true)
+	check(main.director and not hud.get_node("ObservationDock").visible, "Director must hide chrome")
+	main._direct(0.1)
+	check(world.follow_id >= 0 and hud.cinematic.caption_title.text.begins_with("#") or hud.cinematic.caption_title.text == "The biome", "Director did not pick a subject")
+	main.set_director(false)
+	check(hud.get_node("ObservationDock").visible, "Leaving director must restore chrome")
+	main.set_photo_mode(true)
+	check(not hud.get_node("TopStatus").visible and world.camera.auto_orbit > 0.0, "Photo mode must hide chrome and orbit")
+	main._unhandled_key_input(escape)
+	check(not main.photo_mode and hud.get_node("TopStatus").visible, "Escape must leave photo mode")
+	main._toggle_legends()
+	check(hud.legends.visible and hud.legends._rows_by_key.size() == 6, "Legends panel incomplete")
+	main._toggle_legends()
+	check(hud.minimap is Minimap and hud.minimap.world == world, "Radar not wired")
+	hud.feed.ingest([{"seq": 5, "tick": 1, "kind": "birth", "text": "x"}])
+	hud.feed.ingest([{"seq": 5, "tick": 1, "kind": "birth", "text": "x"}, {"seq": 6, "tick": 2, "kind": "fight", "text": "Creature 3 won a clash with creature 4.", "creature_id": 3}])
+	check(hud.feed._toasts.size() == 1 and hud.feed.last_seq == 6, "Feed must show only new sequenced events")
+	var bytes := PackedFloat32Array([2.0, 99, 1, 1, 18, 4, 0, 48, 47.5, 1.25, 0.8, 0.4, 4, 1.5, 0.5, 720, 480, 10, 3, 6, 1, 0, 230, 0,
+		7, 100, 200, 1, 0, 0.5, 1, 4, 2, 80, 0.3, 0.6, 0.5, 1, 7, 3, 500, 0.0,
+		11, 50, 60, 30]).to_byte_array()
+	var decoded: Dictionary = client.decode(bytes)
+	check(decoded.tick == 99 and decoded.count == 1 and decoded.weather == "storm" and decoded.data[decoded.offset] == 7.0 and decoded.data[decoded.resource_offset] == 11.0, "Binary frame decode mismatch")
+	check(client.decode(PackedByteArray([1, 2, 3, 4])).is_empty(), "Malformed frame must be rejected")
 	main._on_connection(false, "Simulation offline · Reconnecting")
 	check(hud.pause_button.disabled and tools.food_button.disabled, "Offline controls not disabled")
 	check(hud.notice.text.contains("offline"), "Offline message missing")
-	check(world.creature_views.is_empty() and main.latest_state.is_empty(), "Offline snapshot remained selectable")
+	check(world.swarm.count() == 0 and main.latest_state.is_empty(), "Offline snapshot remained selectable")
 	main._on_state({"world": state.world, "seed": 2026, "population": 0, "creatures": [], "resources": [], "paused": true})
-	check(world.creature_views.is_empty() and not hud.needs.visible, "Empty world did not clear selection")
+	check(world.swarm.count() == 0 and not hud.needs.visible, "Empty world did not clear selection")
 	check(hud.notice.text.contains("extinct"), "Extinction recovery prompt missing")
 	# Optional presentation capture: fixture, never described as a natural outcome.
 	var args := OS.get_cmdline_user_args()
@@ -150,8 +178,8 @@ func _run() -> void:
 		main._on_state(state)
 		main._select(3)
 		main.world.reset_camera()
-		main.world.distance = 62
-		main.world._update_camera()
+		main.world.camera.goal_distance = 62
+		main.world.camera.snap()
 		for frame in range(12): await process_frame
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png("user://task5-selected.png")

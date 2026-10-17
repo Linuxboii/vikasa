@@ -36,8 +36,8 @@ func _run() -> void:
 			if d < separation: subject = creature; separation = d
 		main._select(int(subject.id))
 		main.world.set_follow(int(subject.id))
-		main.world.distance = 44
-		main.world._update_camera()
+		main.world.camera.goal_distance = 44
+		main.world.camera.snap()
 	await create_timer(0.4).timeout
 	await RenderingServer.frame_post_draw
 	var mode := "genetics" if "--genetics" in args else "overview"

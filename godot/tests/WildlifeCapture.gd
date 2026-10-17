@@ -23,8 +23,8 @@ func _run() -> void:
 				if d < best_distance: best_distance = d; best = animal
 			main._select(int(best.id))
 			main.world.set_follow(int(best.id))
-			main.world.distance = 44
-			main.world._update_camera()
+			main.world.camera.goal_distance = 44
+			main.world.camera.snap()
 			if "--instincts" in args:
 				var content = main.inspector.get_child(0).get_child(0)
 				for child in content.get_children():

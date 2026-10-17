@@ -47,11 +47,11 @@ func _ready() -> void:
 	close.pressed.connect(func(): cancel_placement(); set_open(false))
 	row.add_child(close)
 	content.add_child(BiomeUI.paragraph("Change the climate. Trace the consequences.", 13))
-	content.add_child(BiomeUI.label("Food placement", 18))
-	food_button = BiomeUI.button("Place food patch", "Then click the habitat. Escape cancels.")
-	food_button.pressed.connect(func(): placing_food = not placing_food; placement_changed.emit(placing_food); food_button.text = "Cancel placement" if placing_food else "Place food patch")
+	content.add_child(BiomeUI.label("Food bloom", 18))
+	food_button = BiomeUI.button("Scatter a food bloom", "Then click the habitat. Escape cancels.")
+	food_button.pressed.connect(func(): placing_food = not placing_food; placement_changed.emit(placing_food); food_button.text = "Cancel placement" if placing_food else "Scatter a food bloom")
 	content.add_child(food_button)
-	content.add_child(BiomeUI.paragraph("Choose this tool, then click a place in the habitat. It adds food at the next simulation tick.", 14))
+	content.add_child(BiomeUI.paragraph("Choose this tool, then click a place in the habitat. Ten audited food patches spiral out from where you click.", 14))
 	content.add_child(BiomeUI.label("Environmental pressure", 18))
 	weather_choice = OptionButton.new()
 	weather_choice.custom_minimum_size.y = 40
@@ -136,10 +136,10 @@ func set_notice(message: String, error: bool = false) -> void:
 func cancel_placement() -> void:
 	if not placing_food: return
 	placing_food = false
-	food_button.text = "Place food patch"
+	food_button.text = "Scatter a food bloom"
 	placement_changed.emit(false)
 
 func place_food(position: Vector2) -> void:
 	if not connected or not placing_food: return
-	command_requested.emit({"action": "food", "x": clampf(position.x, 0, 1), "y": clampf(position.y, 0, 1)})
+	command_requested.emit({"action": "food_burst", "x": clampf(position.x, 0, 1), "y": clampf(position.y, 0, 1), "count": 10, "radius": 0.05})
 	cancel_placement()
