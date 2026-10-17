@@ -69,3 +69,14 @@ The already-running bridge keeps the code it imported at launch. Do not silently
 restart an ongoing field study to activate an optimization: its state would be
 lost. New launches load the current implementation. Preserving and restoring a
 live Godot world across upgrades still requires bridge checkpoint integration.
+
+## Live 3D client
+
+The Godot client was rebuilt for frame pacing on integrated graphics: GPU-instanced
+animals with shader animation, a binary push stream for motion, a slim incremental
+explanation document parsed off the main thread, and staggered UI updates. On the
+Iris Xe development laptop the full showcase holds the 59 Hz display refresh with
+p99 frame times around 21 ms, versus 13–35 FPS for the v1.1 client. The measurement
+method, before/after table and copy-paste probe commands are in
+[SHOWCASE.md](SHOWCASE.md#measured-on-this-machine).
+

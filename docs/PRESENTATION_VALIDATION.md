@@ -1,5 +1,9 @@
 # Observatory presentation validation
 
+> The rendering notes below (180-animal draw cap, per-animal shadows, 30 FPS ceiling)
+> describe the v1.1 client and are superseded. The v2.0 client renders every animal
+> with GPU instancing and holds the display refresh rate; see [SHOWCASE.md](SHOWCASE.md).
+
 The evidence below is a historical 2026-10-06 presentation snapshot of the older
 showcase. The 2026-10-08 lifecycle/quantitative-evolution upgrade changes the world,
 configuration and trajectories; see [RESEARCH_STATUS.md](RESEARCH_STATUS.md).

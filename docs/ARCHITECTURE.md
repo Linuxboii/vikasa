@@ -24,18 +24,21 @@ Vikasa separates simulation outcomes from their presentation. `SimulationEngine`
 | `io/checkpoints.py` | Strict versioned checkpoint serialization/migration. |
 | `experiments/` and `analytics/` | Scenario execution, metrics, invariant audits, and result charts/exports. |
 | `ui/` | Pygame setup, controls, rendering and inspection. |
-| `bridge.py` | Loopback HTTP bridge and command handling for the Godot client. |
-| `godot/` | Procedural 3D habitat, client polling, controls, HUD, world tools, and selected-creature inspection. |
+| `bridge.py` | Loopback bridge: binary frame push stream (`/stream`), slim incremental explanation document (`/state?lite=1`), sequenced event feed and command handling for the Godot client. |
+| `godot/` | Procedural 3D habitat, stream client, controls, HUD, world tools, and selected-creature inspection. See [the showcase guide](SHOWCASE.md). |
+| `godot/scripts/CreatureMesh.gd`, `CreatureSwarm.gd`, `shaders/creature.gdshader` | One baked quadruped mesh drawn for the whole population as near/far GPU-instanced LODs; gait and pose animated in the vertex shader; frame interpolation, births, deaths and picking. |
+| `godot/scripts/Atmos.gd`, `Habitat.gd`, `WeatherFX.gd`, `LifeFX.gd`, `FoodField.gd` | Sky, presentation daylight, seasons, instanced meadow/trees/water, weather particles, life-event particles and instanced food. |
+| `godot/scripts/Main.gd`, `HUD.gd`, `CameraRig.gd`, `QualityManager.gd`, `Soundscape.gd` | Director camera, lenses, photo mode, event feed, radar, legends, adaptive quality and procedural audio. |
 | `godot/scripts/Observatory.gd`, `LiveChart.gd` | Switchable chart groups, bounded real histories, hover inspection, life/death totals and exposure shading. |
-| `godot/scripts/AtmosphereOverlay.gd` | Rain, cold and fire cues using inexpensive CanvasItem drawing; no simulation feedback. |
+| `godot/scripts/AtmosphereOverlay.gd` | Screen-space vignette and faint weather tint; no simulation feedback. |
 
 Data flows from validated config and a seed into the engine. At each tick the engine updates environment, food, spatial perceptions and behavior; executes selected actions; then resolves fights, feeding, reproduction and deaths in stable order. Culture and satisfaction are updated after the tick's survival events. The engine exports immutable snapshots to clients. Rendering can lag or disconnect without changing the simulation state.
 
 ## Behavior contract
 
-The bridge publishes a completed snapshot about every 160 milliseconds. HTTP readers return the last publication without waiting for the simulation lock, allowing presentation to remain responsive at high requested tick rates. Commands are serialized under the engine lock and publish their result immediately. Requested speeds are 16/48/120 ticks per second; the HUD also reports an actual rate measured from completed ticks. Unachievable catch-up work is dropped. History payloads include at most 240 metric samples and the client draws at most 180, so chart cost stays bounded.
+The bridge publishes a compact binary frame up to 30 times per second and pushes it to the client over one long-lived socket, and publishes the explanatory document every 0.4 seconds, serialised once per publication. Readers receive the last publication without waiting for the simulation lock, allowing presentation to remain responsive at high requested tick rates. Per-tick births, deaths, clashes and culture entries are collected into a sequenced feed so none are lost between polls. Commands are serialized under the engine lock and publish their result immediately. Requested speeds are 16/48/120 ticks per second; the HUD also reports an actual rate measured from completed ticks. Unachievable catch-up work is dropped. History rows travel incrementally (only rows newer than the client's cursors); the client keeps at most 240 metric samples and draws at most 180, so chart cost stays bounded.
 
-The presentation configuration begins with 64 creatures and a population cap of 180. Above 40 creatures, cognition is deterministically staggered across six ticks; movement and vital processes execute each tick. Contest opportunities are evaluated every four ticks. Rendered creatures use shared low-detail meshes and one simple body shadow; instanced vegetation and a 30 FPS ceiling preserve GPU headroom.
+The presentation configuration begins with 64 creatures and a population cap of 180. Above 40 creatures, cognition is deterministically staggered across six ticks; movement and vital processes execute each tick. Contest opportunities are evaluated every four ticks. The whole population renders as two instanced draws plus instanced contact shadows; vegetation, food and particles are instanced and GPU-animated, and an adaptive quality manager keeps the frame rate locked to the display. Measurements are in [SHOWCASE.md](SHOWCASE.md).
 
 The optional validated `DemographyConfig` supplies a seeded age-dependent hazard;
 old configurations retain fixed-age mortality. `LineageStore.generation_of` uses
