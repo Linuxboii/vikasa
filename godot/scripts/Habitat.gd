@@ -21,6 +21,8 @@ var pools: Array[MeshInstance3D] = []
 var _pool_scales: Array[Vector3] = []
 var _biomass_texture: ImageTexture
 var _materials: Array[ShaderMaterial] = []
+## Crown centres and radii (x, z, r) so cameras can avoid looking through trees.
+var canopy: Array[Vector3] = []
 
 func build(world_width: float, world_height: float, scale_factor: float, seed_value: int) -> void:
 	width = world_width * scale_factor
@@ -259,6 +261,7 @@ func _build_trees(seed_value: int) -> void:
 		var spin := Basis(Vector3.UP, rng.randf() * TAU)
 		trunks.multimesh.set_instance_transform(broad_count + pine_count, Transform3D(Basis.from_scale(Vector3.ONE * s), Vector3(x, trunk_height * 0.5 - 0.2, z)))
 		var pine := rng.randf() < 0.32
+		canopy.append(Vector3(x, z, (1.1 if pine else 1.7) * s))
 		if pine:
 			crowns_pine.multimesh.set_instance_transform(pine_count, Transform3D(spin.scaled(Vector3(1.1, 1.5, 1.1) * s), Vector3(x, trunk_height * 0.55, z)))
 			crowns_pine.multimesh.set_instance_color(pine_count, Color("#2f5a46").lerp(Color("#4f7a52"), rng.randf()))

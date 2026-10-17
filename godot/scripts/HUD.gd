@@ -351,7 +351,9 @@ func set_clock(text: String) -> void:
 	# Changing label text reshapes it and re-sorts the bar; only on real change.
 	if season.text != text: season.text = text
 
-func set_state(state: Dictionary) -> void:
+## `core_only` leaves the observatory, feed, legends and mood layer to the
+## caller, which spreads them over later frames to keep frame times flat.
+func set_state(state: Dictionary, core_only: bool = false) -> void:
 	_paused = bool(state.get("paused", false))
 	pause_button.text = "Resume" if _paused else "Pause"
 	status.text = "Paused" if _paused else "Running"
@@ -364,10 +366,11 @@ func set_state(state: Dictionary) -> void:
 	sparkline.queue_redraw()
 	telemetry.text = "%.1f ticks/s · %d FPS" % [float(state.get("actual_ticks_per_second", 0)), roundi(Engine.get_frames_per_second())]
 	telemetry.tooltip_text = "Measured simulation speed and rendered frames per second."
-	observatory.set_state(state)
-	atmosphere.set_state(state)
-	if legends.visible: legends.set_state(state)
-	feed.ingest(state.get("feed", []))
+	if not core_only:
+		observatory.set_state(state)
+		atmosphere.set_state(state)
+		if legends.visible: legends.set_state(state)
+		feed.ingest(state.get("feed", []))
 	var events: Array = env.get("active_events", [])
 	weather.text = str(events[0].get("kind", "Weather")).capitalize() + " active" if not events.is_empty() else "Seasonal cycle"
 	var rate := float(state.get("ticks_per_second", 48))

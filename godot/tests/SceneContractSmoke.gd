@@ -19,6 +19,7 @@ func _run() -> void:
 	var client = main.get_node("SimulationClient")
 	# Keep this fixture smoke independent of any host bridge process.
 	client.stop_polling()
+	main.stagger = false
 	for contract in [
 		[world, ["set_state", "set_selected", "set_follow", "reset_camera", "clear_snapshot"], ["world_clicked", "creature_clicked"]],
 		[hud, ["set_state", "set_selection"], ["pause_requested", "step_requested", "speed_requested", "inspect_requested", "world_tools_requested", "reset_requested", "follow_requested"]],

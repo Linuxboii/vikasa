@@ -16,7 +16,25 @@ const DEATH_SECONDS := 1.6
 
 class Agent:
 	var id := 0
-	var row: Dictionary = {}
+	var x := 0.0
+	var y := 0.0
+	var vx := 0.0
+	var vy := 0.0
+	var energy := 1.0
+	var behavior := 0
+	var size := 4.0
+	var speed := 2.0
+	var perception := 80.0
+	var aggression := 0.3
+	var resilience := 0.5
+	var sociability := 0.5
+	var bridge_flags := 0
+	var founder := 0
+	var generation := 0
+	var age := 0
+	var injury := 0.0
+	var known := false
+	var look_key := -1
 	var pos := Vector2.ZERO
 	var from := Vector2.ZERO
 	var to := Vector2.ZERO
@@ -31,6 +49,12 @@ class Agent:
 	var flags := 0
 	var size_scale := 1.0
 	var world := Vector3.ZERO
+
+	func to_row() -> Dictionary:
+		return {"id": id, "x": x, "y": y, "vx": vx, "vy": vy, "energy": energy, "behavior": behavior,
+			"size": size, "speed": speed, "perception": perception, "aggression": aggression,
+			"resilience": resilience, "sociability": sociability, "flags": bridge_flags,
+			"founder": founder, "generation": generation, "age": age, "injury": injury}
 
 var scale_factor := 0.1
 var width := 720.0
@@ -111,7 +135,7 @@ func position_of(id: int) -> Vector3:
 
 func row_of(id: int) -> Dictionary:
 	var agent: Agent = agents.get(id)
-	return agent.row if agent != null and agent.dying < 0.0 else {}
+	return agent.to_row() if agent != null and agent.dying < 0.0 and agent.known else {}
 
 func apply_frame(frame: Dictionary) -> void:
 	var now := Time.get_ticks_msec() / 1000.0
@@ -130,33 +154,27 @@ func apply_frame(frame: Dictionary) -> void:
 	var stride := int(frame.stride)
 	var offset := int(frame.offset)
 	var seen: Dictionary = {}
+	# Hot path (~25 Hz): typed fields only, no per-animal Dictionary allocation.
 	for i in int(frame.count):
 		var o := offset + i * stride
 		var id := int(data[o])
 		seen[id] = true
-		var row := {
-			"id": id, "x": data[o + 1], "y": data[o + 2], "vx": data[o + 3], "vy": data[o + 4],
-			"energy": data[o + 5], "behavior": int(data[o + 6]), "size": data[o + 7],
-			"speed": data[o + 8], "perception": data[o + 9], "aggression": data[o + 10],
-			"resilience": data[o + 11], "sociability": data[o + 12], "flags": int(data[o + 13]),
-			"founder": int(data[o + 14]), "generation": int(data[o + 15]), "age": int(data[o + 16]),
-			"injury": data[o + 17],
-		}
-		var target := Vector2(row.x, row.y)
+		var target := Vector2(data[o + 1], data[o + 2])
+		var flags := int(data[o + 13])
 		var agent: Agent = agents.get(id)
 		if agent == null:
 			agent = Agent.new()
 			agent.id = id
 			agent.pos = target
 			agent.from = target
-			agent.heading = -atan2(float(row.vy), float(row.vx))
+			agent.heading = -atan2(data[o + 4], data[o + 3])
 			agent.age_seconds = 10.0 if first else 0.0
 			agent.gait = randf() * TAU
 			agents[id] = agent
 			if not first: born.emit(id, to_world(target))
 		elif agent.dying >= 0.0:
 			agent.dying = -1.0
-		elif not first and int(row.flags) & 1 and not (int(agent.row.get("flags", 0)) & 1):
+		elif not first and flags & 1 and not (agent.bridge_flags & 1):
 			crowned.emit(id, to_world(target))
 		agent.from = agent.pos
 		agent.to = target
@@ -164,8 +182,29 @@ func apply_frame(frame: Dictionary) -> void:
 		if paused or agent.from.distance_to(target) > 40.0:
 			agent.pos = target
 			agent.from = target
-		agent.row = row
-		_refresh_look(agent)
+		agent.x = target.x
+		agent.y = target.y
+		agent.vx = data[o + 3]
+		agent.vy = data[o + 4]
+		agent.energy = data[o + 5]
+		agent.behavior = int(data[o + 6])
+		agent.size = data[o + 7]
+		agent.speed = data[o + 8]
+		agent.perception = data[o + 9]
+		agent.aggression = data[o + 10]
+		agent.resilience = data[o + 11]
+		agent.sociability = data[o + 12]
+		agent.bridge_flags = flags
+		agent.founder = int(data[o + 14])
+		agent.generation = int(data[o + 15])
+		agent.age = int(data[o + 16])
+		agent.injury = data[o + 17]
+		agent.known = true
+		# Recompute colour/shape only when something visible changed.
+		var key := agent.behavior | (flags << 3) | (int(agent.energy * 20.0) << 9) | (mini(agent.age / 24, 10) << 15) | (int(id == selected_id) << 20)
+		if key != agent.look_key:
+			agent.look_key = key
+			_refresh_look(agent)
 	for id in agents.keys():
 		var agent: Agent = agents[id]
 		if not seen.has(id) and agent.dying < 0.0:
@@ -176,37 +215,35 @@ func apply_frame(frame: Dictionary) -> void:
 				died.emit(id, agent.world)
 
 func _refresh_look(agent: Agent) -> void:
-	var row := agent.row
-	agent.coat = ViewModes.coat(view_mode, row)
-	var perception := clampf((float(row.perception) - 25.0) / 125.0, 0.0, 1.0)
-	var behavior := int(row.behavior)
-	var bridge_flags := int(row.flags)
+	agent.coat = ViewModes.coat(view_mode, agent.to_row())
+	var perception := clampf((agent.perception - 25.0) / 125.0, 0.0, 1.0)
+	var behavior := agent.behavior
+	var bridge_flags := agent.bridge_flags
 	var flags := 0
 	if agent.id == selected_id: flags |= 1
 	if bridge_flags & 1: flags |= 2
 	if bridge_flags & 2: flags |= 4
 	if behavior == 7: flags |= 8
 	flags |= roundi(perception * 3.0) << 4
-	flags |= roundi((1.0 - float(row.sociability)) * 3.0) << 6
-	flags |= roundi(float(row.aggression) * 3.0) << 8
+	flags |= roundi((1.0 - agent.sociability) * 3.0) << 6
+	flags |= roundi(agent.aggression * 3.0) << 8
 	if behavior == 3 or behavior == 4: flags |= 1024
 	agent.flags = flags
-	var size_gene := float(row.size)
-	agent.size_scale = clampf(0.78 + size_gene * 0.075, 0.9, 1.4)
+	agent.size_scale = clampf(0.78 + agent.size * 0.075, 0.9, 1.4)
 	if bridge_flags & 4:
-		agent.size_scale *= 0.55 + 0.45 * clampf(float(row.age) / 240.0, 0.0, 1.0)
+		agent.size_scale *= 0.55 + 0.45 * clampf(float(agent.age) / 240.0, 0.0, 1.0)
 
 func set_view_mode(mode: String) -> void:
 	view_mode = mode
 	for agent in agents.values():
-		if not agent.row.is_empty(): _refresh_look(agent)
+		if agent.known: _refresh_look(agent)
 
 func set_selected(id: int) -> void:
 	var previous: Agent = agents.get(selected_id)
 	selected_id = id
-	if previous != null and not previous.row.is_empty(): _refresh_look(previous)
+	if previous != null and previous.known: _refresh_look(previous)
 	var current: Agent = agents.get(id)
-	if current != null and not current.row.is_empty(): _refresh_look(current)
+	if current != null and current.known: _refresh_look(current)
 
 func set_night(value: float) -> void:
 	material.set_shader_parameter("night", value)
@@ -221,8 +258,7 @@ func update(delta: float, camera: Camera3D) -> void:
 	var gone: Array = []
 	var stride_length := 1.25
 	for agent: Agent in agents.values():
-		var row := agent.row
-		var behavior := int(row.get("behavior", 0))
+		var behavior := agent.behavior
 		var sink := 0.0
 		var grow := 1.0
 		if agent.dying >= 0.0:
@@ -242,7 +278,7 @@ func update(delta: float, camera: Camera3D) -> void:
 		if not paused and agent.dying < 0.0:
 			agent.progress = minf(1.0, agent.progress + delta / _interval)
 			agent.pos = agent.from.lerp(agent.to, agent.progress)
-		var velocity := Vector2(float(row.get("vx", 0.0)), float(row.get("vy", 0.0)))
+		var velocity := Vector2(agent.vx, agent.vy)
 		var speed := velocity.length()
 		if speed > 0.02 and agent.dying < 0.0:
 			agent.heading = lerp_angle(agent.heading, -atan2(velocity.y, velocity.x), clampf(delta * 6.0, 0.0, 1.0))
@@ -255,7 +291,7 @@ func update(delta: float, camera: Camera3D) -> void:
 		var ground := moving * ground_speed
 		agent.gait = fposmod(agent.gait + minf(18.0, ground / stride_length * TAU) * delta, TAU)
 		var locomotion := clampf(moving / 1.6, 0.0, 1.0) * (1.0 - agent.rest)
-		var stride := remap(clampf(float(row.get("speed", 2.25)), 0.5, 4.0), 0.5, 4.0, 0.85, 1.15)
+		var stride := remap(clampf(agent.speed, 0.5, 4.0), 0.5, 4.0, 0.85, 1.15)
 		agent.world = to_world(agent.pos) + Vector3(0, -sink, 0)
 		var s := agent.size_scale * grow
 		var basis := Basis(Vector3.UP, agent.heading).scaled(Vector3(s, s * (1.0 + (agent.size_scale - 1.0) * 0.15) / agent.size_scale, s))

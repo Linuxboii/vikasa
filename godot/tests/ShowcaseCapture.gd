@@ -33,7 +33,7 @@ func _run() -> void:
 	if "--view" in args and main.has_method("set_view_mode"):
 		main.set_view_mode(_arg("--view", "natural"))
 	if "--weather" in args:
-		main.client.send_command({"action": "weather", "kind": _arg("--weather", "storm"), "intensity": 1.6, "duration": 400})
+		main.client.send_command({"action": "weather", "kind": _arg("--weather", "storm"), "intensity": float(_arg("--intensity", "1.0")), "duration": int(_arg("--duration", "90"))})
 	await create_timer(float(_arg("--wait", "5"))).timeout
 	if "--select" in args or "--follow" in args:
 		var best := -1
@@ -62,8 +62,16 @@ func _run() -> void:
 	if "--yaw" in args: world.camera.goal_yaw = float(_arg("--yaw", "0.24"))
 	await create_timer(float(_arg("--settle", "2.5"))).timeout
 	await RenderingServer.frame_post_draw
+	var image := root.get_texture().get_image()
 	var path := "user://showcase-%s.png" % _arg("--name", "overview")
-	root.get_texture().get_image().save_png(path)
+	if "--docs" in args:
+		# Documentation gallery: 1600 px wide JPEGs keep the repository light.
+		var width := mini(1600, image.get_width())
+		image.resize(width, int(image.get_height() * float(width) / image.get_width()), Image.INTERPOLATE_LANCZOS)
+		path = ProjectSettings.globalize_path("res://").path_join("../docs/images/%s.jpg" % _arg("--name", "overview")).simplify_path()
+		image.save_jpg(path, 0.88)
+	else:
+		image.save_png(path)
 	print("CAPTURE ", ProjectSettings.globalize_path(path), " fps=", Engine.get_frames_per_second())
 	main.queue_free()
 	await process_frame

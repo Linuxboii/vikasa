@@ -23,6 +23,10 @@ var _hot: Dictionary = {}
 var _peak_generation := -1
 var _clock_accumulator := 0.0
 var _reseed_at := -1.0
+## Spread each explanatory update over consecutive frames (one consumer per
+## frame) so a 2.5 Hz document never lands as a single long frame.
+var stagger := true
+var _state_jobs: Array[Callable] = []
 var _clash_pattern := RegEx.create_from_string("(\\d+) won a clash with creature (\\d+)")
 
 func _ready() -> void:
@@ -75,9 +79,23 @@ func _on_frame(frame: Dictionary) -> void:
 
 func _on_state(state: Dictionary) -> void:
 	latest_state = state
-	world.set_state(state)
-	hud.set_state(state)
-	tools.set_state(state)
+	if not stagger:
+		world.set_state(state)
+		hud.set_state(state)
+		tools.set_state(state)
+		_apply_selection(state)
+		return
+	# A newer document supersedes any unfinished one.
+	_state_jobs = [
+		func(): world.set_state(state); tools.set_state(state),
+		func(): hud.set_state(state, true),
+		func(): _apply_selection(state),
+		func(): hud.observatory.set_state(state),
+		func(): hud.feed.ingest(state.get("feed", [])); hud.atmosphere.set_state(state),
+		func(): if hud.legends.visible: hud.legends.set_state(state),
+	]
+
+func _apply_selection(state: Dictionary) -> void:
 	var selected := _selected()
 	if selected_id >= 0 and selected.is_empty():
 		_select(-1)
@@ -97,6 +115,7 @@ func _on_state(state: Dictionary) -> void:
 			hud.cinematic.show_title()
 
 func _process(delta: float) -> void:
+	if not _state_jobs.is_empty(): _state_jobs.pop_front().call()
 	var env: Dictionary = latest_state.get("environment", {})
 	var season_name: String = world.atmos.conditions.get("season", str(env.get("season", "spring")))
 	var tick := int(client.last_frame.get("tick", latest_state.get("tick", 0)))
@@ -157,12 +176,18 @@ func _check_milestones(state: Dictionary) -> void:
 	_peak_generation = maxi(_peak_generation, deepest)
 
 func _selected() -> Dictionary:
+	# Slim state documents carry full detail only for the focus animal.
+	var focus: Variant = latest_state.get("focus")
+	if focus is Dictionary and int(focus.get("id", -1)) == selected_id: return focus
 	for creature in latest_state.get("creatures", []):
 		if int(creature.get("id", -1)) == selected_id: return creature
 	return {}
 
 func _select(id: int) -> void:
 	selected_id = id
+	if client.focus_id != id:
+		client.focus_id = id
+		if id >= 0 and client.connected: client.request_state()
 	if id < 0:
 		following = false
 		world.set_follow(-1)
@@ -288,12 +313,11 @@ func _direct(delta: float) -> void:
 	var best := -1
 	var best_score := -1.0
 	for agent in swarm.agents.values():
-		if agent.dying >= 0.0 or agent.row.is_empty(): continue
-		var row: Dictionary = agent.row
+		if agent.dying >= 0.0 or not agent.known: continue
 		var score := randf() * 1.5
-		score += {7: 5.0, 3: 3.0, 4: 3.0, 5: 3.0, 1: 1.0}.get(int(row.behavior), 0.0)
-		if int(row.flags) & 1: score += 2.0
-		if int(row.flags) & 4: score += 1.5
+		score += {7: 5.0, 3: 3.0, 4: 3.0, 5: 3.0, 1: 1.0}.get(agent.behavior, 0.0)
+		if agent.bridge_flags & 1: score += 2.0
+		if agent.bridge_flags & 4: score += 1.5
 		score += _hot.get(agent.id, 0.0) * 0.6
 		if agent.id in _director_recent: score -= 8.0
 		if score > best_score:
@@ -307,12 +331,15 @@ func _direct(delta: float) -> void:
 	world.selected_id = best
 	world.swarm.set_selected(best)
 	selected_id = best
-	camera.goal_distance = randf_range(13.0, 22.0)
-	camera.goal_pitch = randf_range(0.28, 0.5)
+	client.focus_id = best
+	camera.goal_distance = randf_range(14.0, 22.0)
+	camera.goal_pitch = randf_range(0.34, 0.55)
+	camera.goal_yaw = _clear_yaw(swarm.position_of(best), camera.goal_distance, camera.goal_pitch)
 	var row: Dictionary = swarm.row_of(best)
 	var reason := ""
 	for creature in latest_state.get("creatures", []):
-		if int(creature.get("id", -1)) == best:
+		# Only quote the explanation when it describes the action now on screen.
+		if int(creature.get("id", -1)) == best and str(creature.get("behavior", "")) == ViewModes.BEHAVIOR_NAMES[clampi(int(row.behavior), 0, 7)]:
 			reason = BehaviorPresentation.reason(creature)
 			break
 	var traits: Array = []
@@ -320,7 +347,28 @@ func _direct(delta: float) -> void:
 	if int(row.flags) & 4: traits.append("Young")
 	if _hot.has(best): traits.append("In the news")
 	var heading := "#%d · Generation %d%s" % [best, int(row.generation), (" · " + ", ".join(traits)) if not traits.is_empty() else ""]
-	hud.cinematic.caption(heading, "%s — %s" % [ViewModes.BEHAVIOR_LABELS[clampi(int(row.behavior), 0, 7)], reason])
+	var action: String = ViewModes.BEHAVIOR_LABELS[clampi(int(row.behavior), 0, 7)]
+	hud.cinematic.caption(heading, action + (" — " + reason if reason != "" else ""))
+
+## Pick the orbit angle whose camera position and sight line stay clear of tree crowns.
+func _clear_yaw(subject: Vector3, distance: float, pitch: float) -> float:
+	var best_yaw := randf() * TAU
+	var best_clearance := -INF
+	for i in 12:
+		var yaw := best_yaw + i * TAU / 12.0
+		var horizontal := distance * cos(pitch)
+		var eye := Vector2(subject.x + sin(yaw) * horizontal, subject.z + cos(yaw) * horizontal)
+		var clearance := INF
+		for crown in world.habitat.canopy:
+			var c := Vector2(crown.x, crown.y)
+			for t in [0.35, 0.6, 0.85, 1.0]:
+				# Crowns sit 2-4 units up; the sight line is lower near the subject.
+				clearance = minf(clearance, Vector2(subject.x, subject.z).lerp(eye, t).distance_to(c) - crown.z * (0.4 + t))
+		if clearance > best_clearance:
+			best_clearance = clearance
+			best_yaw = yaw
+		if clearance > 2.0: return yaw
+	return best_yaw
 
 func _save_screenshot() -> void:
 	await RenderingServer.frame_post_draw
