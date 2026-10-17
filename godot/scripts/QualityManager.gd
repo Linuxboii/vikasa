@@ -48,6 +48,7 @@ func cycle() -> String:
 func apply() -> void:
 	if persist:
 		var config := ConfigFile.new()
+		config.load(SETTINGS_PATH)
 		config.set_value("quality", "mode", mode)
 		config.set_value("quality", "tier", tier)
 		config.save(SETTINGS_PATH)
