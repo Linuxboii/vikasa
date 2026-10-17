@@ -17,6 +17,7 @@ window/size/window_height_override=900
 window/size/min_width=960
 window/size/min_height=600
 window/stretch/mode="disabled"
+window/vsync/vsync_mode=2
 
 [rendering]
 renderer/rendering_method="gl_compatibility"

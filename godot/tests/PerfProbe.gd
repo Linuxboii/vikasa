@@ -31,6 +31,12 @@ func _run() -> void:
 		main.quality.tier = int(_arg("--tier", "2"))
 		main.quality.apply()
 	if "--hide-ui" in args: main.set_ui_hidden(true)
+	if "--select" in args:
+		await create_timer(1.0).timeout
+		main._select(main.world.swarm.agents.keys()[0])
+		if "--legends" in args: main._toggle_legends()
+		if "--no-overlays" in args: main.world.overlays.enabled = false
+		if "--no-inspector" in args: main.inspector.set_open(false)
 	if "--msaa" in args: root.msaa_3d = int(_arg("--msaa", "0"))
 	if "--fxaa" in args: root.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
 	if "--grass" in args: main.world.habitat.set_grass_density(float(_arg("--grass", "1")))
@@ -52,6 +58,7 @@ func _run() -> void:
 	if "--freeze" in args: main.client.stop_polling()
 	if "--no-frames" in args: main.client.streaming = false; main.client._frame_timer.stop()
 	if "--no-state" in args: main.client._timer.stop(); main.client._timer.timeout.disconnect(main.client.request_state)
+	if "--warm" in args: await create_timer(float(_arg("--warm", "0"))).timeout
 	var seconds := float(_arg("--seconds", "12"))
 	var frames: PackedFloat32Array = []
 	var draw_calls := 0.0
@@ -86,10 +93,10 @@ func _run() -> void:
 	for value in frames:
 		if value > 17.5: over_17 += 1
 		if value > 25.0: over_25 += 1
-	print("PERF fps=%.1f mean_ms=%.2f p99_ms=%.2f slow_frames=%.1f%% very_slow=%.1f%% draw_calls=%.0f objects=%.0f population=%d nodes=%d quality=%s frame_latency_ms=%.0f" % [
+	print("PERF fps=%.1f mean_ms=%.2f p99_ms=%.2f slow_frames=%.1f%% very_slow=%.1f%% draw_calls=%.0f objects=%.0f population=%d nodes=%d quality=%s frame_latency_ms=%.0f refresh_hz=%.1f" % [
 		1000.0 / mean, mean, p99, 100.0 * over_17 / frames.size(), 100.0 * over_25 / frames.size(),
 		draw_calls / maxf(1, samples), objects / maxf(1, samples),
-		int(main.latest_state.get("population", 0)), get_node_count(), main.quality.describe(), main.client.frame_latency_ms])
+		int(main.latest_state.get("population", 0)), get_node_count(), main.quality.describe(), main.client.frame_latency_ms, DisplayServer.screen_get_refresh_rate()])
 	for key in buckets:
 		var values: PackedFloat32Array = buckets[key]
 		if values.is_empty(): continue

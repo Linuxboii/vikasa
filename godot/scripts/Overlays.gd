@@ -11,6 +11,7 @@ var threads: MeshInstance3D
 var _lines: ImmediateMesh
 var _materials: Array[ShaderMaterial] = []
 var show_sense := true
+var enabled := true
 
 func _ready() -> void:
 	name = "SelectionOverlays"
@@ -56,6 +57,9 @@ func hide_all() -> void:
 	_lines.clear_surfaces()
 
 func update(clock: float, swarm: CreatureSwarm, selected: int, details: Dictionary) -> void:
+	if not enabled:
+		hide_all()
+		return
 	for material in _materials: material.set_shader_parameter("clock", clock)
 	var at := swarm.position_of(selected)
 	if selected < 0 or at == Vector3.INF:

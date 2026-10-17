@@ -23,6 +23,11 @@ var _cooldown := 8.0
 var _bad_windows := 0
 ## Probes and captures switch this off so experiments never overwrite choices.
 var persist := true
+## Frame pacing. Plugged in, vsync gives a perfect cadence. On battery, waiting
+## for vsync lets the OS down-clock the CPU/GPU, so when even the lowest tier
+## still misses frames we render unlocked instead (and restore vsync on AC).
+var unlocked := false
+var on_battery := false
 
 func _ready() -> void:
 	var config := ConfigFile.new()
@@ -32,11 +37,25 @@ func _ready() -> void:
 	if mode != "auto": tier = MODES.find(mode) - 1
 	apply.call_deferred()
 
+func set_power(ac: Variant) -> void:
+	var battery: bool = ac == false
+	if battery == on_battery: return
+	on_battery = battery
+	if not battery and unlocked:
+		set_unlocked(false)
+		if mode == "auto":
+			tier = 2
+			apply()
+
+func set_unlocked(value: bool) -> void:
+	unlocked = value
+	DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED if value else DisplayServer.VSYNC_ADAPTIVE)
+
 func current() -> Dictionary:
 	return TIERS[tier]
 
 func describe() -> String:
-	return ("auto → " if mode == "auto" else "") + TIERS[tier].name
+	return ("auto → " if mode == "auto" else "") + TIERS[tier].name + (" · unlocked" if unlocked else "")
 
 func cycle() -> String:
 	mode = MODES[(MODES.find(mode) + 1) % MODES.size()]
@@ -66,6 +85,13 @@ func _process(delta: float) -> void:
 	_window.clear()
 	if _cooldown > 0.0: return
 	# Vsync caps us at the refresh rate, so "typical" near 16.7 ms is healthy.
+	if slow > 0.0235 and tier == 0 and on_battery and not unlocked:
+		_bad_windows += 1
+		if _bad_windows >= 2:
+			_bad_windows = 0
+			_cooldown = 6.0
+			set_unlocked(true)
+		return
 	if slow > 0.0235 and tier > 0:
 		# One bad window can be a shader compile or a background task; two in a row is real.
 		_bad_windows += 1

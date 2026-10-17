@@ -26,6 +26,7 @@ var _reseed_at := -1.0
 ## Spread each explanatory update over consecutive frames (one consumer per
 ## frame) so a 2.5 Hz document never lands as a single long frame.
 var stagger := true
+var _battery_hint_shown := false
 var _state_jobs: Array[Callable] = []
 var _clash_pattern := RegEx.create_from_string("(\\d+) won a clash with creature (\\d+)")
 
@@ -89,11 +90,19 @@ func _on_state(state: Dictionary) -> void:
 	_state_jobs = [
 		func(): world.set_state(state); tools.set_state(state),
 		func(): hud.set_state(state, true),
-		func(): _apply_selection(state),
+		func(): _apply_selection(state); _note_power(state),
 		func(): hud.observatory.set_state(state),
 		func(): hud.feed.ingest(state.get("feed", [])); hud.atmosphere.set_state(state),
 		func(): if hud.legends.visible: hud.legends.set_state(state),
 	]
+
+func _note_power(state: Dictionary) -> void:
+	var power: Variant = state.get("power")
+	if not power is Dictionary: return
+	quality.set_power(power.get("ac"))
+	if power.get("ac") == false and not _battery_hint_shown:
+		_battery_hint_shown = true
+		hud.feed.push("weather", "Running on battery: Windows power saving can lower the frame rate. Plug in for the full 60 FPS showcase.")
 
 func _apply_selection(state: Dictionary) -> void:
 	var selected := _selected()
@@ -363,11 +372,13 @@ func _clear_yaw(subject: Vector3, distance: float, pitch: float) -> float:
 			var c := Vector2(crown.x, crown.y)
 			for t in [0.35, 0.6, 0.85, 1.0]:
 				# Crowns sit 2-4 units up; the sight line is lower near the subject.
-				clearance = minf(clearance, Vector2(subject.x, subject.z).lerp(eye, t).distance_to(c) - crown.z * (0.4 + t))
+				clearance = minf(clearance, Vector2(subject.x, subject.z).lerp(eye, t).distance_to(c) - crown.z * (0.9 + 0.6 * t))
 		if clearance > best_clearance:
 			best_clearance = clearance
 			best_yaw = yaw
-		if clearance > 2.0: return yaw
+		if clearance > 2.5: return yaw
+	# Hemmed in by groves: look down from higher so crowns cannot block the view.
+	world.camera.goal_pitch = 0.95
 	return best_yaw
 
 func _save_screenshot() -> void:

@@ -45,7 +45,7 @@ func _process(delta: float) -> void:
 		"%d nodes · %.0f MB video · %.0f MB static" % [Performance.get_monitor(Performance.OBJECT_NODE_COUNT), Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0, Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0],
 	]
 	if client: lines.append("bridge: %s %.0f frames/s · state %.0f ms" % [client.transport, client.frames_per_second, client.state_latency_ms])
-	if quality: lines.append("quality: %s · render scale %d%%" % [quality.describe(), roundi(get_viewport().scaling_3d_scale * 100.0)])
+	if quality: lines.append("quality: %s · render scale %d%% · %s" % [quality.describe(), roundi(get_viewport().scaling_3d_scale * 100.0), "battery" if quality.on_battery else "mains/unknown"])
 	_label.text = "\n".join(lines)
 	_graph.queue_redraw()
 

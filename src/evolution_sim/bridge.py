@@ -70,6 +70,33 @@ def _next_simulation_deadline(deadline: float, tick_interval: float, now: float)
     return planned
 
 
+def power_status() -> dict[str, Any]:
+    """Report whether the host runs on mains power (Windows only; else unknown).
+
+    Laptops on battery let the OS down-clock the CPU/GPU whenever a frame waits
+    for vsync, so the client uses this to explain and adapt its frame pacing.
+    """
+    if sys.platform != "win32":
+        return {"ac": None, "battery": None}
+    import ctypes
+
+    class _PowerStatus(ctypes.Structure):
+        _fields_ = [("ac", ctypes.c_ubyte), ("flags", ctypes.c_ubyte),
+                    ("percent", ctypes.c_ubyte), ("saver", ctypes.c_ubyte),
+                    ("life", ctypes.c_ulong), ("full_life", ctypes.c_ulong)]
+
+    status = _PowerStatus()
+    try:
+        if not ctypes.windll.kernel32.GetSystemPowerStatus(ctypes.byref(status)):
+            return {"ac": None, "battery": None}
+    except (AttributeError, OSError):
+        return {"ac": None, "battery": None}
+    return {
+        "ac": {0: False, 1: True}.get(status.ac),
+        "battery": status.percent if status.percent <= 100 else None,
+    }
+
+
 def _encode(value: Any) -> bytes:
     return json.dumps(value, separators=(",", ":"), allow_nan=False).encode("utf-8")
 
@@ -594,6 +621,7 @@ class GodotSimulationServer:
                 "ticks_per_second": self.ticks_per_second,
                 "actual_ticks_per_second": self._measured_rate(),
                 "feed": list(self._feed)[-60:],
+                "power": power_status(),
                 "feed_seq": self._feed_seq,
                 "world": {
                     "width": engine.config.world.width,

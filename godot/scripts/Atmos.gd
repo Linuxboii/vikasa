@@ -136,7 +136,7 @@ func _compute(delta: float) -> void:
 	if light_dir.y < 0.12: light_dir = Vector3(light_dir.x, 0.12, light_dir.z).normalized()
 	var up := Vector3.UP if absf(light_dir.dot(Vector3.UP)) < 0.98 else Vector3.FORWARD
 	sun.transform = Transform3D(Basis.looking_at(-light_dir, up), Vector3.ZERO)
-	var day_energy := lerpf(0.3, 1.5, smoothstep(-0.05, 0.45, elevation))
+	var day_energy := lerpf(0.3, 1.3, smoothstep(-0.05, 0.45, elevation))
 	var sun_color := Color(1.0, 0.95, 0.86).lerp(Color(1.0, 0.62, 0.34), golden)
 	var moon_color := Color(0.55, 0.66, 1.0)
 	var light_energy := lerpf(day_energy, 0.48, night) * (1.0 - storm * 0.55)
@@ -152,7 +152,8 @@ func _compute(delta: float) -> void:
 	environment.fog_density = 0.0028 + storm * 0.006 + fire * 0.006 + sick * 0.004 + dry * 0.002 + night * 0.0015
 	environment.glow_enabled = glow_allowed
 	environment.glow_intensity = lerpf(0.45, 0.85, night)
-	environment.tonemap_exposure = lerpf(0.92, 1.25, night)
+	# High sun floods the pale meadow; ease exposure down toward noon.
+	environment.tonemap_exposure = lerpf(0.95 - 0.17 * maxf(elevation, 0.0), 1.25, night)
 	sky_material.set_shader_parameter("sun_direction", to_sun)
 	sky_material.set_shader_parameter("night", night)
 	sky_material.set_shader_parameter("golden", golden)
@@ -160,7 +161,9 @@ func _compute(delta: float) -> void:
 	sky_material.set_shader_parameter("flash", flash)
 	sky_material.set_shader_parameter("clock", clock)
 	sky_material.set_shader_parameter("tint", Color(1, 1, 1).lerp(Color(1.0, 0.78, 0.6), fire * 0.6).lerp(Color(0.85, 1.0, 0.8), sick * 0.3))
-	var snow := clampf(float(_season_value("snow")) + cold * 0.75, 0.0, 1.0)
+	# Frost belongs to winter itself (peaking mid-season), not to its approach.
+	var winter := sin(PI * (season_phase - 3.0)) if season_phase >= 3.0 else 0.0
+	var snow := clampf(0.3 * winter + cold * 0.75, 0.0, 1.0)
 	var grass_tip: Color = _season_value("grass_tip")
 	grass_tip = grass_tip.lerp(Color("#cdb46e"), dry * 0.7)
 	conditions = {
