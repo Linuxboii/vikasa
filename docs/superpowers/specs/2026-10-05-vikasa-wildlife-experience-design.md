@@ -94,7 +94,7 @@ All drive signals are normalized to `[0, 1]`, bounded, and explainable in the in
 
 The existing heritable body genome and temperament remain the source of individual differences. Size/speed/perception/metabolism/reproductive traits influence the costs and opportunities an animal experiences; inherited aggression modulates defense/challenge, resilience modulates injury and hazard response, and sociability modulates care, courtship, and tolerance. These traits already inherit with mutation and are filtered by survival/reproductive outcomes, so repeated generations can adapt without inventing a hidden “instinct gene” or treating a single lifetime behavior as evolution.
 
-Initial home range is centered near birthplace with a seeded radius. Home position/radius and behavior state persist in checkpoints; bounded offspring variation lets ranges adapt across generations. Migration is allowed when expected habitat utility outside the range exceeds home utility by a configurable margin for a sustained period.
+Initial home range is centered near birthplace with a seeded radius. Home position/radius and behavior state persist in checkpoints; bounded offspring variation lets ranges adapt across generations. Because radius is relative to the world, entity-local validation requires a finite positive value while the engine and checkpoint loader clamp it to `min(world_width, world_height) / 2`. Migration is allowed when expected habitat utility outside the range exceeds home utility by a configurable margin for a sustained period.
 
 ### 6.3 Action scoring and persistence
 

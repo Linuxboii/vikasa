@@ -23,7 +23,7 @@ from evolution_sim.simulation.engine import SimulationEngine
 from evolution_sim.simulation.environment import EnvironmentState, HabitatField
 
 FORMAT = "vikasa"
-VERSION = 3
+VERSION = 4
 
 
 class CheckpointError(ValueError):
@@ -68,6 +68,8 @@ def _creature_to_dict(creature: Creature) -> dict[str, Any]:
         "age": creature.age,
         "energy": creature.energy,
         "genome": list(creature.genome.values),
+        **({"haplotypes": [list(row) for row in creature.genome.haplotypes]}
+           if creature.genome.haplotypes is not None else {}),
         "parents": list(creature.parents) if creature.parents else None,
         "offspring_count": creature.offspring_count,
         "food_acquired": creature.food_acquired,
@@ -118,7 +120,7 @@ def _resource_to_dict(resource: Resource) -> dict[str, Any]:
 def checkpoint_payload(engine: SimulationEngine) -> dict[str, Any]:
     return {
         "format": FORMAT,
-        "version": VERSION,
+        "version": VERSION if engine.config.genome.architecture is not None else 3,
         "config": engine.config.to_dict(),
         "seed": engine.seed,
         "tick": engine.tick,
@@ -196,7 +198,9 @@ def _restore_creature(data: dict[str, Any], *, strict_v3: bool = False) -> Creat
         velocity=np.asarray(data["velocity"], dtype=float),
         age=int(data["age"]),
         energy=float(data["energy"]),
-        genome=Genome(tuple(float(item) for item in data["genome"])),  # type: ignore[arg-type]
+        genome=Genome(tuple(float(item) for item in data["genome"]),  # type: ignore[arg-type]
+                      tuple(tuple(row) for row in data["haplotypes"])
+                      if data.get("haplotypes") is not None else None),
         parents=parent_ids,
         offspring_count=int(data["offspring_count"]),
         food_acquired=float(data["food_acquired"]),
@@ -266,9 +270,9 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
         version = payload.get("version")
         if isinstance(version, bool) or not isinstance(version, int):
             raise CheckpointError("Checkpoint version must be a JSON integer")
-        if version not in {1, 2, VERSION}:
+        if version not in {1, 2, 3, VERSION}:
             raise CheckpointError(
-                f"Unsupported checkpoint version {version}; expected 1, 2, or {VERSION}"
+                f"Unsupported checkpoint version {version}; expected 1, 2, 3, or {VERSION}"
             )
         if version in {1, 2}:
             payload = dict(payload)
@@ -279,6 +283,8 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
             payload.setdefault("combat_events", [])
             payload.setdefault("recent_events", [])
         config = SimulationConfig.from_dict(payload["config"])
+        if config.genome.architecture is not None and version < 4:
+            raise CheckpointError("Diploid inheritance requires checkpoint version 4")
         max_home_radius = min(config.world.width, config.world.height) / 2.0
         if max_home_radius <= 0:
             raise CheckpointError("World dimensions cannot support a positive home range")
@@ -331,7 +337,7 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
         engine.interventions = [dict(entry) for entry in records]
         engine.rng.bit_generator.state = payload["rng_state"]
         creatures = [
-            _restore_creature(item, strict_v3=version == VERSION)
+            _restore_creature(item, strict_v3=version >= 3)
             for item in payload["creatures"]
         ]
         resources = [

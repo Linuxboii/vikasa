@@ -16,6 +16,7 @@ from typing import Any
 
 import numpy as np
 
+from evolution_sim.analytics.trait_space import population_genetics
 from evolution_sim.config import SimulationConfig
 from evolution_sim.simulation.engine import SimulationEngine
 from evolution_sim.simulation.environment import EVENT_KINDS, EnvironmentEvent
@@ -174,6 +175,8 @@ class GodotSimulationServer:
                         "speed": item.genome.values[1],
                         "perception": item.genome.values[2],
                         "metabolism": item.genome.values[3],
+                        "generation": engine.lineage.generation_of(item.id),
+                        "haplotypes": item.genome.haplotypes,
                         "aggression": item.temperament.aggression,
                         "resilience": item.temperament.resilience,
                         "sociability": item.temperament.sociability,
@@ -273,6 +276,10 @@ class GodotSimulationServer:
                 "total_births": engine.total_births,
                 "total_deaths": engine.total_deaths,
                 "development": engine.metrics.development(engine),
+                "population_genetics": (population_genetics(
+                    [item.genome.haplotypes for item in engine.creatures.values()],
+                    loci=len(engine.config.genome.architecture.dominance))
+                    if engine.config.genome.architecture is not None else None),
                 "mean_satisfaction": round(mean_satisfaction, 3),
                 "alpha_count": sum(item.alpha for item in engine.creatures.values()),
                 "starving_count": starving,

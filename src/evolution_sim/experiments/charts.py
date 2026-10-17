@@ -152,4 +152,61 @@ def export_charts(engine: SimulationEngine, directory: str | Path) -> tuple[Path
     space_path = root / "trait_space.png"
     figure.savefig(space_path, dpi=150, facecolor=BACKGROUND, bbox_inches="tight")
     plt.close(figure)
-    return population_path, traits_path, vital_path, distributions_path, space_path
+    paths = (population_path, traits_path, vital_path, distributions_path, space_path)
+    if space["population_genetics"] is not None:
+        paths += (_chromosome_chart(space, root / "chromosomes.png"),)
+    return paths
+
+
+def _chromosome_chart(space: dict, path: Path) -> Path:
+    stats = space["population_genetics"]
+    figure, axes = plt.subplots(2, 2, figsize=(12, 8))
+    figure.suptitle(f"Chromosome observatory | tick {space['tick']:,} | "
+                   f"{stats['individuals']} diploid creatures", color=TEXT, fontsize=16)
+    for axis, title in zip(axes.flat, ["Allele frequencies", "Heterozygosity",
+                                      "Linked-locus association · r²", "Individual allele dosage"],
+                           strict=True):
+        _style(axis, title)
+    if stats["individuals"]:
+        loci = np.arange(1, stats["loci"] + 1)
+        axes[0, 0].bar(loci, stats["allele_frequency"], color=CYAN)
+        axes[0, 0].set_ylim(0, 1)
+        axes[0, 1].plot(loci, stats["observed_heterozygosity"], color=CYAN, marker="o",
+                        label="Observed heterozygotes")
+        axes[0, 1].plot(loci, stats["expected_heterozygosity"], color=AMBER, marker="o",
+                        label="2p(1-p), random-union reference")
+        axes[0, 1].set_ylim(0, 1)
+        axes[0, 1].legend(facecolor=PANEL, edgecolor=GRID, labelcolor=TEXT, fontsize=8)
+        matrix = np.array([[np.nan if v is None else v for v in row]
+                           for row in stats["linkage_r_squared"]])
+        axes[1, 0].grid(False)
+        image = axes[1, 0].imshow(np.ma.masked_invalid(matrix), vmin=0, vmax=1, cmap="magma")
+        bar = figure.colorbar(image, ax=axes[1, 0], shrink=.8)
+        bar.ax.tick_params(colors=TEXT)
+        rows = sorted(space["individuals"], key=lambda row: (row["generation"], row["id"]))
+        # Bound image height while retaining a deterministic spread of individuals.
+        indices = np.linspace(0, len(rows) - 1, min(180, len(rows)), dtype=int)
+        dosage = np.array([np.sum(rows[i]["haplotypes"], axis=0) for i in indices])
+        axes[1, 1].grid(False)
+        image = axes[1, 1].imshow(dosage, aspect="auto", vmin=0, vmax=2, cmap="viridis",
+                                 interpolation="nearest")
+        axes[1, 1].set_ylabel("Rows ordered by generation then ID", color=TEXT)
+        bar = figure.colorbar(image, ax=axes[1, 1], ticks=[0, 1, 2], shrink=.8)
+        bar.ax.tick_params(colors=TEXT)
+        for axis in axes[1]:
+            axis.set_xticks(np.arange(stats["loci"]), loci)
+        axes[1, 0].set_yticks(np.arange(stats["loci"]), loci)
+        for axis in axes.flat:
+            axis.set_xlabel("Locus", color=TEXT)
+    else:
+        for axis in axes.flat:
+            axis.text(.5, .5, "Population extinct · statistics unavailable",
+                      transform=axis.transAxes, color=TEXT, ha="center", fontsize=9)
+    figure.text(.5, .01, "Phased binary loci · descriptive association, not causal adaptation "
+                "or heritability · dosage display ≤180 individuals", color=TEXT,
+                ha="center", fontsize=9)
+    figure.patch.set_facecolor(BACKGROUND)
+    figure.tight_layout(rect=(0, .04, 1, .96))
+    figure.savefig(path, dpi=150, facecolor=BACKGROUND, bbox_inches="tight")
+    plt.close(figure)
+    return path

@@ -11,6 +11,7 @@ var latest: Dictionary = {}
 var stats: Dictionary = {}
 var development_heading: Label
 var habitat_map: Control
+var chromosome_chart
 
 func _ready() -> void:
 	name = "Observatory"
@@ -56,6 +57,8 @@ func _ready() -> void:
 		var graph = Chart.new()
 		content.add_child(graph)
 		graphs.append(graph)
+	chromosome_chart = preload("res://scripts/LocusChart.gd").new()
+	content.add_child(chromosome_chart)
 	habitat_map = preload("res://scripts/HabitatMap.gd").new()
 	content.add_child(habitat_map)
 	pressure = BiomeUI.paragraph("Seasonal conditions", 13, BiomeUI.ACCENT)
@@ -108,6 +111,8 @@ func _configure() -> void:
 
 func set_state(state: Dictionary) -> void:
 	latest = state
+	chromosome_chart.set_population(state.get("population_genetics"))
+	chromosome_chart.visible = tab == 2 and state.get("population_genetics") is Dictionary
 	habitat_map.set_habitat(state.get("habitat"))
 	for key in stats: stats[key].text = str(int(state.get(key, 0)))
 	for graph in graphs: graph.set_samples(state.get("history", []))
