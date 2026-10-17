@@ -3,32 +3,52 @@ class_name BiomeUI
 
 const INK := Color("#eef4ef")
 const MUTED := Color("#9db9b8")
-const ACCENT := Color("#e9c786")
+const ACCENT := Color("#f0cd8a")
+const TEAL := Color("#7be0c2")
+const ROSE := Color("#f1a07c")
+const GLASS := Color("#0b1820d9")
+const EDGE := Color("#7be0c233")
+
+static var _font: SystemFont
+static var _display: SystemFont
 
 static func font() -> SystemFont:
-	var face := SystemFont.new()
-	face.font_names = PackedStringArray(["Bahnschrift", "Aptos", "DejaVu Sans", "Arial"])
-	return face
+	if _font == null:
+		_font = SystemFont.new()
+		_font.font_names = PackedStringArray(["Bahnschrift", "Segoe UI Variable Text", "Aptos", "DejaVu Sans", "Arial"])
+		_font.antialiasing = TextServer.FONT_ANTIALIASING_GRAY
+		_font.subpixel_positioning = TextServer.SUBPIXEL_POSITIONING_DISABLED
+	return _font
 
-static func panel(control: PanelContainer) -> void:
+static func display_font() -> SystemFont:
+	if _display == null:
+		_display = SystemFont.new()
+		_display.font_names = PackedStringArray(["Bahnschrift SemiLight", "Bahnschrift", "Segoe UI Variable Display", "Arial"])
+		_display.font_weight = 300
+	return _display
+
+static func panel(control: PanelContainer, alpha: float = -1.0) -> void:
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color("#101f28f5")
-	style.border_color = Color("#7be0c244")
+	style.bg_color = GLASS if alpha < 0.0 else Color(GLASS.r, GLASS.g, GLASS.b, alpha)
+	style.border_color = EDGE
 	style.set_border_width_all(1)
-	style.set_corner_radius_all(10)
+	style.border_width_top = 1
+	style.set_corner_radius_all(14)
 	style.content_margin_left = 20
 	style.content_margin_right = 20
 	style.content_margin_top = 14
 	style.content_margin_bottom = 14
-	style.shadow_color = Color("#06121a90")
-	style.shadow_size = 12
+	style.shadow_color = Color("#02080c88")
+	style.shadow_size = 6
+	style.shadow_offset = Vector2(0, 3)
+	style.anti_aliasing = true
 	control.add_theme_stylebox_override("panel", style)
 
 static func label(text: String, size: int = 16, color: Color = INK) -> Label:
 	var item := Label.new()
 	item.text = text
 	item.add_theme_font_size_override("font_size", size)
-	item.add_theme_font_override("font", font())
+	item.add_theme_font_override("font", display_font() if size >= 26 else font())
 	item.add_theme_color_override("font_color", color)
 	return item
 
@@ -43,21 +63,31 @@ static func button(text: String, tip: String = "") -> Button:
 	item.text = text
 	item.tooltip_text = tip
 	item.custom_minimum_size.y = 38
+	item.focus_mode = Control.FOCUS_NONE
+	item.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	item.add_theme_font_size_override("font_size", 15)
 	item.add_theme_font_override("font", font())
 	item.add_theme_color_override("font_color", INK)
-	item.add_theme_color_override("font_disabled_color", Color("#8e9d8e"))
-	for kind in ["normal", "hover", "pressed", "disabled", "focus"]:
+	item.add_theme_color_override("font_hover_color", Color.WHITE)
+	item.add_theme_color_override("font_pressed_color", ACCENT)
+	item.add_theme_color_override("font_disabled_color", Color("#6f807a"))
+	for kind in ["normal", "hover", "pressed", "disabled", "focus", "hover_pressed"]:
 		var style := StyleBoxFlat.new()
-		style.bg_color = Color("#223942") if kind == "normal" else Color("#355864")
-		if kind == "pressed": style.bg_color = Color("#386159")
-		if kind == "disabled": style.bg_color = Color("#1c2b34")
+		style.bg_color = Color("#16303acc")
+		if kind == "hover": style.bg_color = Color("#22495499")
+		if kind in ["pressed", "hover_pressed"]: style.bg_color = Color("#2a5a52dd")
+		if kind == "disabled": style.bg_color = Color("#11222a99")
 		if kind == "focus": style.bg_color = Color.TRANSPARENT
-		style.border_color = ACCENT if kind in ["hover", "focus", "pressed"] else Color("#76927555")
-		style.set_border_width_all(2 if kind == "focus" else 1)
-		style.set_corner_radius_all(6)
-		style.content_margin_left = 12
-		style.content_margin_right = 12
+		style.border_color = ACCENT if kind in ["hover", "pressed", "hover_pressed"] else Color("#7be0c222")
+		if kind == "focus": style.border_color = Color("#f0cd8a88")
+		style.set_border_width_all(1)
+		style.set_corner_radius_all(9)
+		style.content_margin_left = 13
+		style.content_margin_right = 13
+		style.anti_aliasing = true
+		if kind in ["pressed", "hover_pressed"]:
+			style.shadow_color = Color("#f0cd8a33")
+			style.shadow_size = 6
 		item.add_theme_stylebox_override(kind, style)
 	return item
 
@@ -71,10 +101,27 @@ static func meter(color: Color) -> ProgressBar:
 	fill.set_corner_radius_all(4)
 	bar.add_theme_stylebox_override("fill", fill)
 	var track := StyleBoxFlat.new()
-	track.bg_color = Color("#405345")
+	track.bg_color = Color("#22363c")
 	track.set_corner_radius_all(4)
 	bar.add_theme_stylebox_override("background", track)
 	return bar
+
+static func chip(text: String, color: Color, size: int = 13) -> PanelContainer:
+	var holder := PanelContainer.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(color.r, color.g, color.b, 0.16)
+	style.border_color = Color(color.r, color.g, color.b, 0.55)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(20)
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 3
+	style.content_margin_bottom = 3
+	holder.add_theme_stylebox_override("panel", style)
+	var text_label := label(text, size, color.lightened(0.25))
+	text_label.name = "Text"
+	holder.add_child(text_label)
+	return holder
 
 static func percent(value: Variant) -> String:
 	return "%d%%" % roundi(clampf(float(value), 0.0, 1.0) * 100.0)
