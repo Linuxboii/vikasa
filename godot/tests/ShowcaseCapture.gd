@@ -45,6 +45,12 @@ func _run() -> void:
 				best = id
 		main._select(best)
 		if "--follow" in args: main._toggle_follow()
+	if "--director" in args:
+		main.set_director(true)
+		await create_timer(float(_arg("--director", "9"))).timeout
+	if "--legends" in args: main._toggle_legends()
+	if "--help" in args: main.hud.help.visible = true
+	if "--perf" in args: main.hud.perf.visible = true
 	if "--hide-ui" in args and main.has_method("set_ui_hidden"):
 		main.set_ui_hidden(true)
 	if "--focus" in args:

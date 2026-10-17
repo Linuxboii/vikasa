@@ -14,6 +14,7 @@ var ui_hidden := false
 var skip_intro := false
 var view_mode := "natural"
 var quality: QualityManager
+var sound: Soundscape
 var _intro_played := false
 var _director_timer := 0.0
 var _director_recent: Array = []
@@ -21,6 +22,7 @@ var _director_wide := false
 var _hot: Dictionary = {}
 var _peak_generation := -1
 var _clock_accumulator := 0.0
+var _reseed_at := -1.0
 var _clash_pattern := RegEx.create_from_string("(\\d+) won a clash with creature (\\d+)")
 
 func _ready() -> void:
@@ -30,6 +32,13 @@ func _ready() -> void:
 	hud.perf.client = client
 	hud.perf.quality = quality
 	hud.minimap.setup(world)
+	sound = Soundscape.new()
+	add_child(sound)
+	var audio := ConfigFile.new()
+	if audio.load(QualityManager.SETTINGS_PATH) == OK: sound.enabled = bool(audio.get_value("audio", "enabled", true))
+	world.swarm.born.connect(func(_id: int, _at: Vector3): sound.birth())
+	world.swarm.died.connect(func(_id: int, _at: Vector3): sound.death())
+	world.weather_fx.lightning.connect(func(at: Vector3): sound.thunder(world.camera.position.distance_to(at)))
 	client.state_updated.connect(_on_state)
 	client.frame_updated.connect(_on_frame)
 	client.connection_changed.connect(_on_connection)
@@ -77,6 +86,10 @@ func _on_state(state: Dictionary) -> void:
 		hud.set_selection(selected)
 		inspector.set_creature(selected)
 	_check_milestones(state)
+	# Unattended showcase: in Director mode an extinct biome reseeds itself.
+	if director and int(state.get("population", 1)) == 0 and _reseed_at < 0.0:
+		_reseed_at = 6.0
+		hud.cinematic.caption("Extinction", "Every lineage has ended. A new founding population arrives shortly…")
 	if not _intro_played and not state.get("creatures", []).is_empty():
 		_intro_played = true
 		if not skip_intro:
@@ -95,6 +108,14 @@ func _process(delta: float) -> void:
 	for key in _hot.keys():
 		_hot[key] -= delta
 		if _hot[key] <= 0.0: _hot.erase(key)
+	if _reseed_at >= 0.0:
+		_reseed_at -= delta
+		if _reseed_at < 0.0:
+			_peak_generation = -1
+			hud.feed.clear()
+			hud.legends.reset()
+			client.send_command({"action": "restart"})
+	sound.update(delta, world.atmos.conditions, world.running)
 	if director: _direct(delta)
 
 func _on_connection(connected: bool, message: String) -> void:
@@ -121,6 +142,7 @@ func _on_event(item: Dictionary) -> void:
 		var found := _clash_pattern.search(str(item.get("text", "")))
 		if found:
 			world.flash_clash(int(found.get_string(1)), int(found.get_string(2)))
+			sound.clash()
 			_hot[int(found.get_string(1))] = 10.0
 	elif kind == "birth" and id >= 0:
 		_hot[id] = 12.0
@@ -309,6 +331,14 @@ func _save_screenshot() -> void:
 	var error := get_viewport().get_texture().get_image().save_png(path)
 	hud.cinematic.flash("Saved " + path if error == OK else "Screenshot failed (%d)" % error)
 
+func _toggle_sound() -> void:
+	sound.enabled = not sound.enabled
+	var config := ConfigFile.new()
+	config.load(QualityManager.SETTINGS_PATH)
+	config.set_value("audio", "enabled", sound.enabled)
+	config.save(QualityManager.SETTINGS_PATH)
+	hud.cinematic.flash("Sound on · wind, rain, birds, crickets and life events" if sound.enabled else "Sound off")
+
 func _select_next(step: int) -> void:
 	var ids: Array = world.swarm.agents.keys().filter(func(id): return world.swarm.agents[id].dying < 0.0)
 	if ids.is_empty(): return
@@ -352,5 +382,6 @@ func _unhandled_key_input(event: InputEvent) -> void:
 		KEY_F3: hud.perf.visible = not hud.perf.visible
 		KEY_F4: hud.cinematic.flash("Quality · " + quality.cycle())
 		KEY_F12: _save_screenshot()
+		KEY_K: _toggle_sound()
 		_: handled = false
 	if handled: get_viewport().set_input_as_handled()

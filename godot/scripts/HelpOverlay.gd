@@ -9,7 +9,7 @@ const KEYS := [
 	["F", "Follow selected"], ["C", "Director (cinematic camera)"], ["V", "Cycle lens: coat, action, energy, dynasty…"],
 	["N", "Daylight: cycle · day · golden · night"], ["L", "Hall of legends"], ["G", "Graphs"],
 	["T", "World tools"], ["M", "Radar"], ["H", "Hide interface"], ["P", "Photo mode"], ["F12", "Save screenshot"],
-	["F3", "Performance overlay"], ["F4", "Quality: auto · battery · balanced · high · ultra"], ["Esc", "Close panels / exit modes"],
+	["K", "Sound on / off"], ["F3", "Performance overlay"], ["F4", "Quality: auto · battery · balanced · high · ultra"], ["Esc", "Close panels / exit modes"],
 ]
 
 func _ready() -> void:
