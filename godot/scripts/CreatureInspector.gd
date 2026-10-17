@@ -111,6 +111,15 @@ func set_creature(data: Dictionary) -> void:
 		float(data.get("size", 0)), float(data.get("speed", 0)), float(data.get("perception", 0)),
 		float(data.get("metabolism", 0)),
 		BiomeUI.percent(data.get("aggression", 0)), BiomeUI.percent(data.get("resilience", 0)), BiomeUI.percent(data.get("sociability", 0))]
+	sections["Genome"].text += "\nLiving generation: " + (str(int(data.generation)) if data.has("generation") else "Unknown")
+	var chromosomes: Variant = data.get("haplotypes")
+	if chromosomes is Array and chromosomes.size() == 2:
+		var differing := 0
+		for locus in range(chromosomes[0].size()):
+			if chromosomes[0][locus] != chromosomes[1][locus]: differing += 1
+		sections["Genome"].text += "\n%d linked loci · two homologs\nA  %s\nB  %s\nHeterozygosity: %.0f%%\nChromosomes determine the inherited traits; these are illustrative binary alleles." % [chromosomes[0].size(), _alleles(chromosomes[0]), _alleles(chromosomes[1]), 100.0 * differing / max(1, chromosomes[0].size())]
+	else:
+		sections["Genome"].text += "\nScalar-trait inheritance · no explicit chromosomes"
 	sections["Encounters"].text = "Wins %s · Losses %s\n%s\nFood acquired %s · Satisfaction %s\nHealthy or hungry animals may avoid a contest even after a win." % [
 		str(int(data.get("fights_won", 0))), str(int(data.get("fights_lost", 0))), "Established alpha" if data.get("alpha", false) else "No alpha status",
 		str(data.get("food_acquired", 0)), BiomeUI.percent(data.get("satisfaction", 0))]
@@ -121,6 +130,13 @@ func _ids(values: Array) -> String:
 	var labels: PackedStringArray = []
 	for id in values: labels.append("#%d" % int(id))
 	return ", ".join(labels) if not labels.is_empty() else "None"
+
+func _alleles(values: Array) -> String:
+	var text := ""
+	for i in range(values.size()):
+		if i > 0 and i % 8 == 0: text += " "
+		text += str(int(values[i]))
+	return text
 
 func _update_scores(scores: Dictionary) -> void:
 	var candidates: Array = []

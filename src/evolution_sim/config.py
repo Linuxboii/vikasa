@@ -84,11 +84,63 @@ class WorldConfig:
 
 
 @dataclass(frozen=True, slots=True)
+class DiploidArchitecture:
+    """One linked chromosome, binary alleles, and bounded quantitative effects."""
+
+    effects: tuple[tuple[float, ...], ...]
+    dominance: tuple[float, ...]
+    recombination: tuple[float, ...]
+    founder_frequency: tuple[float, ...]
+    allele_mutation_probability: float
+
+    def __post_init__(self):
+        if not isinstance(self.effects, (list, tuple)) or len(self.effects) != 6:
+            raise ConfigError("genome.architecture.effects must have six rows")
+        if not isinstance(self.effects[0], (list, tuple)):
+            raise ConfigError("genome.architecture.effects rows must be vectors")
+        loci = len(self.effects[0])
+        if not 2 <= loci <= 64:
+            raise ConfigError("genome.architecture must have 2 to 64 loci")
+        rows = []
+        for row in self.effects:
+            if not isinstance(row, (list, tuple)) or len(row) != loci:
+                raise ConfigError("genome.architecture.effects rows must have equal length")
+            values = tuple(_number(v, "genome.architecture.effects") for v in row)
+            if max(abs(v) for v in values) > 1e6 or sum(abs(v) for v in values) == 0:
+                raise ConfigError("effect rows need nonzero mass and weights at most 1e6")
+            rows.append(values)
+        object.__setattr__(self, "effects", tuple(rows))
+        for name, count, lower, upper in (
+            ("dominance", loci, -1, 1), ("recombination", loci - 1, 0, .5),
+            ("founder_frequency", loci, 0, 1),
+        ):
+            raw = getattr(self, name)
+            if not isinstance(raw, (list, tuple)) or len(raw) != count:
+                raise ConfigError(f"genome.architecture.{name} must have {count} entries")
+            values = tuple(_number(v, f"genome.architecture.{name}") for v in raw)
+            if any(not lower <= v <= upper for v in values):
+                raise ConfigError(f"genome.architecture.{name} outside [{lower}, {upper}]")
+            object.__setattr__(self, name, values)
+        probability = _number(self.allele_mutation_probability,
+                              "genome.architecture.allele_mutation_probability", minimum=0)
+        if probability > 1:
+            raise ConfigError("allele_mutation_probability must not exceed 1")
+
+    @classmethod
+    def from_dict(cls, raw):
+        data = _mapping(raw, "genome.architecture")
+        _keys(data, {"effects", "dominance", "recombination", "founder_frequency",
+                     "allele_mutation_probability"}, "genome.architecture")
+        return cls(**data)
+
+
+@dataclass(frozen=True, slots=True)
 class GenomeConfig:
     traits: dict[str, GeneBounds]
     mutation_probability: float
     mutation_sigma: float
     crossover: str
+    architecture: DiploidArchitecture | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -262,8 +314,9 @@ class SimulationConfig:
         genome_data = _mapping(data["genome"], "genome")
         _keys(
             genome_data,
-            {"traits", "mutation_probability", "mutation_sigma", "crossover"},
+            {"traits", "mutation_probability", "mutation_sigma", "crossover", "architecture"},
             "genome",
+            optional={"architecture"},
         )
         traits_data = _mapping(genome_data["traits"], "genome.traits")
         _keys(traits_data, set(TRAIT_NAMES), "genome.traits")
@@ -280,7 +333,9 @@ class SimulationConfig:
         crossover = genome_data["crossover"]
         if crossover not in {"uniform", "arithmetic"}:
             raise ConfigError("genome.crossover must be 'uniform' or 'arithmetic'")
-        genome = GenomeConfig(traits, mutation_probability, mutation_sigma, crossover)
+        architecture = (DiploidArchitecture.from_dict(genome_data["architecture"])
+                        if genome_data.get("architecture") is not None else None)
+        genome = GenomeConfig(traits, mutation_probability, mutation_sigma, crossover, architecture)
 
         energy_data = _mapping(data["energy"], "energy")
         _keys(energy_data, {"initial", "basal_cost", "movement_cost", "maximum"}, "energy")
@@ -379,6 +434,8 @@ class SimulationConfig:
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
+        if self.genome.architecture is None:
+            data["genome"].pop("architecture")
         data["genome"]["traits"] = {
             name: [bounds.minimum, bounds.maximum] for name, bounds in self.genome.traits.items()
         }

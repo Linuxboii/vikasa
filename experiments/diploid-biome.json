@@ -1,0 +1,9 @@
+{
+  "name": "diploid-biome",
+  "description": "Linked binary loci with dominance, pleiotropy and recombination in a spatial biome.",
+  "config": "../config/diploid-biome.json",
+  "seed": 2026,
+  "ticks": 1200,
+  "overrides": {},
+  "events": []
+}

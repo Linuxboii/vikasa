@@ -81,10 +81,44 @@ def engine_trait_space(engine) -> dict:
         "individuals": [{"id": creature.id,
                          "generation": engine.lineage.generation_of(creature.id),
                          "birth_tick": creature.birth_tick,
+                         "haplotypes": creature.genome.haplotypes,
                          "traits": list(creature.genome.values)} for creature in creatures],
+        "population_genetics": (population_genetics(
+            [c.genome.haplotypes for c in creatures],
+            loci=len(engine.config.genome.architecture.dominance))
+            if engine.config.genome.architecture is not None else None),
         "geometry": trait_geometry(cloud, [bound.minimum for bound in bounds],
                                    [bound.maximum for bound in bounds]),
         "caveat": "Living-population descriptive covariance, not additive genetic G or "
                   "heritability. PCA axes are snapshot-local; tied axes are not identifiable. "
                   "Survivorship and environment can change this distribution.",
     }
+
+
+def population_genetics(haplotypes, *, loci=None) -> dict:
+    """Phased binary-locus frequencies and descriptive linkage disequilibrium."""
+    cloud = np.asarray(haplotypes)
+    if cloud.size == 0 and loci is not None:
+        cloud = np.empty((0, 2, loci), dtype=int)
+    if (cloud.ndim != 3 or cloud.shape[1] != 2 or not 2 <= cloud.shape[2] <= 64
+            or cloud.dtype.kind not in "iu" or np.any((cloud != 0) & (cloud != 1))):
+        raise ValueError("Expected n-by-2-by-loci phased binary alleles")
+    count, _, loci = cloud.shape
+    result = {"individuals": count, "loci": loci, "allele_frequency": None,
+              "observed_heterozygosity": None, "expected_heterozygosity": None,
+              "linkage_d": None, "linkage_r_squared": None}
+    if count == 0:
+        return result
+    chromosomes = cloud.reshape(-1, loci).astype(float)
+    frequency = chromosomes.mean(axis=0)
+    centered = chromosomes - frequency
+    linkage = centered.T @ centered / len(chromosomes)
+    variance = frequency * (1 - frequency)
+    r_squared = [[float(np.clip(linkage[i, j]**2 / variance[i] / variance[j], 0, 1))
+                  if variance[i] > 0 and variance[j] > 0 else None
+                  for j in range(loci)] for i in range(loci)]
+    result.update(allele_frequency=frequency.tolist(),
+                  observed_heterozygosity=(cloud[:, 0] != cloud[:, 1]).mean(axis=0).tolist(),
+                  expected_heterozygosity=(2 * variance).tolist(),
+                  linkage_d=linkage.tolist(), linkage_r_squared=r_squared)
+    return result

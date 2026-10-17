@@ -30,12 +30,21 @@ class Genome:
     """A stable, immutable vector of quantitative inheritable traits."""
 
     values: tuple[float, float, float, float, float, float]
+    haplotypes: tuple[tuple[int, ...], tuple[int, ...]] | None = None
 
     def __post_init__(self) -> None:
         if len(self.values) != len(TRAITS):
             raise ValueError(f"Genome needs exactly {len(TRAITS)} traits")
         if not all(math.isfinite(value) for value in self.values):
             raise ValueError("Genome values must be finite")
+        if self.haplotypes is not None and (
+                    not isinstance(self.haplotypes, tuple) or len(self.haplotypes) != 2
+                    or not all(isinstance(row, tuple) for row in self.haplotypes)
+                    or not 2 <= len(self.haplotypes[0]) <= 64
+                    or len(self.haplotypes[1]) != len(self.haplotypes[0])
+                    or any(type(v) is not int or v not in (0, 1)
+                           for row in self.haplotypes for v in row)):
+            raise ValueError("Diploid haplotypes must be two equal immutable binary vectors")
 
     def __getitem__(self, trait: Trait) -> float:
         return self.values[TRAITS.index(trait)]
@@ -76,6 +85,12 @@ class Genome:
 
 
 def random_genome(config: GenomeConfig, rng: np.random.Generator) -> Genome:
+    if config.architecture is not None:
+        from evolution_sim.model.genetics import polygenic_genome
+
+        alleles = rng.random((2, len(config.architecture.dominance))) < np.array(
+            config.architecture.founder_frequency)
+        return polygenic_genome(tuple(tuple(int(v) for v in row) for row in alleles), config)
     minimum = np.array([config.traits[trait.value].minimum for trait in TRAITS])
     maximum = np.array([config.traits[trait.value].maximum for trait in TRAITS])
     values = rng.uniform(minimum, maximum)

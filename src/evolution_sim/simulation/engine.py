@@ -9,7 +9,7 @@ import numpy as np
 from evolution_sim.analytics.metrics import MetricsRecorder
 from evolution_sim.config import SimulationConfig
 from evolution_sim.model.entities import Creature, Resource
-from evolution_sim.model.genetics import crossover, mutate
+from evolution_sim.model.genetics import crossover, mutate, polygenic_genome
 from evolution_sim.model.genome import Trait, random_genome
 from evolution_sim.model.lineage import LineageStore
 from evolution_sim.model.math2d import distance_sq, reflect_bounds, unit_vector
@@ -654,7 +654,8 @@ class SimulationEngine:
                 break
             second = self.creatures[second_id]
             child_genome = crossover(
-                first.genome, second.genome, self.config.genome.crossover, self.rng
+                first.genome, second.genome, self.config.genome.crossover, self.rng,
+                config=self.config.genome,
             )
             child_genome = mutate(child_genome, self.config.genome, self.rng)
             child_id = self.next_creature_id
@@ -854,6 +855,15 @@ class SimulationEngine:
         for key, creature in self.creatures.items():
             if key != creature.id:
                 errors.append(f"creature key/id mismatch: {key}/{creature.id}")
+            if self.config.genome.architecture is not None:
+                try:
+                    reconstructed = polygenic_genome(creature.genome.haplotypes, self.config.genome)
+                    if reconstructed != creature.genome:
+                        errors.append(f"creature {key} genotype/phenotype mismatch")
+                except (TypeError, ValueError):
+                    errors.append(f"creature {key} has invalid diploid genotype")
+            elif creature.genome.haplotypes is not None:
+                errors.append(f"creature {key} has genotype without diploid architecture")
             if not np.isfinite(creature.position).all() or not np.isfinite(creature.velocity).all():
                 errors.append(f"creature {key} has non-finite motion state")
             if not math.isfinite(creature.energy):
