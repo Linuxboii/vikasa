@@ -204,6 +204,20 @@ def test_push_stream_delivers_length_prefixed_frames(tiny_config) -> None:
         bridge.stop()
 
 
+def test_state_reports_host_power_source(tiny_config) -> None:
+    from evolution_sim.bridge import power_status
+
+    status = power_status()
+    assert set(status) == {"ac", "battery"}
+    assert status["ac"] in (True, False, None)
+    assert status["battery"] is None or 0 <= status["battery"] <= 100
+    bridge = _bridge(tiny_config)
+    try:
+        assert set(bridge.state()["power"]) == {"ac", "battery"}
+    finally:
+        bridge._http.server_close()
+
+
 def test_http_serves_binary_frame_and_state(tiny_config) -> None:
     bridge = _bridge(tiny_config)
     bridge.start()
