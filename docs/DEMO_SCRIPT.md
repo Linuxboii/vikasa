@@ -53,6 +53,14 @@ Open **Genetics** to show mean inherited size/speed, perception and normalized d
 
 Show a selected animal’s genome, parents, offspring, hunger and encounter history. Explain that offspring inherit bounded body genes and temperament, while survival and reproduction create selection. Repeated shared cues may form a named belief/ritual group under a small probabilistic rule; that is not a claim of language, theology or human religion.
 
+## Showcase beats (any time)
+
+- Press **C** for the director's cut: the camera finds clashes, newborns, alphas and families on its own and captions them. Press **Esc** to take back control.
+- Press **N** until *Night*: glowing eyes, fireflies and bioluminescent food. Press **N** again for golden hour.
+- Press **V** to cycle lenses. *Dynasty* shows founding mothers' lines spreading; *Action* shows foraging, courting and fleeing at a glance.
+- Press **L** for the hall of legends and click the elder or the champion to fly there. Double-click any animal to follow it; the golden threads lead to its living parents, green ones to its dependent young.
+- Press **P** for photo mode and **F12** to save a screenshot; **F3** shows the live frame-time graph.
+
 ## Close
 
 Summarize: “The presentation makes the simulation legible: what the animal did, why the available model says it did so, and which needs competed. The model is deterministic for a fixed run, inspectable, and deliberately simpler than a real ecosystem.”

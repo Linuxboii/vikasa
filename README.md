@@ -1,6 +1,42 @@
 # Vikasa — Living Biome
 
-[Visual evidence and graph-reading guide](#visual-evidence-and-how-to-read-the-graphs) · [Mathematics PDF](output/pdf/Vikasa_Mathematics_Guide.pdf) · [Desktop setup](#run-the-3d-living-biome)
+[What's new in 2.0](#vikasa-20--the-living-biome-showcase) · [Showcase guide](docs/SHOWCASE.md) · [Visual evidence and graph-reading guide](#visual-evidence-and-how-to-read-the-graphs) · [Mathematics PDF](output/pdf/Vikasa_Mathematics_Guide.pdf) · [Desktop setup](#run-the-3d-living-biome)
+
+![Golden hour over the floating Vikasa biome](docs/images/showcase-hero.jpg)
+
+## Vikasa 2.0 — the Living Biome showcase
+
+A deterministic artificial-life simulation you can watch like a nature film. Every
+animal decides for itself from inherited genes, temperament and changing needs;
+populations grow, starve, fight, court, raise young and evolve over generations.
+Version 2.0 rebuilds the 3D client so it looks alive **and** holds the display's
+refresh rate on an ordinary laptop with integrated graphics.
+
+| | |
+| --- | --- |
+| ![Director's cut camera](docs/images/showcase-director.jpg) | ![Night with eyeshine and fireflies](docs/images/showcase-night.jpg) |
+| **Director's cut (C)** — an autonomous camera that finds clashes, newborns, alphas and families and captions them. | **Day and night (N)** — sun, moon, stars, clouds; glowing eyes, fireflies and bioluminescent food after dark. |
+| ![Storm over the biome](docs/images/showcase-storm.jpg) | ![Dynasty lens with radar](docs/images/showcase-lens-dynasty.jpg) |
+| **Visible weather** — rain, wind-bent grass, rippling pools, lightning and thunder; snow, embers, spores and dust. | **Lenses (V)** — recolour by coat, action, energy, dynasty, generation or temperament; the radar follows. |
+
+**New in 2.0**
+
+- **GPU-instanced wildlife.** The whole population is two draw calls: one baked quadruped mesh animated in a vertex shader (gait, lying down, feeding, glances, tail wags, gene-driven ears/ridges/tails, alpha mantle). Every animal is drawn — no more visibility cap.
+- **A living world.** Custom sky and daylight cycle, seasons that tint grass, canopies and pools, 26,000 wind-blown grass blades, wildflowers, two tree species, rippling water with sun glints, a floating cliff island, and GPU particles for births, deaths, clashes, crowning and food blooms.
+- **Cinematic tools.** Director mode, intro flight, photo mode (P), F12 screenshots, lenses, kin threads to parents and young, sensing and home-range rings.
+- **Story surfaces.** A live event feed that never misses an event, a radar minimap, a hall of legends, a population sparkline and milestone toasts.
+- **Procedural soundscape (K).** Wind, rain, birdsong, crickets, thunder and soft life-event chimes, all synthesised at startup — no audio files.
+- **Built for this laptop.** Binary push stream for motion, a slim incremental explanation document, staggered UI work and an adaptive quality manager (F4). On the Iris Xe development laptop: **13–35 FPS → a locked 59–60 FPS**, ~2,300 → ~20 draw calls for the 3D world. Details and reproduction commands: [docs/SHOWCASE.md](docs/SHOWCASE.md).
+
+Launch it (Windows) after the [one-time setup](#run-the-3d-living-biome):
+
+```powershell
+.\.venv\Scripts\vikasa.exe godot --config config\showcase.json --seed 2026
+```
+
+Press **F1** in the app for every shortcut.
+
+## Research views
 
 ![Live generational development and birth-cohort evolutionary change](docs/images/research-evolution.png)
 
@@ -117,23 +153,24 @@ For direct GUI launch on Windows or macOS, the `godot` command starts the Python
 
 ### Screenshots
 
-| Live Observatory | Storm and population loss |
+| Interface and Observatory | Hall of legends |
 | --- | --- |
-| ![Population, food and survival graphs](docs/images/presentation-overview.png) | ![Exposure deaths and shaded weather intervals](docs/images/presentation-storm.png) |
+| ![Interface with inspector, event feed and Observatory](docs/images/showcase-interface.jpg) | ![Hall of legends](docs/images/showcase-legends.jpg) |
 
-| Genetic trends | Creature profile |
+| Close-up with kin threads | Field guide and performance overlay |
 | --- | --- |
-| ![Inherited size, speed, perception and diversity](docs/images/presentation-genetics.png) | ![Creature inspector with the Observatory](docs/images/presentation-selected.png) |
+| ![Selected animal with halo, sensing ring and kin threads](docs/images/showcase-closeup.jpg) | ![Field guide and F3 performance overlay](docs/images/showcase-help.jpg) |
 
-These are real seeded bridge states, including an explicitly applied storm. See the current [960×600 layout](docs/images/presentation-compact.png). Earlier captures remain in `docs/images/` for reference.
+These are real seeded bridge states captured with `godot/tests/ShowcaseCapture.gd`. The v1.1 Observatory captures ([overview](docs/images/presentation-overview.png), [storm](docs/images/presentation-storm.png), [genetics](docs/images/presentation-genetics.png), [selected](docs/images/presentation-selected.png), [960×600](docs/images/presentation-compact.png)) remain in `docs/images/` for reference.
 
 ### Observe and control
 
-- Click a creature to open its readable profile: current action and reason, energy, hunger, injury, instincts, top action choices, genes, encounters, satisfaction, and lineage.
-- Use **Follow** to track the selected animal; **Reset view** returns to the whole habitat. Right-drag orbits, and the wheel zooms.
+- Click a creature to open its readable profile: current action and reason, energy, hunger, injury, instincts, top action choices, genes, encounters, satisfaction, and lineage. Its halo, sensing radius, home range, current target and threads to living parents and young appear in the world.
+- Use **Follow** (F) to track the selected animal, or double-click any animal to fly to it; **Reset view** returns to the whole habitat. Right-drag orbits, middle-drag or WASD pans, Q/E rotate, and the wheel zooms. **Tab** selects the next animal.
+- **Director** (C) hands the camera to an autonomous cinematographer; **Lens** (V) recolours animals; **Daylight** (N) cycles day, golden hour and night; **Legends** (L) lists living record holders; **Photo** (P) hides the interface and slowly orbits; **F12** saves a screenshot to `Pictures/Vikasa`; **K** toggles sound; **F3** shows the frame-time graph; **F4** changes quality; **F1** opens the field guide.
 - **Space** pauses/resumes; **Step** advances one tick while paused. **Observe · 16**, **Present · 48**, and **Accelerate · 120** request those tick rates. Present is the default; the HUD displays actual speed. Excess catch-up work is discarded on slower hardware. With the complete 3D window open, this Intel Iris Xe development laptop sustained about 43 ticks/second in a 12-second Accelerate sample; this is an example, not a guarantee for all devices.
 - **Graphs** toggles the Observatory. **Population**, **Survival**, **Genetics**, and **Evolution** show real engine histories; hover to inspect values at a tick. Evolution shows generational depth, founder replacement and signed birth-cohort Price decomposition. Shaded periods show weather exposure. Birth/death totals retain outcomes between GUI polls.
-- **World tools** offers drought, heat, storm, wildfire, cold, disease, a food bloom, and food placement. Adjust pressure and duration, then **Apply weather**. Drought intensity is food growth retained (lower is harsher); other hazards strengthen as intensity increases. Default duration is 160 ticks.
+- **World tools** (T) offers drought, heat, storm, wildfire, cold, disease, a food-growth bloom, and a clickable food bloom that scatters ten audited food patches on a spiral. Adjust pressure and duration, then **Apply weather**. Drought intensity is food growth retained (lower is harsher); other hazards strengthen as intensity increases. Default duration is 160 ticks.
 - **Restart biome** resets the population and histories with the same seed after an experiment or extinction.
 - **Escape** cancels placement/closes a panel. The HUD reports offline state and clears stale creature data if the bridge disconnects.
 
@@ -141,7 +178,7 @@ These are real seeded bridge states, including an explicitly applied storm. See 
 
 The model tracks six drives—survival, foraging, mating, offspring care, danger avoidance, and territory. They are competing normalized pressures, not human feelings. Expand **Instincts** to read each one and **Action choices** to inspect the leading perceived utilities. An urgent danger can preempt the highest score; otherwise hysteresis and seeded near-tie choice reduce jitter. The exact model and its caveats are in [the scientific model](docs/SCIENTIFIC_MODEL.md) and [the mathematics reference](docs/MATHEMATICS.md).
 
-The client uses shared meshes, one simple body shadow per visible animal, static habitat shadows, instanced vegetation, a 30 FPS ceiling, at most 180 visible creatures and 240 food patches, and bounded chart histories. The full population lives in Python; drawing alone is capped. Above 40 creatures, decisions are deterministically staggered across six ticks while movement, hunger, consumption, births and deaths advance every tick. Combat opportunities are checked every four ticks. Completed GUI snapshots publish about six times/second, so polling does not wait for a simulation tick. Diversity analysis is vectorized.
+The client draws every animal with GPU instancing (two LOD draws plus contact shadows) and animates bodies, grass, trees, water, food and particles in shaders. Motion arrives as compact binary frames pushed over one socket and is interpolated between samples; explanations arrive in a slim document (full detail only for the watched animal, history rows only when new) that is parsed off the main thread and applied over several frames. An adaptive quality manager keeps the frame rate at the display refresh. The full population lives in Python. Above 40 creatures, decisions are deterministically staggered across six ticks while movement, hunger, consumption, births and deaths advance every tick. Combat opportunities are checked every four ticks. Diversity analysis is vectorized. See [the showcase guide](docs/SHOWCASE.md) for the architecture and measurements.
 
 The showcase starts with 64 founders in a 720×480 habitat and a cap of 180. It uses seeded age-dependent mortality, viable feeding/encounter density and larger newborn reserves for sustained generational replacement. The 12,000-tick maximum age is a hard ceiling, not an expected lifespan. Animals still die from scarcity, fights, senescence and exposure; nothing respawns them. The previous extinction-prone configuration is preserved as `config/extinction-control.json`. See [research status and remaining work](docs/RESEARCH_STATUS.md). These coefficients remain illustrative rather than calibrated to a real species.
 
@@ -528,6 +565,6 @@ changes do not retroactively turn them into measurements of the latest checkout.
 
 ## Limitations
 
-Ticks have no calibrated real-time meaning. Space is two-dimensional in the engine even when the renderer presents terrain in 3D. There is no food web, sex differentiation, genetic drift calibration, explicit disease transmission, hydrology, learned language, or validated real-species parameterization. Combat, starvation, inheritance, environment, and culture are intentionally simplified rules; plausible-looking animation does not validate them. A belief group may arise through the implemented cue/ritual rules, but users should not interpret that as the simulation independently developing human-like religion.
+Ticks have no calibrated real-time meaning. Space is two-dimensional in the engine even when the renderer presents terrain in 3D. There is no food web, sex differentiation, genetic drift calibration, explicit disease transmission, hydrology, learned language, or validated real-species parameterization. Combat, starvation, inheritance, environment, and culture are intentionally simplified rules; plausible-looking animation does not validate them. The 2.0 presentation layer adds a daylight cycle, sound, terrain relief, trees, water and weather particles that are scenery only: the model has seasons but no day/night, and none of these visuals affect movement, perception or survival. A belief group may arise through the implemented cue/ritual rules, but users should not interpret that as the simulation independently developing human-like religion.
 
 Additional implementation contracts live in [architecture](docs/ARCHITECTURE.md), [scientific model](docs/SCIENTIFIC_MODEL.md), and [mathematics](docs/MATHEMATICS.md). Project history and accepted current design: [wildlife experience spec](docs/superpowers/specs/2026-10-05-vikasa-wildlife-experience-design.md) and [implementation plan](docs/superpowers/plans/2026-10-05-vikasa-wildlife-experience.md).
