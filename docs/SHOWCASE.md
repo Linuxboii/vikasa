@@ -91,15 +91,16 @@ deaths, clashes and traditions between polls are never lost.
 10% of frames slower than 23.5 ms, and climbs back after 20 seconds of headroom.
 F4 cycles auto/battery/balanced/high/ultra; the choice persists. FXAA is always on.
 
-**Battery power.** Plugged in, adaptive vsync gives a perfect cadence at the display
-refresh. On battery, Windows lets the CPU and integrated GPU down-clock whenever a
-frame waits for vsync (a sleeping frame limiter is worse still), which on this laptop
-capped vsync'd rendering near 45 FPS even though the same scene renders at 110+ FPS
-unlocked. The bridge therefore reports the host power source; in `auto`, if the
-lowest tier still misses frames on battery the client switches to unlocked pacing,
-and it restores vsync when mains power returns. A one-time feed message suggests
-plugging in. Measured on battery after this change: auto settled on *balanced ·
-unlocked* at 94.5 FPS (p99 29 ms), versus ~45 FPS with vsync.
+**Battery power.** Plugged in, adaptive vsync gives a steady cadence at the display
+refresh. On battery we measured vsync'd rendering near 45 FPS (and only ~33 FPS with
+Godot's sleeping frame limiter) even though the same scene rendered at 110+ FPS
+unlocked — consistent with Windows down-clocking the CPU and integrated GPU while a
+frame waits, though OS power management makes this host-dependent. The bridge
+therefore reports the host power source; in `auto`, if the lowest tier still misses
+frames on battery the client switches to unlocked pacing, and it restores vsync when
+mains power returns. A one-time feed message suggests plugging in. Measured on
+battery after this change: auto settled on *balanced · unlocked* at 94.5 FPS (p99
+29 ms). For a showcase, plug the laptop in.
 
 ## Measured on this machine
 
