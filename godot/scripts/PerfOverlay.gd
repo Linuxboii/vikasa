@@ -44,7 +44,7 @@ func _process(delta: float) -> void:
 		"%d draw calls · %d objects · %dk primitives" % [Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME), Performance.get_monitor(Performance.RENDER_TOTAL_OBJECTS_IN_FRAME), int(Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME) / 1000.0)],
 		"%d nodes · %.0f MB video · %.0f MB static" % [Performance.get_monitor(Performance.OBJECT_NODE_COUNT), Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0, Performance.get_monitor(Performance.MEMORY_STATIC) / 1048576.0],
 	]
-	if client: lines.append("bridge: frame %.0f ms · state %.0f ms" % [client.frame_latency_ms, client.state_latency_ms])
+	if client: lines.append("bridge: %s %.0f frames/s · state %.0f ms" % [client.transport, client.frames_per_second, client.state_latency_ms])
 	if quality: lines.append("quality: %s · render scale %d%%" % [quality.describe(), roundi(get_viewport().scaling_3d_scale * 100.0)])
 	_label.text = "\n".join(lines)
 	_graph.queue_redraw()

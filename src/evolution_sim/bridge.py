@@ -6,13 +6,16 @@ import json
 import os
 import re
 import shutil
+import struct
 import subprocess
+import sys
 import threading
 import time
 from collections import deque
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from typing import Any
+from urllib.parse import parse_qs, urlsplit
 
 import numpy as np
 
@@ -48,6 +51,15 @@ FRAME_INTERVAL = 0.033
 STATE_INTERVAL = 0.4
 FEED_LENGTH = 240
 MAX_FOOD_BURST = 24
+# The GUI's slim document: what legends, milestones and captions need for every
+# animal. Full detail (drives, utilities, genome…) is sent only for the focus.
+LITE_CREATURE_FIELDS = (
+    "id", "age", "generation", "founder", "offspring", "fights_won", "food_acquired",
+    "behavior", "behavior_reason", "alpha",
+)
+# Append-only series the client merges itself; only rows newer than its cursor
+# travel. Re-sending them whole cost ~95% of every document.
+HISTORY_KEYS = ("history", "birth_history")
 
 
 def _next_simulation_deadline(deadline: float, tick_interval: float, now: float) -> float:
@@ -56,6 +68,21 @@ def _next_simulation_deadline(deadline: float, tick_interval: float, now: float)
     if now > planned:
         return now + min(0.002, tick_interval * 0.1)
     return planned
+
+
+def _encode(value: Any) -> bytes:
+    return json.dumps(value, separators=(",", ":"), allow_nan=False).encode("utf-8")
+
+
+def _lite(state: dict[str, Any]) -> dict[str, Any]:
+    lite = {key: value for key, value in state.items()
+            if key != "creatures" and key not in HISTORY_KEYS}
+    lite["creatures"] = [
+        {field: creature[field] for field in LITE_CREATURE_FIELDS}
+        for creature in state["creatures"]
+    ]
+    lite["lite"] = True
+    return lite
 
 
 def decode_frame(payload: bytes) -> dict[str, Any]:
@@ -113,9 +140,9 @@ class _BridgeHandler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: object) -> None:
         return
 
-    def _reply_bytes(self, payload: bytes) -> None:
+    def _reply_bytes(self, payload: bytes, content_type: str = "application/octet-stream") -> None:
         self.send_response(200)
-        self.send_header("Content-Type", "application/octet-stream")
+        self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(payload)))
         self.send_header("Cache-Control", "no-store")
         self.end_headers()
@@ -133,12 +160,48 @@ class _BridgeHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if self.path == "/health":
             self._reply(200, {"ok": True, "service": "vikasa-godot-bridge"})
+        elif self.path == "/stream":
+            self._stream_frames()
         elif self.path == "/frame":
             self._reply_bytes(self.server.bridge.frame_bytes())
-        elif self.path == "/state":
-            self._reply(200, self.server.bridge.state())
+        elif self.path.split("?", 1)[0] == "/state":
+            query = parse_qs(urlsplit(self.path).query)
+            def number(key: str) -> int | None:
+                value = query.get(key, [None])[0]
+                return int(value) if value and value.lstrip("-").isdigit() else None
+
+            since = {key: value for key, value in
+                     (("history", number("hs")), ("birth_history", number("bs")))
+                     if value is not None}
+            payload = self.server.bridge.state_bytes(
+                lite=query.get("lite", ["0"])[0] == "1", focus=number("focus"),
+                since=since or None,
+            )
+            self._reply_bytes(payload, "application/json; charset=utf-8")
         else:
             self._reply(404, {"error": "Unknown endpoint"})
+
+    def _stream_frames(self) -> None:
+        """Push every new presentation frame, length-prefixed, on one connection.
+
+        Polling costs the client a request per frame; a push stream costs it a
+        non-blocking socket read. The connection ends when either side closes.
+        """
+        self.send_response(200)
+        self.send_header("Content-Type", "application/octet-stream")
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        bridge = self.server.bridge
+        last: bytes | None = None
+        try:
+            while bridge.running:
+                frame = bridge.wait_for_frame(last, timeout=1.0)
+                if frame is None or frame is last:
+                    continue
+                self.wfile.write(struct.pack("<I", len(frame)) + frame)
+                last = frame
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError, OSError):
+            return
 
     def do_POST(self) -> None:
         if self.path != "/command":
@@ -171,7 +234,10 @@ class GodotSimulationServer:
         self.ticks_per_second = 48.0
         self._tick_times: deque[float] = deque(maxlen=256)
         self._published_state: dict[str, Any] | None = None
+        self._published_state_bytes: bytes | None = None
+        self._published_lite_bytes: bytes | None = None
         self._published_frame: bytes | None = None
+        self._frame_ready = threading.Condition()
         self._founders: dict[int, int] = {}
         self._feed: deque[dict[str, Any]] = deque(maxlen=FEED_LENGTH)
         self._feed_seq = 0
@@ -190,14 +256,18 @@ class GodotSimulationServer:
         )
 
     def start(self) -> None:
-        self._published_state = self._build_state()
-        self._published_frame = self._build_frame()
+        # Hand the GIL over more often so HTTP readers are not starved by ticks.
+        sys.setswitchinterval(0.001)
+        self._publish_state()
+        self._set_frame(self._build_frame())
         self._http_thread.start()
         self._sim_thread.start()
 
     def stop(self) -> None:
         self.running = False
         self._stop.set()
+        with self._frame_ready:
+            self._frame_ready.notify_all()
         self._http.shutdown()
         self._http.server_close()
         self._http_thread.join(timeout=2.0)
@@ -220,10 +290,10 @@ class GodotSimulationServer:
                     # the full explanatory document at a calmer rate. Building
                     # the document holds the GIL, so it must not run every tick.
                     if time.monotonic() - frame_at >= FRAME_INTERVAL:
-                        self._published_frame = self._build_frame()
+                        self._set_frame(self._build_frame())
                         frame_at = time.monotonic()
                     if time.monotonic() - state_at >= STATE_INTERVAL:
-                        self._published_state = self._build_state()
+                        self._publish_state()
                         state_at = time.monotonic()
                 deadline = _next_simulation_deadline(
                     deadline, tick_interval, time.monotonic()
@@ -290,12 +360,58 @@ class GodotSimulationServer:
             self._founders[item] = root
         return root
 
+    def _publish_state(self) -> None:
+        # Serialise the slim document once per publication; the full document
+        # is serialised lazily, only if a legacy client asks for it.
+        state = self._build_state()
+        self._published_state = state
+        self._published_state_bytes = None
+        self._published_lite_bytes = _encode(_lite(state))
+
+    def state_bytes(self, *, lite: bool = False, focus: int | None = None,
+                    since: dict[str, int] | None = None) -> bytes:
+        live = self._sim_thread.is_alive() and self._published_state is not None
+        state = self._published_state if live else self._build_state()
+        if lite:
+            payload = (self._published_lite_bytes if live and self._published_lite_bytes
+                       else _encode(_lite(state)))
+            # Splice per-client parts into the pre-serialised document.
+            extra = b""
+            cursors = since or {}
+            for key in HISTORY_KEYS:
+                after = cursors.get(key)
+                rows = state[key] if after is None else [r for r in state[key] if r["tick"] > after]
+                extra += b',"' + key.encode() + b'":' + _encode(rows)
+            if since is not None:
+                extra += b',"history_since":' + _encode(since)
+            detail = next((c for c in state["creatures"] if c["id"] == focus), None)
+            if detail is not None:
+                extra += b',"focus":' + _encode(detail)
+            return payload[:-1] + extra + b"}"
+        if not live:
+            return _encode(state)
+        if self._published_state_bytes is None:
+            self._published_state_bytes = _encode(state)
+        return self._published_state_bytes
+
     def state(self) -> dict[str, Any]:
         # HTTP reads a completed immutable-by-convention publication; a slow
         # engine tick cannot make a GUI poll queue behind the simulation lock.
         if self._sim_thread.is_alive() and self._published_state is not None:
             return self._published_state
         return self._build_state()
+
+    def _set_frame(self, frame: bytes) -> None:
+        with self._frame_ready:
+            self._published_frame = frame
+            self._frame_ready.notify_all()
+
+    def wait_for_frame(self, last: bytes | None, timeout: float) -> bytes | None:
+        """Block until a frame other than ``last`` is published (or timeout)."""
+        with self._frame_ready:
+            self._frame_ready.wait_for(
+                lambda: self._published_frame is not last or not self.running, timeout)
+            return self._published_frame
 
     def frame_bytes(self) -> bytes:
         if self._sim_thread.is_alive() and self._published_frame is not None:
@@ -606,8 +722,8 @@ class GodotSimulationServer:
 
     def _publish(self) -> None:
         self._collect_events()
-        self._published_state = self._build_state()
-        self._published_frame = self._build_frame()
+        self._publish_state()
+        self._set_frame(self._build_frame())
 
     def _food_burst(self, value: dict[str, Any]) -> dict[str, Any]:
         """Scatter a ring of audited external food on a deterministic golden-angle spiral.

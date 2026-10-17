@@ -79,11 +79,16 @@ func set_state(state: Dictionary) -> void:
 	_resize_world(float(world.get("width", width)), float(world.get("height", height)), int(state.get("seed", 2026)))
 	habitat.set_biomass(state.get("habitat"))
 	details = {}
-	for creature in state.get("creatures", []):
-		if creature is Dictionary and int(creature.get("id", -1)) == selected_id:
-			details = creature
-			break
-	if Time.get_ticks_msec() - _last_frame_ms > 1500:
+	var focus: Variant = state.get("focus")
+	if focus is Dictionary and int(focus.get("id", -1)) == selected_id:
+		details = focus
+	else:
+		for creature in state.get("creatures", []):
+			if creature is Dictionary and int(creature.get("id", -1)) == selected_id:
+				details = creature
+				break
+	# Slim documents carry no motion; only a full document can stand in for frames.
+	if not state.get("lite", false) and Time.get_ticks_msec() - _last_frame_ms > 1500:
 		_apply_frame(frame_from_state(state), true)
 
 func set_frame(frame: Dictionary) -> void:

@@ -11,6 +11,7 @@ from evolution_sim.bridge import (
     CREATURE_STRIDE,
     FRAME_HEADER,
     FRAME_VERSION,
+    LITE_CREATURE_FIELDS,
     RESOURCE_STRIDE,
     WEATHER_CODES,
     GodotSimulationServer,
@@ -125,6 +126,82 @@ def test_food_burst_scatters_bounded_audited_food(tiny_config) -> None:
             bridge.command({"action": "food_burst", "x": 2.0, "y": 0.5, "count": 3})
     finally:
         bridge._http.server_close()
+
+
+def test_lite_state_is_compact_with_full_focus_detail(tiny_config) -> None:
+    bridge = _bridge(tiny_config)
+    bridge.start()
+    try:
+        bridge.command({"action": "step", "count": 5})
+        full = bridge.state()
+        focus_id = full["creatures"][0]["id"]
+        lite = json.loads(bridge.state_bytes(lite=True, focus=focus_id))
+        assert lite["lite"] is True
+        assert [c["id"] for c in lite["creatures"]] == [c["id"] for c in full["creatures"]]
+        assert set(lite["creatures"][0]) == set(LITE_CREATURE_FIELDS)
+        assert lite["focus"] == full["creatures"][0]
+        assert lite["history"] == full["history"]
+        assert "focus" not in json.loads(bridge.state_bytes(lite=True, focus=999_999))
+        assert len(bridge.state_bytes(lite=True)) < len(bridge.state_bytes())
+        port = bridge._http.server_address[1]
+        url = f"http://127.0.0.1:{port}/state?lite=1&focus={focus_id}"
+        with urllib.request.urlopen(url, timeout=3) as response:
+            assert json.loads(response.read())["focus"]["id"] == focus_id
+    finally:
+        bridge.stop()
+
+
+def test_lite_state_streams_histories_incrementally(tiny_config) -> None:
+    bridge = _bridge(tiny_config)
+    bridge.start()
+    try:
+        bridge.command({"action": "step", "count": 100})
+        full = bridge.state()
+        assert len(full["history"]) >= 3
+        cut = full["history"][-3]["tick"]
+        since = {"history": cut, "birth_history": 10**9}
+        lite = json.loads(bridge.state_bytes(lite=True, since=since))
+        assert lite["history"] == [row for row in full["history"] if row["tick"] > cut]
+        assert lite["birth_history"] == []
+        assert lite["history_since"] == {"history": cut, "birth_history": 10**9}
+        port = bridge._http.server_address[1]
+        url = f"http://127.0.0.1:{port}/state?lite=1&hs={cut}&bs=-1"
+        with urllib.request.urlopen(url, timeout=3) as response:
+            payload = json.loads(response.read())
+        assert [row["tick"] for row in payload["history"]] == [
+            row["tick"] for row in full["history"] if row["tick"] > cut]
+        assert payload["birth_history"] == full["birth_history"]
+    finally:
+        bridge.stop()
+
+
+def test_push_stream_delivers_length_prefixed_frames(tiny_config) -> None:
+    import socket
+    import struct
+
+    bridge = _bridge(tiny_config)
+    bridge.start()
+    try:
+        port = bridge._http.server_address[1]
+        with socket.create_connection(("127.0.0.1", port), timeout=3) as sock:
+            sock.sendall(b"GET /stream HTTP/1.1\r\nHost: localhost\r\n\r\n")
+            data = b""
+            while b"\r\n\r\n" not in data:
+                data += sock.recv(4096)
+            head, _, data = data.partition(b"\r\n\r\n")
+            assert b"200" in head.split(b"\r\n")[0]
+            bridge.command({"action": "step", "count": 3})
+            ticks = []
+            while len(ticks) < 2:
+                while len(data) < 4 or len(data) < 4 + struct.unpack("<I", data[:4])[0]:
+                    data += sock.recv(65536)
+                size = struct.unpack("<I", data[:4])[0]
+                ticks.append(decode_frame(data[4:4 + size])["tick"])
+                data = data[4 + size:]
+            assert ticks[-1] == bridge.engine.tick
+            assert ticks == sorted(ticks)
+    finally:
+        bridge.stop()
 
 
 def test_http_serves_binary_frame_and_state(tiny_config) -> None:

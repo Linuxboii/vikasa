@@ -40,7 +40,7 @@ static func coat(mode: String, row: Dictionary) -> Color:
 			return Color("#e8b84a").lerp(Color("#5fd47f"), (energy - 0.5) * 2.0)
 		"dynasty":
 			var hue := fposmod(float(row.founder) * 0.618034 + 0.05, 1.0)
-			return Color.from_hsv(hue, 0.62, 0.86)
+			return Color.from_hsv(hue, 0.82, 0.9)
 		"generation":
 			var depth := clampf(float(row.generation) / 14.0, 0.0, 1.0)
 			return Color("#4b2a7a").lerp(Color("#2f8f8a"), minf(1.0, depth * 2.0)).lerp(Color("#f2d35b"), maxf(0.0, depth * 2.0 - 1.0))
