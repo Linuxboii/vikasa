@@ -18,11 +18,36 @@ import numpy as np
 
 from evolution_sim.analytics.trait_space import population_genetics
 from evolution_sim.config import SimulationConfig
+from evolution_sim.simulation.behavior import ActionName
 from evolution_sim.simulation.engine import SimulationEngine
 from evolution_sim.simulation.environment import EVENT_KINDS, EnvironmentEvent
 
 DEFAULT_PORT = 8765
 MAX_REQUEST_BYTES = 32_768
+
+# Compact presentation stream. The JSON /state document carries explanations and
+# history; /frame carries only what the renderer needs every few hundredths of a
+# second, as little-endian float32 so the client can decode it without parsing.
+FRAME_VERSION = 2.0
+FRAME_HEADER = 24
+CREATURE_STRIDE = 18
+RESOURCE_STRIDE = 4
+BEHAVIOR_CODES = tuple(action.value for action in ActionName)
+WEATHER_CODES = (
+    "drought", "abundance", "heat", "cold", "storm", "flood", "wildfire", "disease",
+    "redistribute",
+)
+if set(WEATHER_CODES) != set(EVENT_KINDS):  # pragma: no cover - import-time contract
+    raise RuntimeError("bridge weather codes must cover every environmental event kind")
+FLAG_ALPHA = 1
+FLAG_INJURED = 2
+FLAG_YOUNG = 4
+FLAG_STARVING = 8
+FLAG_BELIEVER = 16
+FRAME_INTERVAL = 0.033
+STATE_INTERVAL = 0.4
+FEED_LENGTH = 240
+MAX_FOOD_BURST = 24
 
 
 def _next_simulation_deadline(deadline: float, tick_interval: float, now: float) -> float:
@@ -31,6 +56,46 @@ def _next_simulation_deadline(deadline: float, tick_interval: float, now: float)
     if now > planned:
         return now + min(0.002, tick_interval * 0.1)
     return planned
+
+
+def decode_frame(payload: bytes) -> dict[str, Any]:
+    """Decode a /frame payload; the reference reader for tests and tooling."""
+    values = np.frombuffer(payload, dtype="<f4")
+    if values.size < FRAME_HEADER or values[0] != FRAME_VERSION:
+        raise ValueError("not a Vikasa presentation frame")
+    count, resources = int(values[2]), int(values[3])
+    creature_stride, resource_stride = int(values[4]), int(values[5])
+    body = values[FRAME_HEADER:FRAME_HEADER + count * creature_stride].reshape(
+        count, creature_stride)
+    food = values[FRAME_HEADER + count * creature_stride:].reshape(resources, resource_stride)
+    weather = int(values[12])
+    return {
+        "version": float(values[0]),
+        "tick": int(values[1]),
+        "paused": bool(values[6]),
+        "ticks_per_second": float(values[7]),
+        "actual_ticks_per_second": float(values[8]),
+        "season_phase": float(values[9]),
+        "weather": WEATHER_CODES[weather] if weather >= 0 else None,
+        "feed_seq": int(values[19]),
+        "creatures": [
+            {
+                "id": int(row[0]), "x": float(row[1]), "y": float(row[2]),
+                "vx": float(row[3]), "vy": float(row[4]), "energy_ratio": float(row[5]),
+                "behavior": BEHAVIOR_CODES[int(row[6])], "size": float(row[7]),
+                "speed": float(row[8]), "perception": float(row[9]),
+                "aggression": float(row[10]), "resilience": float(row[11]),
+                "sociability": float(row[12]), "flags": int(row[13]),
+                "founder": int(row[14]), "generation": int(row[15]), "age": int(row[16]),
+                "injury": float(row[17]),
+            }
+            for row in body
+        ],
+        "resources": [
+            {"id": int(row[0]), "x": float(row[1]), "y": float(row[2]), "energy": float(row[3])}
+            for row in food
+        ],
+    }
 
 
 class _BridgeServer(ThreadingHTTPServer):
@@ -48,6 +113,14 @@ class _BridgeHandler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: object) -> None:
         return
 
+    def _reply_bytes(self, payload: bytes) -> None:
+        self.send_response(200)
+        self.send_header("Content-Type", "application/octet-stream")
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        self.wfile.write(payload)
+
     def _reply(self, status: int, value: dict[str, Any]) -> None:
         payload = json.dumps(value, separators=(",", ":"), allow_nan=False).encode("utf-8")
         self.send_response(status)
@@ -60,6 +133,8 @@ class _BridgeHandler(BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         if self.path == "/health":
             self._reply(200, {"ok": True, "service": "vikasa-godot-bridge"})
+        elif self.path == "/frame":
+            self._reply_bytes(self.server.bridge.frame_bytes())
         elif self.path == "/state":
             self._reply(200, self.server.bridge.state())
         else:
@@ -96,6 +171,14 @@ class GodotSimulationServer:
         self.ticks_per_second = 48.0
         self._tick_times: deque[float] = deque(maxlen=256)
         self._published_state: dict[str, Any] | None = None
+        self._published_frame: bytes | None = None
+        self._founders: dict[int, int] = {}
+        self._feed: deque[dict[str, Any]] = deque(maxlen=FEED_LENGTH)
+        self._feed_seq = 0
+        self._event_source: list[dict[str, Any]] | None = None
+        self._event_consumed = 0
+        self._chronicle_marker: dict[str, Any] | None = None
+        self._reset_event_cursor()
         self.running = True
         self._stop = threading.Event()
         self._http = _BridgeServer(("127.0.0.1", port), self)
@@ -108,6 +191,7 @@ class GodotSimulationServer:
 
     def start(self) -> None:
         self._published_state = self._build_state()
+        self._published_frame = self._build_frame()
         self._http_thread.start()
         self._sim_thread.start()
 
@@ -121,7 +205,7 @@ class GodotSimulationServer:
 
     def _run_simulation(self) -> None:
         deadline = time.monotonic()
-        published_at = deadline
+        state_at = frame_at = deadline
         while not self._stop.wait(0.002):
             if self.paused:
                 deadline = time.monotonic()
@@ -130,14 +214,81 @@ class GodotSimulationServer:
             tick_interval = 1.0 / self.ticks_per_second
             if now >= deadline:
                 with self.lock:
-                    self.engine.step(1)
+                    self._advance(1)
                     self._tick_times.append(time.monotonic())
-                    if time.monotonic() - published_at >= 0.16:
+                    # Two cadences: a cheap binary frame for smooth motion and
+                    # the full explanatory document at a calmer rate. Building
+                    # the document holds the GIL, so it must not run every tick.
+                    if time.monotonic() - frame_at >= FRAME_INTERVAL:
+                        self._published_frame = self._build_frame()
+                        frame_at = time.monotonic()
+                    if time.monotonic() - state_at >= STATE_INTERVAL:
                         self._published_state = self._build_state()
-                        published_at = time.monotonic()
+                        state_at = time.monotonic()
                 deadline = _next_simulation_deadline(
                     deadline, tick_interval, time.monotonic()
                 )
+
+    def _advance(self, count: int) -> None:
+        for _ in range(count):
+            self.engine.step(1)
+            self._collect_events()
+
+    def _reset_event_cursor(self) -> None:
+        """Start reading a (new) engine's event sources from their current end."""
+        self._event_source = self.engine.recent_events
+        self._event_consumed = len(self.engine.recent_events)
+        chronicle = self.engine.culture.chronicle
+        self._chronicle_marker = chronicle[-1] if chronicle else None
+
+    def _push_event(self, tick: int, kind: str, text: str, **extra: Any) -> None:
+        self._feed_seq += 1
+        self._feed.append({"seq": self._feed_seq, "tick": tick, "kind": kind, "text": text,
+                           **extra})
+
+    def _collect_events(self) -> None:
+        """Move per-tick engine events into a sequenced feed the GUI cannot miss.
+
+        The engine clears ``recent_events`` at the start of every tick by binding
+        a new list, so list identity tells us whether the source rolled over.
+        """
+        engine = self.engine
+        if engine.recent_events is not self._event_source:
+            self._event_source = engine.recent_events
+            self._event_consumed = 0
+        for item in self._event_source[self._event_consumed:]:
+            self._push_event(int(item.get("tick", engine.tick)), str(item.get("kind", "event")),
+                             str(item.get("text", "")), creature_id=item.get("creature_id"))
+        self._event_consumed = len(self._event_source)
+        chronicle = engine.culture.chronicle
+        fresh: list[dict[str, Any]] = []
+        for item in reversed(chronicle):
+            if item is self._chronicle_marker:
+                break
+            fresh.append(item)
+        for item in reversed(fresh):
+            self._push_event(int(item["tick"]), str(item["kind"]), str(item["text"]),
+                             tradition_id=item.get("tradition_id"))
+        if chronicle:
+            self._chronicle_marker = chronicle[-1]
+
+    def founder_of(self, creature_id: int) -> int:
+        """Maternal-line root (first recorded parent, repeatedly): a stable dynasty key."""
+        if creature_id in self._founders:
+            return self._founders[creature_id]
+        trail = [creature_id]
+        cursor = creature_id
+        while cursor not in self._founders:
+            parents = self.engine.lineage.parents_of(cursor)
+            if parents is None:
+                self._founders[cursor] = cursor
+                break
+            cursor = parents[0]
+            trail.append(cursor)
+        root = self._founders[cursor]
+        for item in trail:
+            self._founders[item] = root
+        return root
 
     def state(self) -> dict[str, Any]:
         # HTTP reads a completed immutable-by-convention publication; a slow
@@ -145,6 +296,72 @@ class GodotSimulationServer:
         if self._sim_thread.is_alive() and self._published_state is not None:
             return self._published_state
         return self._build_state()
+
+    def frame_bytes(self) -> bytes:
+        if self._sim_thread.is_alive() and self._published_frame is not None:
+            return self._published_frame
+        return self._build_frame()
+
+    def _build_frame(self) -> bytes:
+        with self.lock:
+            engine = self.engine
+            creatures = [engine.creatures[key] for key in sorted(engine.creatures)]
+            resources = [engine.resources[key] for key in sorted(engine.resources)]
+            out = np.zeros(
+                FRAME_HEADER + CREATURE_STRIDE * len(creatures) + RESOURCE_STRIDE * len(resources),
+                dtype="<f4",
+            )
+            environment = engine.environment
+            events = environment.active_events
+            weather = events[0] if events else None
+            max_energy = engine.config.energy.maximum
+            out[:FRAME_HEADER] = (
+                FRAME_VERSION, engine.tick, len(creatures), len(resources),
+                CREATURE_STRIDE, RESOURCE_STRIDE, float(self.paused), self.ticks_per_second,
+                self._measured_rate(), (engine.tick % 384) / 96.0,
+                environment.temperature, environment.rainfall,
+                WEATHER_CODES.index(weather.kind) if weather else -1,
+                weather.intensity if weather else 0.0,
+                (max(0, weather.end_tick - engine.tick) / max(1, weather.duration)
+                 if weather else 0.0),
+                engine.config.world.width, engine.config.world.height,
+                engine.total_births, engine.total_deaths, self._feed_seq,
+                environment.food_multiplier, environment.health_pressure, max_energy, 0.0,
+            )
+            young_age = engine.config.behavior.dependent_age_ticks
+            offset = FRAME_HEADER
+            for item in creatures:
+                flags = (
+                    (FLAG_ALPHA if item.alpha else 0)
+                    | (FLAG_INJURED if item.injury > 0.12 else 0)
+                    | (FLAG_YOUNG if item.parents is not None and item.age < young_age else 0)
+                    | (FLAG_STARVING if item.starvation_ticks > 0 else 0)
+                    | (FLAG_BELIEVER if item.belief_id is not None else 0)
+                )
+                genes = item.genome.values
+                temperament = item.temperament
+                out[offset:offset + CREATURE_STRIDE] = (
+                    item.id, item.position[0], item.position[1],
+                    item.velocity[0], item.velocity[1],
+                    max(0.0, min(1.0, item.energy / max_energy)),
+                    BEHAVIOR_CODES.index(item.behavior_state.action.value),
+                    genes[0], genes[1], genes[2], temperament.aggression,
+                    temperament.resilience, temperament.sociability, flags,
+                    self.founder_of(item.id), engine.lineage.generation_of(item.id),
+                    item.age, item.injury,
+                )
+                offset += CREATURE_STRIDE
+            for food in resources:
+                out[offset:offset + RESOURCE_STRIDE] = (
+                    food.id, food.position[0], food.position[1], food.energy)
+                offset += RESOURCE_STRIDE
+            return out.tobytes()
+
+    def _measured_rate(self) -> float:
+        if len(self._tick_times) > 1 and not self.paused:
+            return round((len(self._tick_times) - 1)
+                         / max(0.001, self._tick_times[-1] - self._tick_times[0]), 1)
+        return 0.0
 
     def _build_state(self) -> dict[str, Any]:
         with self.lock:
@@ -176,6 +393,7 @@ class GodotSimulationServer:
                         "perception": item.genome.values[2],
                         "metabolism": item.genome.values[3],
                         "generation": engine.lineage.generation_of(item.id),
+                        "founder": self.founder_of(item.id),
                         "haplotypes": item.genome.haplotypes,
                         "aggression": item.temperament.aggression,
                         "resilience": item.temperament.resilience,
@@ -258,11 +476,9 @@ class GodotSimulationServer:
                 "tick": engine.tick,
                 "paused": self.paused,
                 "ticks_per_second": self.ticks_per_second,
-                "actual_ticks_per_second": (
-                    round((len(self._tick_times) - 1)
-                          / max(0.001, self._tick_times[-1] - self._tick_times[0]), 1)
-                    if len(self._tick_times) > 1 and not self.paused else 0.0
-                ),
+                "actual_ticks_per_second": self._measured_rate(),
+                "feed": list(self._feed)[-60:],
+                "feed_seq": self._feed_seq,
                 "world": {
                     "width": engine.config.world.width,
                     "height": engine.config.world.height,
@@ -328,6 +544,9 @@ class GodotSimulationServer:
         elif action == "restart":
             self.engine = SimulationEngine(self.engine.config, seed=self.engine.seed)
             self._tick_times.clear()
+            self._founders.clear()
+            self._reset_event_cursor()
+            self._push_event(0, "restart", "A fresh founding population entered the habitat.")
             self.paused = False
         elif action == "speed":
             speed = float(value.get("ticks_per_second", 48))
@@ -340,7 +559,7 @@ class GodotSimulationServer:
             if not 1 <= count <= 100:
                 raise ValueError("step count must be between 1 and 100")
             with self.lock:
-                self.engine.step(count)
+                self._advance(count)
         elif action == "weather":
             kind = str(value.get("kind", ""))
             if kind not in EVENT_KINDS:
@@ -377,10 +596,56 @@ class GodotSimulationServer:
                     np.array([x * self.engine.config.world.width,
                               y * self.engine.config.world.height]),
                     energy)
+        elif action == "food_burst":
+            return self._food_burst(value)
         else:
-            raise ValueError("action must be pause, resume, restart, speed, step, weather, or food")
-        self._published_state = self._build_state()
+            raise ValueError(
+                "action must be pause, resume, restart, speed, step, weather, food, or food_burst")
+        self._publish()
         return {"ok": True, "action": action}
+
+    def _publish(self) -> None:
+        self._collect_events()
+        self._published_state = self._build_state()
+        self._published_frame = self._build_frame()
+
+    def _food_burst(self, value: dict[str, Any]) -> dict[str, Any]:
+        """Scatter a ring of audited external food on a deterministic golden-angle spiral.
+
+        No engine random numbers are consumed, so the intervention is reproducible
+        from its logged parameters alone.
+        """
+        x = float(value.get("x", 0.5))
+        y = float(value.get("y", 0.5))
+        count = int(value.get("count", 8))
+        radius = float(value.get("radius", 0.06))
+        engine = self.engine
+        energy = float(value.get("energy", engine.config.resources.energy_value))
+        if not 0.0 <= x <= 1.0 or not 0.0 <= y <= 1.0:
+            raise ValueError("food coordinates must be normalized to zero through one")
+        if not 1 <= count <= MAX_FOOD_BURST:
+            raise ValueError(f"food burst count must be between 1 and {MAX_FOOD_BURST}")
+        if not 0.0 <= radius <= 0.25:
+            raise ValueError("food burst radius must be between 0 and 0.25")
+        if energy <= 0.0 or energy > engine.config.energy.maximum:
+            raise ValueError("food energy is outside the valid range")
+        room = engine.config.resources.maximum_count - len(engine.resources)
+        if room <= 0:
+            raise ValueError("the configured food-patch limit has been reached")
+        width, height = engine.config.world.width, engine.config.world.height
+        scale = min(width, height)
+        placed = 0
+        for index in range(min(count, room)):
+            distance = radius * scale * np.sqrt((index + 0.5) / count)
+            angle = index * 2.399963229728653
+            point = np.array([
+                min(max(x * width + distance * np.cos(angle), 0.0), float(width)),
+                min(max(y * height + distance * np.sin(angle), 0.0), float(height)),
+            ])
+            engine.add_food(point, energy)
+            placed += 1
+        self._publish()
+        return {"ok": True, "action": "food_burst", "placed": placed}
 
 
 def _godot_binary(explicit: str | None) -> str:
