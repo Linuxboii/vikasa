@@ -3,4 +3,4 @@
 from evolution_sim.config import SimulationConfig
 
 __all__ = ["SimulationConfig"]
-__version__ = "2.0.0"
+__version__ = "2.1.0"

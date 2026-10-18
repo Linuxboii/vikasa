@@ -19,9 +19,12 @@ from evolution_sim.simulation.engine import SimulationEngine
 ROOT = Path(__file__).resolve().parents[2]
 
 LEGACY_FINGERPRINTS = {
-    ("config/default.json", 11): "3d964e43245e47b07b3cea21358dedf364d7915a6f821c5e7e1231d06177135c",
-    ("config/showcase.json", 2026): "24e13edf3f962ef9a2493c49acf5a7a0a9f2c08547e233075a3098b8575249b8",
-    ("config/spatial-biome.json", 7): "1d90cb49b908f19ba4ad496f6851b983b59f35e68ed00c32fcd011f61820cb59",
+    ("config/default.json", 11):
+        "3d964e43245e47b07b3cea21358dedf364d7915a6f821c5e7e1231d06177135c",
+    ("config/showcase.json", 2026):
+        "24e13edf3f962ef9a2493c49acf5a7a0a9f2c08547e233075a3098b8575249b8",
+    ("config/spatial-biome.json", 7):
+        "1d90cb49b908f19ba4ad496f6851b983b59f35e68ed00c32fcd011f61820cb59",
 }
 
 

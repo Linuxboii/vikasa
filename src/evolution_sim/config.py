@@ -256,6 +256,79 @@ class EcologyConfig:
                 raise ConfigError(f"ecology.{name} exceeds the explicit diffusion stability limit")
 
 
+def _bounded(value: Any, path: str, lower: float, upper: float, *,
+             exclusive_lower: bool = False) -> float:
+    result = _number(value, path)
+    if result < lower or result > upper or (exclusive_lower and result == lower):
+        bound = f"({lower:g}" if exclusive_lower else f"[{lower:g}"
+        raise ConfigError(f"{path} must be in {bound}, {upper:g}]")
+    return result
+
+
+@dataclass(frozen=True, slots=True)
+class ClimateConfig:
+    """Optional °C climate forcing and heritable thermal tolerance; off for legacy files."""
+
+    enabled: bool = False
+    ticks_per_year: int = 384
+    monthly_c: tuple[float, ...] = (25.0,) * 12
+    anomaly_c: tuple[tuple[float, float], ...] = ()
+    tolerance_breadth_c: float = 4.0
+    warm_side_ratio: float = 0.6
+    stress_metabolic_gain: float = 1.5
+    stress_injury_rate: float = 0.02
+    fertility_stress_limit: float = 0.7
+    inheritance: str = "heritable"
+    founder_mean_c: float | None = None
+    founder_sd_c: float = 1.0
+    segregation_sd_c: float = 0.4
+    mutation_sd_c: float = 0.1
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.enabled, bool):
+            raise ConfigError("climate.enabled must be boolean")
+        ticks = _integer(self.ticks_per_year, "climate.ticks_per_year", minimum=4)
+        if ticks > 1_000_000:
+            raise ConfigError("climate.ticks_per_year must not exceed 1000000")
+        object.__setattr__(self, "ticks_per_year", ticks)
+        if not isinstance(self.monthly_c, (list, tuple)) or len(self.monthly_c) != 12:
+            raise ConfigError("climate.monthly_c must contain 12 monthly temperatures")
+        object.__setattr__(self, "monthly_c", tuple(
+            _bounded(value, "climate.monthly_c", -60, 60) for value in self.monthly_c))
+        if not isinstance(self.anomaly_c, (list, tuple)):
+            raise ConfigError("climate.anomaly_c must be a list of [year, anomaly] knots")
+        knots = []
+        for knot in self.anomaly_c:
+            if not isinstance(knot, (list, tuple)) or len(knot) != 2:
+                raise ConfigError("climate.anomaly_c knots must be [year, anomaly]")
+            year = _bounded(knot[0], "climate.anomaly_c", 0, 1e9)
+            if knots and year <= knots[-1][0]:
+                raise ConfigError("climate.anomaly_c years must be strictly increasing")
+            knots.append((year, _bounded(knot[1], "climate.anomaly_c", -30, 30)))
+        object.__setattr__(self, "anomaly_c", tuple(knots))
+        for name, lower, upper, exclusive in (
+            ("tolerance_breadth_c", 0.1, 50, False), ("warm_side_ratio", 0.05, 1, False),
+            ("stress_metabolic_gain", 0, 20, False), ("stress_injury_rate", 0, 1, False),
+            ("fertility_stress_limit", 0, 1, False), ("founder_sd_c", 0, 20, False),
+            ("segregation_sd_c", 0, 20, False), ("mutation_sd_c", 0, 20, False),
+        ):
+            object.__setattr__(self, name, _bounded(getattr(self, name), f"climate.{name}",
+                                                    lower, upper, exclusive_lower=exclusive))
+        if self.inheritance not in {"heritable", "none"}:
+            raise ConfigError("climate.inheritance must be 'heritable' or 'none'")
+        if self.founder_mean_c is not None:
+            object.__setattr__(self, "founder_mean_c", _bounded(
+                self.founder_mean_c, "climate.founder_mean_c", -20, 60))
+
+    @property
+    def annual_mean_c(self) -> float:
+        return sum(self.monthly_c) / 12.0
+
+    @property
+    def resolved_founder_mean_c(self) -> float:
+        return self.annual_mean_c if self.founder_mean_c is None else self.founder_mean_c
+
+
 @dataclass(frozen=True, slots=True)
 class SimulationConfig:
     world: WorldConfig
@@ -270,6 +343,7 @@ class SimulationConfig:
     behavior: BehaviorConfig = field(default_factory=BehaviorConfig)
     demography: DemographyConfig = field(default_factory=DemographyConfig)
     ecology: EcologyConfig = field(default_factory=EcologyConfig)
+    climate: ClimateConfig = field(default_factory=ClimateConfig)
 
     ROOT_KEYS: ClassVar[set[str]] = {
         "world",
@@ -284,6 +358,7 @@ class SimulationConfig:
         "behavior",
         "demography",
         "ecology",
+        "climate",
     }
 
     @classmethod
@@ -298,7 +373,8 @@ class SimulationConfig:
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> SimulationConfig:
         data = _mapping(raw, "config")
-        _keys(data, cls.ROOT_KEYS, "", optional={"behavior", "demography", "ecology"})
+        _keys(data, cls.ROOT_KEYS, "",
+              optional={"behavior", "demography", "ecology", "climate"})
 
         world_data = _mapping(data["world"], "world")
         _keys(world_data, {"width", "height", "boundary"}, "world")
@@ -416,6 +492,10 @@ class SimulationConfig:
         ecology_keys = set(EcologyConfig.__dataclass_fields__)
         _keys(ecology_data, ecology_keys, "ecology", optional=ecology_keys)
         ecology = EcologyConfig(**ecology_data)
+        climate_data = _mapping(data.get("climate", {}), "climate")
+        climate_keys = set(ClimateConfig.__dataclass_fields__)
+        _keys(climate_data, climate_keys, "climate", optional=climate_keys)
+        climate = ClimateConfig(**climate_data)
 
         return cls(
             world=world,
@@ -430,12 +510,19 @@ class SimulationConfig:
             behavior=behavior,
             demography=demography,
             ecology=ecology,
+            climate=climate,
         )
 
     def to_dict(self) -> dict[str, Any]:
         data = asdict(self)
         if self.genome.architecture is None:
             data["genome"].pop("architecture")
+        if self.climate.enabled:
+            data["climate"]["monthly_c"] = list(self.climate.monthly_c)
+            data["climate"]["anomaly_c"] = [list(knot) for knot in self.climate.anomaly_c]
+        else:
+            # Legacy configs keep byte-identical serialization and hashes.
+            data.pop("climate")
         data["genome"]["traits"] = {
             name: [bounds.minimum, bounds.maximum] for name, bounds in self.genome.traits.items()
         }
