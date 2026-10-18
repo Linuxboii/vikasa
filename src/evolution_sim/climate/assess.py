@@ -19,6 +19,7 @@ from evolution_sim.climate.data import (
     ssp_rate_c_per_year,
 )
 from evolution_sim.climate.protocol import (
+    CalibrationExtinct,
     RescueCondition,
     RescuePhases,
     calibrate_generation_ticks,
@@ -28,6 +29,7 @@ from evolution_sim.climate.protocol import (
 from evolution_sim.climate.surrogate import Surrogate
 
 DOMAIN_TOLERANCE = 0.25
+CALIBRATION_SEEDS = (101, 102, 103, 104)
 BIOLOGY_DISCLAIMER = ("Climate forcing is observed data; the organism is a generic model, "
                       "not a calibrated real species.")
 
@@ -114,33 +116,44 @@ def _in_sweep_domain(request: AssessmentRequest, domain: dict[str, float]) -> bo
 
 def _cached_calibration(path: Path, base: dict[str, Any], request: AssessmentRequest,
                         workers: int, options: dict[str, Any]) -> dict[str, Any]:
-    """Re-measure the generation interval for this region and breadth, once."""
-    settings = {"seeds": list(options.get("seeds", [101, 102])),
+    """Re-measure the generation interval for this region and breadth, once.
+
+    Calibration runs on the assessment's own seasonal clock: one reference
+    generation spans generation_years climate years.
+    """
+    reference = options.get("reference_generation_ticks")
+    settings = {"seeds": list(options.get("seeds", CALIBRATION_SEEDS)),
                 "burn_in_ticks": int(options.get("burn_in_ticks", 1500)),
-                "measure_ticks": int(options.get("measure_ticks", 6000))}
+                "measure_ticks": int(options.get("measure_ticks", 6000)),
+                "provisional_ticks_per_year": (max(4, round(reference / request.generation_years))
+                                               if reference else 300)}
     if path.exists():
         cached = json.loads(path.read_text(encoding="utf-8"))
         if (cached.get("breadth_c") == request.breadth_c
                 and cached.get("monthly_c") == list(request.region.monthly_c)
-                and cached.get("seeds") == settings["seeds"]):
+                and all(cached.get(key) == value for key, value in settings.items())):
             return cached
     calibration = calibrate_generation_ticks(
         base, settings["seeds"], breadth_c=request.breadth_c,
         monthly_c=list(request.region.monthly_c), workers=min(len(settings["seeds"]), workers),
-        burn_in_ticks=settings["burn_in_ticks"], measure_ticks=settings["measure_ticks"])
-    path.write_text(json.dumps(calibration, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        burn_in_ticks=settings["burn_in_ticks"], measure_ticks=settings["measure_ticks"],
+        provisional_ticks_per_year=settings["provisional_ticks_per_year"])
+    _write_json_atomic(path, calibration)
     return calibration
 
 
 BASELINE_FAILURE_VERDICT = "not viable in present-day climate"
 
 
-def _write_assessment(results_dir: Path, result: dict[str, Any]) -> dict[str, Any]:
-    target = results_dir / "assessment.json"
+def _write_json_atomic(target: Path, value: dict[str, Any]) -> None:
     temporary = target.with_name(target.name + ".tmp")
-    temporary.write_text(json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + "\n",
+    temporary.write_text(json.dumps(value, indent=2, sort_keys=True, allow_nan=False) + "\n",
                          encoding="utf-8", newline="\n")
     temporary.replace(target)
+
+
+def _write_assessment(results_dir: Path, result: dict[str, Any]) -> dict[str, Any]:
+    _write_json_atomic(results_dir / "assessment.json", result)
     return result
 
 
@@ -152,7 +165,7 @@ def _identity(request: AssessmentRequest, assessment_id: str | None,
 
 
 def _baseline_failure(request: AssessmentRequest, results_dir: Path, reason: str,
-                      identity: dict[str, Any]) -> dict[str, Any]:
+                      identity: dict[str, Any], seeds: int) -> dict[str, Any]:
     entries = []
     for ssp in request.ssps:
         plan = plan_ssp(request, ssp, generation_ticks=1)
@@ -163,14 +176,16 @@ def _baseline_failure(request: AssessmentRequest, results_dir: Path, reason: str
                         "observed_trend_c_per_decade": request.region.trend_c_per_decade,
                         "sweep": None, "surrogate": None})
     caveats = [BIOLOGY_DISCLAIMER,
-               f"With a tolerance breadth of {request.breadth_c:g} °C the population died out "
-               f"under the region's present-day seasonal cycle (seasonal amplitude "
+               f"With a tolerance breadth of {request.breadth_c:g} °C, 0 of {seeds} populations "
+               f"survived the region's present-day seasonal cycle (seasonal amplitude "
                f"{request.region.seasonal_amplitude_c:.1f} °C) with no warming at all, so no "
                "warming scenario was simulated. Try a broader tolerance breadth.",
                f"Calibration detail: {reason}"]
     return _write_assessment(results_dir, {
         "schema": "vikasa-climate-assessment-v1", **identity, "request": request.to_dict(),
-        "calibration": None, "baseline_viable": False, "ssps": entries, "caveats": caveats})
+        "calibration": None, "baseline_viable": False,
+        "baseline_viability": {"survived": 0, "n": seeds}, "ssps": entries,
+        "caveats": caveats})
 
 
 def assess(request: AssessmentRequest, base: dict[str, Any], *, results_dir: Path,
@@ -185,10 +200,11 @@ def assess(request: AssessmentRequest, base: dict[str, Any], *, results_dir: Pat
     try:
         calibration = calibration_override or _cached_calibration(
             results_dir / "calibration.json", base, request, workers, calibration_kwargs or {})
-    except RuntimeError as exc:
-        # The organism dies out under today's seasonal cycle with zero warming:
+    except CalibrationExtinct as exc:
+        # Every population died under today's seasonal cycle with zero warming:
         # a real answer for this region and tolerance, not a tool failure.
-        return _baseline_failure(request, results_dir, str(exc), identity)
+        seeds = len((calibration_kwargs or {}).get("seeds", CALIBRATION_SEEDS))
+        return _baseline_failure(request, results_dir, str(exc), identity, seeds)
     generation_ticks = int(calibration["generation_ticks"])
     climate = base.get("climate", {})
     founder_sd = request.founder_sd_c if request.founder_sd_c is not None else float(
@@ -255,5 +271,7 @@ def assess(request: AssessmentRequest, base: dict[str, Any], *, results_dir: Pat
                        "only the first part of the 2025-2100 pathway was simulated.")
     return _write_assessment(results_dir, {
         "schema": "vikasa-climate-assessment-v1", **identity, "request": request.to_dict(),
-        "calibration": calibration, "baseline_viable": True, "ssps": entries,
-        "caveats": caveats})
+        "calibration": calibration, "baseline_viable": True,
+        "baseline_viability": {"survived": calibration.get("viable_seeds"),
+                               "n": len(calibration.get("seeds", []))},
+        "ssps": entries, "caveats": caveats})

@@ -19,7 +19,7 @@ from typing import Any
 import numpy as np
 
 from evolution_sim.climate.analysis import summarize_sweep
-from evolution_sim.climate.assess import AssessmentRequest, assess
+from evolution_sim.climate.assess import CALIBRATION_SEEDS, AssessmentRequest, assess
 from evolution_sim.climate.data import (
     BUNDLED_REGIONS,
     POWER_URL,
@@ -31,6 +31,7 @@ from evolution_sim.climate.data import (
     save_region,
 )
 from evolution_sim.climate.protocol import (
+    CalibrationExtinct,
     RescuePhases,
     calibrate_generation_ticks,
     make_task,
@@ -248,8 +249,13 @@ def stage_assess(root: Path, base: dict[str, Any], profile: dict[str, Any], work
                              f"{region.name}: locally adapted organism (breadth "
                              f"{profile['local_breadth_factor']:g} x seasonal amplitude = "
                              f"{local:.1f} °C)", replace(request, breadth_c=local)))
-        calibration = {"seeds": [101, 102], **{key: value for key, value in
-                                               profile["calibration"].items() if key != "seeds"}}
+        reference = root / "calibration.json"
+        calibration = {"seeds": list(CALIBRATION_SEEDS),
+                       **{key: value for key, value in profile["calibration"].items()
+                          if key != "seeds"},
+                       "reference_generation_ticks": (
+                           _read_json(reference)["generation_ticks"] if reference.exists()
+                           else None)}
         for identifier, label, variant in variants:
             print(f"Assessing {label} ({', '.join(ssps)}) ...", flush=True)
             results.append(assess(variant, base, results_dir=root / "assess" / identifier,
@@ -481,7 +487,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         code, path = stage_report(root, args.config, profile)
         print(f"Report: {path}")
         return code
-    except (ConfigError, OSError, RuntimeError, ValueError, KeyError) as exc:
+    except (ConfigError, CalibrationExtinct, OSError, RuntimeError, ValueError,
+            KeyError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 2
 
