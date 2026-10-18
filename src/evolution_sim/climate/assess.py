@@ -144,8 +144,15 @@ def _write_assessment(results_dir: Path, result: dict[str, Any]) -> dict[str, An
     return result
 
 
-def _baseline_failure(request: AssessmentRequest, results_dir: Path,
-                      reason: str) -> dict[str, Any]:
+def _identity(request: AssessmentRequest, assessment_id: str | None,
+              label: str | None) -> dict[str, Any]:
+    return {"id": assessment_id or request.region.key,
+            "label": label or f"{request.region.name}: tolerance breadth "
+                              f"{request.breadth_c:g} °C"}
+
+
+def _baseline_failure(request: AssessmentRequest, results_dir: Path, reason: str,
+                      identity: dict[str, Any]) -> dict[str, Any]:
     entries = []
     for ssp in request.ssps:
         plan = plan_ssp(request, ssp, generation_ticks=1)
@@ -162,7 +169,7 @@ def _baseline_failure(request: AssessmentRequest, results_dir: Path,
                "warming scenario was simulated. Try a broader tolerance breadth.",
                f"Calibration detail: {reason}"]
     return _write_assessment(results_dir, {
-        "schema": "vikasa-climate-assessment-v1", "request": request.to_dict(),
+        "schema": "vikasa-climate-assessment-v1", **identity, "request": request.to_dict(),
         "calibration": None, "baseline_viable": False, "ssps": entries, "caveats": caveats})
 
 
@@ -170,7 +177,9 @@ def assess(request: AssessmentRequest, base: dict[str, Any], *, results_dir: Pat
            workers: int, sweep_summary: dict[str, Any] | None = None,
            sweep_domain: dict[str, float] | None = None, surrogate: Surrogate | None = None,
            calibration_override: dict[str, Any] | None = None,
-           calibration_kwargs: dict[str, Any] | None = None) -> dict[str, Any]:
+           calibration_kwargs: dict[str, Any] | None = None, assessment_id: str | None = None,
+           label: str | None = None) -> dict[str, Any]:
+    identity = _identity(request, assessment_id, label)
     results_dir = Path(results_dir)
     results_dir.mkdir(parents=True, exist_ok=True)
     try:
@@ -179,7 +188,7 @@ def assess(request: AssessmentRequest, base: dict[str, Any], *, results_dir: Pat
     except RuntimeError as exc:
         # The organism dies out under today's seasonal cycle with zero warming:
         # a real answer for this region and tolerance, not a tool failure.
-        return _baseline_failure(request, results_dir, str(exc))
+        return _baseline_failure(request, results_dir, str(exc), identity)
     generation_ticks = int(calibration["generation_ticks"])
     climate = base.get("climate", {})
     founder_sd = request.founder_sd_c if request.founder_sd_c is not None else float(
@@ -245,6 +254,6 @@ def assess(request: AssessmentRequest, base: dict[str, Any], *, results_dir: Pat
         caveats.append(f"Warming capped at {request.max_warming_generations:g} generations: "
                        "only the first part of the 2025-2100 pathway was simulated.")
     return _write_assessment(results_dir, {
-        "schema": "vikasa-climate-assessment-v1", "request": request.to_dict(),
+        "schema": "vikasa-climate-assessment-v1", **identity, "request": request.to_dict(),
         "calibration": calibration, "baseline_viable": True, "ssps": entries,
         "caveats": caveats})

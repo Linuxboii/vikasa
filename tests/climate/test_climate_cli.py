@@ -56,6 +56,18 @@ def test_criteria_print_on_legacy_windows_console(monkeypatch) -> None:
     assert "PASS" in raw.getvalue().decode("utf-8")
 
 
+def test_local_breadth_scales_with_seasonality() -> None:
+    from evolution_sim.climate.cli import local_breadth
+    from evolution_sim.climate.data import resolve_region
+
+    profile = PROFILES["full"]
+    assert local_breadth(resolve_region("delhi-ncr"), profile) == pytest.approx(
+        1.5 * resolve_region("delhi-ncr").seasonal_amplitude_c)
+    # Never narrower than the reference organism's breadth.
+    assert local_breadth(resolve_region("western-ghats"), profile) == profile["breadth_c"]
+    assert local_breadth(resolve_region("delhi-ncr"), PROFILES["quick"]) is None
+
+
 def test_design_batches_keep_first_batch_stable() -> None:
     from evolution_sim.climate.cli import design_batches
 

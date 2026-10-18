@@ -222,5 +222,6 @@ def build_figures(context: dict[str, Any]) -> dict[str, bytes]:
     if validation and validation.get("holdout", {}).get("observed_ratio"):
         figures["surrogate_parity"] = surrogate_parity(validation)
     for assessment in context.get("assessments") or []:
-        figures[f"assessment_{assessment['request']['region']}"] = assessment_panel(assessment)
+        key = assessment.get("id") or assessment["request"]["region"]
+        figures[f"assessment_{key}"] = assessment_panel(assessment)
     return figures
