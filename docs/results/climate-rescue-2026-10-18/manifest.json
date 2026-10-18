@@ -3,6 +3,8 @@
   "sha256": {
     "figures/assessment_delhi-ncr-local.png": "0c3d8dba90d78b6608c02542cfd70b941ce5eef2437f5ea10f33221d15c5a53b",
     "figures/assessment_sundarbans-local.png": "16a6b9d3d033622408fa88631251e735a9d755c3845137650100d6f07d9b6c7c",
+    "figures/assessment_western-ghats-g12.png": "6e44ce43d6f9ef8cee41480ca085dbaf85c4e1cdcca4dd9201ea9ab17a914d7b",
+    "figures/assessment_western-ghats-g6.png": "26526ca646fdf9afb48ccff2de7f0cac724699ff2c5b91bbb2cfefec650f99d9",
     "figures/assessment_western-ghats.png": "5204006226d20567f659f173200568522267912db447924882ceb6a543d60ebf",
     "figures/lag_vs_rate.png": "a6a44e81fc58cc1659bd23119beae7ccc6699ba8a751296cb014815303a182cd",
     "figures/shift_vs_rate.png": "1579e2b4e6f0a8b257820e91f4f352d45a214286c1a7bdd88f9c850d351265b8",
@@ -10,7 +12,7 @@
     "figures/surrogate_parity.png": "f54f930d9558f0c3a44199fa09c62b8d2a827b2e90428469d1bafbda2a84758e",
     "figures/survival_curve.png": "4bf7239fd2b112f22f452720933fa6f23c550ee4470ad2c1d7b074f4b415c47e",
     "figures/trajectories.png": "c689c0a3954bf30b3d409da410757e15c05b8a8984386690eff5e5952e1c5128",
-    "index.html": "b12ae6724c92f13e66a1055192e1c0480b9a9f51eab10858121b2297c01f1243",
-    "summary.json": "3f9ec12debbf26a57ec89b1aca78192a942a96cd4200e2e151f4e4b180edb256"
+    "index.html": "5194e03a18d74f639378c9a06773b5d609e773ae0f41b3bb1cd420e46890a558",
+    "summary.json": "7a231d366316d53a6452f8247b6624cd3823f6214753d70100715794ec6a8a5b"
   }
 }

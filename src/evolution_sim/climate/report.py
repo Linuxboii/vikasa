@@ -389,6 +389,10 @@ def write_report(out_dir: Path, context: dict[str, Any],
         files[f"figures/{name}.png"] = data
     for name, data in files.items():
         _atomic_write(out_dir / name, data)
+    # A rerender must not leave figures from an earlier run beside the new manifest.
+    for stale in (out_dir / "figures").glob("*.png"):
+        if f"figures/{stale.name}" not in files:
+            stale.unlink()
     manifest = {"schema": "vikasa-climate-report-v1",
                 "sha256": {name: hashlib.sha256(data).hexdigest()
                            for name, data in sorted(files.items())}}
