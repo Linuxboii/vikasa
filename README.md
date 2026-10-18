@@ -48,7 +48,7 @@ plus IPCC AR6 warming pathways (SSP1-2.6 to SSP5-8.5).
 | Critical warming rate, heritable tolerance | **0.262 °C per generation** (95 % CI 0.234–0.291) |
 | Critical rate without heritability (control) | 0.067 °C per generation (0.052–0.080) |
 | Extra warming that evolution makes survivable | **+0.196 °C per generation** (0.165–0.230) |
-| Generation time beyond which species fall behind, SSP5-8.5 | about **6 years** (≈ 25 years under SSP1-2.6) |
+| Generation time beyond which species fall behind, SSP5-8.5 | about **6 years** (≈ 25 years under SSP1-2.6); a first-order estimate, k<sub>c</sub> ÷ warming per year, checked by direct simulation in the [results](docs/CLIMATE_RESCUE.md#4-real-regions-under-ipcc-scenarios) |
 
 ![Survival against warming rate](docs/results/climate-rescue-2026-10-18/figures/survival_curve.png)
 
@@ -58,7 +58,7 @@ plus IPCC AR6 warming pathways (SSP1-2.6 to SSP5-8.5).
 # Any place on Earth, any organism
 .\.venv\Scripts\vikasa.exe climate fetch --lat 18.52 --lon 73.86 --name Pune --key pune --output data\pune.json
 .\.venv\Scripts\vikasa.exe climate assess --root exports\climate\full --region data\pune.json --generation-years 2 --breadth 3
-# Watch warming in the 3D biome (live °C and adaptation lag in the top bar)
+# Watch warming in the 3D biome (live °C in the top bar; hover it for the adaptation lag)
 .\.venv\Scripts\vikasa.exe godot --config config\climate-demo.json --seed 2026
 ```
 

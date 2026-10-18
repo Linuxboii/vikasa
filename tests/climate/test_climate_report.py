@@ -91,6 +91,7 @@ def test_critical_generation_time_table() -> None:
 def test_report_shows_critical_generation_time(context) -> None:
     html = render_report(context, {})
     assert "Critical generation time" in html and "SSP5-8.5" in html
+    assert "first-order" in html
 
 
 def test_two_variants_of_one_region_get_separate_figures(context) -> None:

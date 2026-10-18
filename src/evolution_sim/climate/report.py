@@ -203,8 +203,11 @@ def _generation_time_block(critical: dict[str, Any]) -> str:
                        f"{row['years']:.1f}",
                        (f"{row['ci95'][0]:.1f}&ndash;{row['ci95'][1]:.1f}"
                         if row["ci95"] else "&mdash;")] for row in rows])
-            + "<p class=small>Applies to the reference organism (tolerance breadth "
-              "4 °C, Western Ghats seasonality) at regional factor 1.</p>")
+            + "<p class=small>A first-order translation for the reference organism "
+              "(tolerance breadth 4 °C, Western Ghats seasonality, regional factor 1). "
+              "k<sub>c</sub> was measured over 20 warming generations; species with long "
+              "generations see fewer generations of warming before 2100, so the direct "
+              "regional assessments are the authoritative answer.</p>")
 
 
 def _sensitivity_section(context: dict[str, Any], figures: dict[str, bytes]) -> str:

@@ -121,7 +121,7 @@ population come from `config/climate-rescue.json`.
 
 | Stage | Design | Statistics |
 |---|---|---|
-| Rate sweep | 9 rates (0 – 0.4 °C/gen) × {heritable, control} × 12 seeds | Wilson 95 % per cell; logistic fit; critical rate k<sub>c</sub> at p = 0.5 with 2,000-resample bootstrap CI; paired bootstrap for the rescue gain |
+| Rate sweep | 9 rates (0 – 0.4 °C/gen) × {heritable, control} × 12 seeds | Wilson 95 % per cell; lightly penalised logistic fit (L2, C = 10 on scaled rate, finite under perfect separation); critical rate k<sub>c</sub> at p = 0.5 with 2,000-resample bootstrap CI; paired bootstrap for the rescue gain |
 | Sensitivity | Two 192-run Latin hypercubes (384 runs) over 6 inputs + 48 held-out runs | GP surrogate (Matérn 5/2 + noise); 5-fold CV and hold-out R², AUC, Brier; Sobol S1/ST (Saltelli sampling, Jansen estimators, n = 4,096) |
 | Regional assessment | 3 regions × 4 SSPs × 12 seeds for a reference organism (ω = 4 °C) and a locally adapted one (ω = 1.5 × seasonal amplitude), real monthly cycle, 2025 onward | Survival fraction, Wilson 95 %, verdict; surrogate and sweep references with domain checks |
 
@@ -185,8 +185,12 @@ p ≥ 0.92, n = 12, all four scenarios, 2025–2065.
 | Region | Reference organism (breadth 4 °C) | Locally adapted organism (1.5 × seasonal amplitude) |
 |---|---|---|
 | Western Ghats (Agumbe) | persists under all SSPs (p = 0.92–1.0) | same as reference: 1.5 × 2.4 °C < 4 °C |
-| Delhi NCR (±11.1 °C seasons) | **not viable even without warming** | breadth 16.6 °C: persists under all SSPs (p = 0.92–1.0) |
-| Sundarbans (±5.4 °C) | **not viable even without warming** | breadth 8.2 °C: persists under all SSPs (p = 1.0) |
+| Delhi NCR (±11.1 °C seasons) | **not viable even without warming** (0 of 4 populations survive today's cycle) | breadth 16.6 °C: persists under all SSPs (p = 0.92–1.0) |
+| Sundarbans (±5.4 °C) | **not viable even without warming** (0 of 4) | breadth 8.2 °C: persists under all SSPs (p = 1.0) |
+
+The Western Ghats and locally adapted assessments reuse generation intervals measured
+before calibration was moved onto each assessment's own seasonal clock. Each report entry
+says so. The non-viability verdicts were re-tested on the correct clock with four seeds.
 
 The risk sits with long-lived species. Dividing k<sub>c</sub> by each scenario's warming
 rate gives the **critical generation time**: species with longer generations fall behind.
@@ -198,10 +202,26 @@ rate gives the **critical generation time**: species with longer generations fal
 | SSP3-7.0 | 0.033 | 8.0 (7.1–8.8) |
 | SSP5-8.5 | 0.041 | 6.4 (5.7–7.1) |
 
-So in this model, under high emissions (SSP5-8.5), organisms whose generations last more
-than about six years cannot evolve fast enough. Under SSP1-2.6, that threshold rises
-to about 25 years. The thresholds belong to the reference organism and inherit its
-caveats.
+This is a first-order translation. k<sub>c</sub> was measured with one seasonal cycle
+per generation over 20 generations of warming. **Checked by direct simulation**
+(Western Ghats, real monthly cycle, 2025–2100, 12 seeds each):
+
+| Species | Scenario | Warming per generation | Direct survival p (95 %) | Verdict |
+|---|---|---|---|---|
+| 6-year generations | SSP2-4.5 | 0.127 | 1.00 (0.76–1.00) | likely persists |
+| 6-year generations | SSP3-7.0 | 0.198 | 0.67 (0.39–0.86) | at risk |
+| 6-year generations | SSP5-8.5 | 0.247 (≈ k<sub>c</sub>) | **0.50** (0.25–0.75) | at risk |
+| 12-year generations | SSP2-4.5 | 0.254 (≈ k<sub>c</sub>) | 0.92 (0.65–0.99) | likely persists |
+| 12-year generations | SSP3-7.0 | 0.395 | 0.50 (0.25–0.75) | at risk |
+| 12-year generations | SSP5-8.5 | 0.494 | 0.25 (0.09–0.53) | at risk |
+
+For six-year species, survival falls to 50 % right at the predicted threshold. For
+twelve-year species, 2025–2100 spans only about six generations, against twenty in the
+sweep, so less total warming accumulates and survival beats the simple rule. The
+critical generation time is therefore **conservative for long-lived species over this
+century**. Use the direct `assess` command for any specific species. In this model,
+under high emissions, organisms with generations longer than about six years are at
+real risk. The numbers belong to the reference organism and inherit its caveats.
 
 ### 5. Success criteria (fixed before the run)
 
