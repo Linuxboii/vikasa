@@ -132,6 +132,13 @@ def test_report_includes_biology_disclaimer_and_escapes(context) -> None:
     assert "<script>alert" not in html
 
 
+def test_rerender_removes_stale_figures(tmp_path, context) -> None:
+    (tmp_path / "figures").mkdir()
+    (tmp_path / "figures" / "assessment_gone.png").write_bytes(b"old")
+    write_report(tmp_path, context, build_figures(context))
+    assert not (tmp_path / "figures" / "assessment_gone.png").exists()
+
+
 def test_manifest_hashes_match(tmp_path, context) -> None:
     manifest = write_report(tmp_path, context, build_figures(context))
     for name, digest in manifest["sha256"].items():
