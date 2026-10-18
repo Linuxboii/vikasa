@@ -112,15 +112,35 @@ def _in_sweep_domain(request: AssessmentRequest, domain: dict[str, float]) -> bo
             <= DOMAIN_TOLERANCE * domain["breadth_c"])
 
 
+def _cached_calibration(path: Path, base: dict[str, Any], request: AssessmentRequest,
+                        workers: int, options: dict[str, Any]) -> dict[str, Any]:
+    """Re-measure the generation interval for this region and breadth, once."""
+    settings = {"seeds": list(options.get("seeds", [101, 102])),
+                "burn_in_ticks": int(options.get("burn_in_ticks", 1500)),
+                "measure_ticks": int(options.get("measure_ticks", 6000))}
+    if path.exists():
+        cached = json.loads(path.read_text(encoding="utf-8"))
+        if (cached.get("breadth_c") == request.breadth_c
+                and cached.get("monthly_c") == list(request.region.monthly_c)
+                and cached.get("seeds") == settings["seeds"]):
+            return cached
+    calibration = calibrate_generation_ticks(
+        base, settings["seeds"], breadth_c=request.breadth_c,
+        monthly_c=list(request.region.monthly_c), workers=min(len(settings["seeds"]), workers),
+        burn_in_ticks=settings["burn_in_ticks"], measure_ticks=settings["measure_ticks"])
+    path.write_text(json.dumps(calibration, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    return calibration
+
+
 def assess(request: AssessmentRequest, base: dict[str, Any], *, results_dir: Path,
            workers: int, sweep_summary: dict[str, Any] | None = None,
            sweep_domain: dict[str, float] | None = None, surrogate: Surrogate | None = None,
-           calibration_override: dict[str, Any] | None = None) -> dict[str, Any]:
+           calibration_override: dict[str, Any] | None = None,
+           calibration_kwargs: dict[str, Any] | None = None) -> dict[str, Any]:
     results_dir = Path(results_dir)
     results_dir.mkdir(parents=True, exist_ok=True)
-    calibration = calibration_override or calibrate_generation_ticks(
-        base, [101, 102], breadth_c=request.breadth_c,
-        monthly_c=list(request.region.monthly_c), workers=min(2, workers))
+    calibration = calibration_override or _cached_calibration(
+        results_dir / "calibration.json", base, request, workers, calibration_kwargs or {})
     generation_ticks = int(calibration["generation_ticks"])
     climate = base.get("climate", {})
     founder_sd = request.founder_sd_c if request.founder_sd_c is not None else float(
