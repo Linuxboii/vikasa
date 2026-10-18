@@ -139,6 +139,8 @@ def test_legacy_calibration_cache_is_reused(tmp_path, monkeypatch) -> None:
     assert result["calibration"]["generation_ticks"] == 60
     assert result["calibration_legacy"] is True
     assert any("earlier calibration" in caveat for caveat in result["caveats"])
+    # Legacy calibration aborted on any extinction, so success means every seed lived.
+    assert result["baseline_viability"] == {"survived": 2, "n": 2}
 
 
 def test_calibration_uses_the_assessment_seasonal_clock(tmp_path, monkeypatch) -> None:
