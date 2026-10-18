@@ -290,6 +290,7 @@ def assess(request: AssessmentRequest, base: dict[str, Any], *, results_dir: Pat
         "schema": "vikasa-climate-assessment-v1", **identity, "request": request.to_dict(),
         "calibration": calibration, "calibration_legacy": bool(calibration.get("legacy")),
         "baseline_viable": True,
-        "baseline_viability": {"survived": calibration.get("viable_seeds"),
+        "baseline_viability": {"survived": calibration.get(
+                                   "viable_seeds", len(calibration.get("seeds", []))),
                                "n": len(calibration.get("seeds", []))},
         "ssps": entries, "caveats": caveats})
