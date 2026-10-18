@@ -132,6 +132,40 @@ def _cached_calibration(path: Path, base: dict[str, Any], request: AssessmentReq
     return calibration
 
 
+BASELINE_FAILURE_VERDICT = "not viable in present-day climate"
+
+
+def _write_assessment(results_dir: Path, result: dict[str, Any]) -> dict[str, Any]:
+    target = results_dir / "assessment.json"
+    temporary = target.with_name(target.name + ".tmp")
+    temporary.write_text(json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + "\n",
+                         encoding="utf-8", newline="\n")
+    temporary.replace(target)
+    return result
+
+
+def _baseline_failure(request: AssessmentRequest, results_dir: Path,
+                      reason: str) -> dict[str, Any]:
+    entries = []
+    for ssp in request.ssps:
+        plan = plan_ssp(request, ssp, generation_ticks=1)
+        entries.append({"ssp": ssp, "plan": plan,
+                        "direct": {"survived": 0, "n": 0, "p": None, "wilson": [0.0, 1.0],
+                                   "errors": 0, "mean_ratio": None},
+                        "verdict": BASELINE_FAILURE_VERDICT,
+                        "observed_trend_c_per_decade": request.region.trend_c_per_decade,
+                        "sweep": None, "surrogate": None})
+    caveats = [BIOLOGY_DISCLAIMER,
+               f"With a tolerance breadth of {request.breadth_c:g} °C the population died out "
+               f"under the region's present-day seasonal cycle (seasonal amplitude "
+               f"{request.region.seasonal_amplitude_c:.1f} °C) with no warming at all, so no "
+               "warming scenario was simulated. Try a broader tolerance breadth.",
+               f"Calibration detail: {reason}"]
+    return _write_assessment(results_dir, {
+        "schema": "vikasa-climate-assessment-v1", "request": request.to_dict(),
+        "calibration": None, "baseline_viable": False, "ssps": entries, "caveats": caveats})
+
+
 def assess(request: AssessmentRequest, base: dict[str, Any], *, results_dir: Path,
            workers: int, sweep_summary: dict[str, Any] | None = None,
            sweep_domain: dict[str, float] | None = None, surrogate: Surrogate | None = None,
@@ -139,8 +173,13 @@ def assess(request: AssessmentRequest, base: dict[str, Any], *, results_dir: Pat
            calibration_kwargs: dict[str, Any] | None = None) -> dict[str, Any]:
     results_dir = Path(results_dir)
     results_dir.mkdir(parents=True, exist_ok=True)
-    calibration = calibration_override or _cached_calibration(
-        results_dir / "calibration.json", base, request, workers, calibration_kwargs or {})
+    try:
+        calibration = calibration_override or _cached_calibration(
+            results_dir / "calibration.json", base, request, workers, calibration_kwargs or {})
+    except RuntimeError as exc:
+        # The organism dies out under today's seasonal cycle with zero warming:
+        # a real answer for this region and tolerance, not a tool failure.
+        return _baseline_failure(request, results_dir, str(exc))
     generation_ticks = int(calibration["generation_ticks"])
     climate = base.get("climate", {})
     founder_sd = request.founder_sd_c if request.founder_sd_c is not None else float(
@@ -205,11 +244,7 @@ def assess(request: AssessmentRequest, base: dict[str, Any], *, results_dir: Pat
     if any(plan["truncated"] for plan in plans.values()):
         caveats.append(f"Warming capped at {request.max_warming_generations:g} generations: "
                        "only the first part of the 2025-2100 pathway was simulated.")
-    result = {"schema": "vikasa-climate-assessment-v1", "request": request.to_dict(),
-              "calibration": calibration, "ssps": entries, "caveats": caveats}
-    target = results_dir / "assessment.json"
-    temporary = target.with_name(target.name + ".tmp")
-    temporary.write_text(json.dumps(result, indent=2, sort_keys=True, allow_nan=False) + "\n",
-                         encoding="utf-8", newline="\n")
-    temporary.replace(target)
-    return result
+    return _write_assessment(results_dir, {
+        "schema": "vikasa-climate-assessment-v1", "request": request.to_dict(),
+        "calibration": calibration, "baseline_viable": True, "ssps": entries,
+        "caveats": caveats})
