@@ -42,6 +42,31 @@ def test_profiles_are_consistent() -> None:
     assert len(PROFILES["full"]["rates"]) == 9 and PROFILES["full"]["seeds"] == 12
 
 
+def test_criteria_print_on_legacy_windows_console(monkeypatch) -> None:
+    import io
+    import sys
+
+    from evolution_sim.climate import cli
+
+    raw = io.BytesIO()
+    monkeypatch.setattr(sys, "stdout", io.TextIOWrapper(raw, encoding="cp1252"))
+    cli._configure_console()
+    cli._print_criteria([{"id": "C2", "passed": True, "statement": "rank ≤ 2 at 4 °C"}])
+    sys.stdout.flush()
+    assert "PASS" in raw.getvalue().decode("utf-8")
+
+
+def test_design_batches_keep_first_batch_stable() -> None:
+    from evolution_sim.climate.cli import design_batches
+
+    assert design_batches({"design_batches": 1}) == [("design", 2026, 10_000)]
+    batches = design_batches(PROFILES["full"])
+    assert batches[0] == ("design", 2026, 10_000)
+    assert len(batches) == 2 and len({seed for _, seed, _ in batches}) == 2
+    starts = sorted(seed0 for _, _, seed0 in batches)
+    assert starts[1] - starts[0] >= PROFILES["full"]["design_points"]
+
+
 @pytest.mark.slow
 def test_quick_pipeline_end_to_end(tmp_path, capsys) -> None:
     root = tmp_path / "quick"

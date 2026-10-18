@@ -65,7 +65,8 @@ PROFILES: dict[str, dict[str, Any]] = {
         "phases": {"burn_in": 5.0, "warming": 20.0, "hold": 5.0},
         "calibration": {"seeds": [901, 902, 903], "burn_in_ticks": 1500,
                         "measure_ticks": 6000},
-        "design_points": 192, "holdout_points": 48, "sobol_n": 4096, "n_boot": 2000,
+        "design_points": 192, "design_batches": 2, "holdout_points": 48, "sobol_n": 4096,
+        "n_boot": 2000,
         "regions": tuple(BUNDLED_REGIONS), "ssps": tuple(SSP_WARMING),
         "assess_seeds": 12, "generation_years": 1.0, "breadth_c": 4.0,
         "max_warming_generations": 40.0,
@@ -73,6 +74,19 @@ PROFILES: dict[str, dict[str, Any]] = {
 }
 DESIGN_SEED, HOLDOUT_SEED = 2026, 2027
 DESIGN_SEED0, HOLDOUT_SEED0 = 10_000, 20_000
+
+
+def design_batches(profile: dict[str, Any]) -> list[tuple[str, int, int]]:
+    """(file stem, LHS seed, first simulation seed) per training batch.
+
+    Batch 1 never changes, so adding batches (the plan's one-time escalation when
+    the surrogate misses its accuracy target) reuses every finished simulation.
+    """
+    batches = [("design", DESIGN_SEED, DESIGN_SEED0)]
+    for index in range(1, int(profile.get("design_batches", 1))):
+        batches.append((f"design-{index + 1}", DESIGN_SEED + 100 * index,
+                        DESIGN_SEED0 + 20_000 * (index + 1)))
+    return batches
 
 
 class _Progress:
@@ -174,9 +188,11 @@ def stage_sensitivity(root: Path, base: dict[str, Any], profile: dict[str, Any],
         rate_high = _rate_high(sweep_summary, profile)
         _write_json(params_path, {"rate_high": rate_high})
     params = parameters(rate_high)
-    design = _design_rows(root, "design", base, params,
-                          latin_hypercube(profile["design_points"], len(params), DESIGN_SEED),
-                          DESIGN_SEED0, generation_ticks, profile, workers)
+    design = []
+    for stem, lhs_seed, seed0 in design_batches(profile):
+        design += _design_rows(root, stem, base, params,
+                               latin_hypercube(profile["design_points"], len(params), lhs_seed),
+                               seed0, generation_ticks, profile, workers)
     holdout = _design_rows(root, "holdout", base, params,
                            latin_hypercube(profile["holdout_points"], len(params),
                                            HOLDOUT_SEED),
@@ -321,6 +337,13 @@ def stage_report(root: Path, config: Path, profile: dict[str, Any]) -> tuple[int
     return code, root / "report" / "index.html"
 
 
+def _configure_console() -> None:
+    """Emit UTF-8 (°C, ≤) even where Windows defaults redirected output to cp1252."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
+
+
 def _print_criteria(criteria: list[dict[str, Any]]) -> None:
     if not criteria:
         return
@@ -380,6 +403,7 @@ def _stage_inputs(args) -> tuple[dict[str, Any], dict[str, Any]]:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    _configure_console()
     args = build_parser().parse_args(argv)
     try:
         if args.command == "fetch":
