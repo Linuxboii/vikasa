@@ -65,8 +65,14 @@ class Creature:
     home_center: Vector | None = None
     home_radius: float = 24.0
     home_migration_ticks: int = 0
+    thermal_optimum: float = 0.0
+    thermal_stress: float = 0.0
 
     def __post_init__(self) -> None:
+        if not math.isfinite(self.thermal_optimum):
+            raise ValueError("thermal_optimum must be finite")
+        if not math.isfinite(self.thermal_stress) or not 0.0 <= self.thermal_stress <= 1.0:
+            raise ValueError("thermal_stress must be between zero and one")
         if not isinstance(self.id, int) or self.id < 0:
             raise ValueError("id must be a non-negative integer")
         self.position = _vector(self.position, "position")

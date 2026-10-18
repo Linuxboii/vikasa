@@ -7,6 +7,14 @@ import math
 import numpy as np
 
 from evolution_sim.analytics.metrics import MetricsRecorder
+from evolution_sim.climate.forcing import ClimateForcing
+from evolution_sim.climate.thermal import (
+    OPTIMUM_BOUNDS,
+    STRESS_INJURY_THRESHOLD,
+    founder_optimum,
+    inherit_optimum,
+    thermal_stress,
+)
 from evolution_sim.config import SimulationConfig
 from evolution_sim.model.entities import Creature, Resource
 from evolution_sim.model.genetics import crossover, mutate, polygenic_genome
@@ -49,7 +57,8 @@ class SimulationEngine:
         self.creatures: dict[int, Creature] = {}
         self.resources: dict[int, Resource] = {}
         self.lineage = LineageStore()
-        self.environment = EnvironmentState()
+        self.climate = ClimateForcing(config.climate) if config.climate.enabled else None
+        self.environment = EnvironmentState(self.climate)
         self.habitat = (HabitatField(config.ecology, width=config.world.width,
                                     height=config.world.height, boundary=config.world.boundary)
                         if config.ecology.enabled else None)
@@ -97,7 +106,7 @@ class SimulationEngine:
         genome = random_genome(self.config.genome, self.rng)
         angle = float(self.rng.uniform(0.0, math.tau))
         speed = genome[Trait.SPEED] * float(self.rng.uniform(0.15, 0.45))
-        self.creatures[creature_id] = Creature(
+        creature = self.creatures[creature_id] = Creature(
             id=creature_id,
             position=self._random_position(),
             velocity=np.array([math.cos(angle), math.sin(angle)]) * speed,
@@ -111,6 +120,8 @@ class SimulationEngine:
                 min(self.config.world.width, self.config.world.height) / 2.0,
             ),
         )
+        if self.climate is not None:
+            creature.thermal_optimum = founder_optimum(self.config.climate, self.rng)
 
     def _spawn_resource(self) -> bool:
         if len(self.resources) >= self.config.resources.maximum_count:
@@ -407,6 +418,12 @@ class SimulationEngine:
         else:
             creature.position %= np.array([self.config.world.width, self.config.world.height])
         size, metabolism = creature.genome[Trait.SIZE], creature.genome[Trait.METABOLISM]
+        stress = 0.0
+        if self.climate is not None:
+            climate = self.config.climate
+            stress = creature.thermal_stress = thermal_stress(
+                self.environment.temperature_c, creature.thermal_optimum,
+                climate.tolerance_breadth_c, climate.warm_side_ratio)
         basal = (
             self.config.energy.basal_cost
             * (1.0 + size / 8.0)
@@ -416,6 +433,8 @@ class SimulationEngine:
             * (1.0 + creature.injury * 0.35)
             * (1.0 + self.environment.health_pressure * 0.25)
         )
+        if self.climate is not None:
+            basal *= 1.0 + self.config.climate.stress_metabolic_gain * stress
         movement = (
             self.config.energy.movement_cost
             * distance
@@ -451,9 +470,13 @@ class SimulationEngine:
                 * (1.0 + creature.hunger * 0.6)
                 * 0.018,
             )
-        else:
+        elif stress <= STRESS_INJURY_THRESHOLD:
             recovery = 0.003 if state.action is ActionName.REST else 0.0015
             creature.injury = max(0.0, creature.injury - recovery)
+        if stress > STRESS_INJURY_THRESHOLD:
+            creature.injury = min(1.0, creature.injury + self.config.climate.stress_injury_rate
+                                  * (stress - STRESS_INJURY_THRESHOLD)
+                                  / (1.0 - STRESS_INJURY_THRESHOLD))
         creature.hunger = min(1.0, max(0.0, 1.0 - creature.energy / self.config.energy.maximum))
         creature.starvation_ticks = (
             creature.starvation_ticks + 1
@@ -614,6 +637,8 @@ class SimulationEngine:
             and creature.age >= self.config.reproduction.minimum_age
             and creature.energy >= creature.genome[Trait.REPRODUCTION_THRESHOLD]
             and self.tick - creature.last_reproduction_tick >= cooldown
+            and (self.climate is None
+                 or creature.thermal_stress <= self.config.climate.fertility_stress_limit)
         )
 
     def _resolve_reproduction(self) -> None:
@@ -689,6 +714,9 @@ class SimulationEngine:
                     min(self.config.world.width, self.config.world.height) / 2.0,
                 ),
             )
+            if self.climate is not None:
+                child.thermal_optimum = inherit_optimum(
+                    self.config.climate, first.thermal_optimum, second.thermal_optimum, self.rng)
             contribution = self.config.reproduction.offspring_energy / 2.0
             first.energy -= contribution
             second.energy -= contribution
@@ -730,11 +758,14 @@ class SimulationEngine:
             if creature.age > self.config.maximum_age:
                 cause = "old age"
             elif creature.injury >= 0.98:
-                cause = (
-                    "environmental exposure"
-                    if self.environment.health_pressure > 0.0
-                    else "fight injuries"
-                )
+                if (self.climate is not None
+                        and creature.thermal_stress > STRESS_INJURY_THRESHOLD):
+                    cause = "thermal stress"
+                elif self.environment.health_pressure > 0.0:
+                    cause = "environmental exposure"
+                else:
+                    cause = "fight injuries"
+
             elif creature.starvation_ticks >= 12:
                 cause = "starvation"
             elif (
@@ -878,6 +909,12 @@ class SimulationEngine:
                 errors.append(f"creature {key} has invalid migration counter")
             if not (0 <= creature.position[0] <= width and 0 <= creature.position[1] <= height):
                 errors.append(f"creature {key} is outside world bounds")
+            if self.climate is not None:
+                if not (math.isfinite(creature.thermal_optimum)
+                        and OPTIMUM_BOUNDS[0] <= creature.thermal_optimum <= OPTIMUM_BOUNDS[1]):
+                    errors.append(f"creature {key} has invalid thermal optimum")
+            elif creature.thermal_optimum != 0.0:
+                errors.append(f"creature {key} has a thermal optimum without climate")
             for trait, value in creature.genome.to_mapping().items():
                 bounds = self.config.genome.traits[trait]
                 if not bounds.minimum <= value <= bounds.maximum:
