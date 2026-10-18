@@ -21,6 +21,14 @@ from evolution_sim.simulation.engine import SimulationEngine
 LAG_WINDOW_GENERATIONS = 5.0
 
 
+class CalibrationExtinct(Exception):
+    """Every calibration seed died out with no warming: the climate itself is lethal.
+
+    Deliberately not a RuntimeError, so a crashed worker (BrokenProcessPool) can
+    never be mistaken for this biological result.
+    """
+
+
 @dataclass(frozen=True)
 class RescuePhases:
     """Protocol lengths in generations: burn-in, warming, hold."""
@@ -190,7 +198,7 @@ def run_replicate(config: SimulationConfig, seed: int, generation_ticks: int,
     }
 
 
-def _calibrate_one(args: tuple[dict[str, Any], int, int, int]) -> tuple[float, float]:
+def _calibrate_one(args: tuple[dict[str, Any], int, int, int]) -> tuple[float | None, float]:
     data, seed, burn_in_ticks, measure_ticks = args
     engine = SimulationEngine(SimulationConfig.from_dict(data), seed)
     started = time.perf_counter()
@@ -201,10 +209,10 @@ def _calibrate_one(args: tuple[dict[str, Any], int, int, int]) -> tuple[float, f
             ticks.append(engine.tick)
             depth.append(float(np.mean([engine.lineage.generation_of(key)
                                         for key in engine.creatures])))
+    rate = engine.tick / (time.perf_counter() - started)
     if len(ticks) < 3:
-        raise RuntimeError(f"Calibration seed {seed} went extinct before measurement")
-    slope = float(np.polyfit(ticks, depth, 1)[0])
-    return slope, engine.tick / (time.perf_counter() - started)
+        return None, rate  # extinct before measurement
+    return float(np.polyfit(ticks, depth, 1)[0]), rate
 
 
 def calibrate_generation_ticks(base: dict[str, Any], seeds: list[int], *,
@@ -223,12 +231,17 @@ def calibrate_generation_ticks(base: dict[str, Any], seeds: list[int], *,
             results = list(pool.map(_calibrate_one, jobs))
     else:
         results = [_calibrate_one(job) for job in jobs]
-    slopes = [slope for slope, _ in results]
+    slopes = [slope for slope, _ in results if slope is not None]
+    if not slopes:
+        raise CalibrationExtinct(f"0 of {len(seeds)} calibration seeds survived "
+                                 f"{burn_in_ticks + measure_ticks} ticks without warming")
     mean_slope = float(np.mean(slopes))
     if mean_slope <= 0:
         raise RuntimeError("Calibration measured no generational turnover")
     return {"generation_ticks": round(1.0 / mean_slope), "slopes": slopes,
-            "seeds": list(seeds), "ticks_per_second": [rate for _, rate in results],
+            "seeds": list(seeds), "viable_seeds": len(slopes),
+            "provisional_ticks_per_year": provisional_ticks_per_year,
+            "ticks_per_second": [rate for _, rate in results],
             "burn_in_ticks": burn_in_ticks, "measure_ticks": measure_ticks,
             "breadth_c": breadth_c, "monthly_c": monthly_c}
 

@@ -89,6 +89,37 @@ def test_region_too_harsh_at_baseline_is_reported_not_crashed(tmp_path) -> None:
     assert entry["direct"]["n"] == 0
     assert not (tmp_path / "results.jsonl").exists()
     assert any("present-day" in caveat for caveat in result["caveats"])
+    assert result["baseline_viability"] == {"survived": 0, "n": 1}
+    assert any("0 of 1" in caveat for caveat in result["caveats"])
+
+
+def test_worker_crash_is_not_reported_as_non_viable(tmp_path, monkeypatch) -> None:
+    from evolution_sim.climate import assess as module
+
+    def crash(*args, **kwargs):
+        raise RuntimeError("A process in the process pool was terminated abruptly")
+
+    monkeypatch.setattr(module, "calibrate_generation_ticks", crash)
+    with pytest.raises(RuntimeError, match="terminated abruptly"):
+        assess(request(), BASE, results_dir=tmp_path, workers=1)
+    assert not (tmp_path / "assessment.json").exists()
+
+
+def test_calibration_uses_the_assessment_seasonal_clock(tmp_path, monkeypatch) -> None:
+    from evolution_sim.climate import assess as module
+
+    seen = {}
+
+    def fake(base, seeds, **kwargs):
+        seen.update(kwargs, seeds=seeds)
+        return {"generation_ticks": 60, "seeds": seeds, "viable_seeds": len(seeds)}
+
+    monkeypatch.setattr(module, "calibrate_generation_ticks", fake)
+    assess(request(generation_years=2.0, max_warming_generations=1, seeds=(1,)), BASE,
+           results_dir=tmp_path, workers=1,
+           calibration_kwargs={"reference_generation_ticks": 400})
+    assert seen["provisional_ticks_per_year"] == 200
+    assert len(seen["seeds"]) == 4
 
 
 def test_assess_end_to_end_small(tmp_path) -> None:

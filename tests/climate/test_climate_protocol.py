@@ -113,3 +113,16 @@ def test_calibration_returns_positive_generation_ticks() -> None:
     result = calibrate_generation_ticks(BASE, [3], burn_in_ticks=300, measure_ticks=900)
     assert result["generation_ticks"] > 0
     assert result["seeds"] == [3] and len(result["slopes"]) == 1
+    assert result["viable_seeds"] == 1
+
+
+def test_calibration_raises_dedicated_error_when_every_seed_dies() -> None:
+    from evolution_sim.climate.protocol import CalibrationExtinct
+
+    harsh = json.loads(json.dumps(BASE))
+    harsh["climate"]["monthly_c"] = [25.0 + (15.0 if m in (4, 5, 6) else -15.0)
+                                     for m in range(12)]
+    with pytest.raises(CalibrationExtinct, match="0 of 1"):
+        calibrate_generation_ticks(harsh, [3], breadth_c=1.0, burn_in_ticks=300,
+                                   measure_ticks=300)
+    assert not issubclass(CalibrationExtinct, RuntimeError)
