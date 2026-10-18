@@ -103,6 +103,26 @@ def test_run_tasks_parallel_matches_serial(tmp_path) -> None:
     assert all(row["meta"]["arm"] == "heritable" for row in serial)
 
 
+def test_rows_from_different_settings_are_refused(tmp_path) -> None:
+    path = tmp_path / "results.jsonl"
+    run_tasks(_tasks()[:1], path, workers=1)
+    other = sweep_tasks(BASE, rates=(0.0,), arms=("heritable",), seeds=(1,),
+                        generation_ticks=G, phases=RescuePhases(2, 2, 1))
+    assert other[0]["key"] == _tasks()[0]["key"]
+    assert other[0]["fingerprint"] != _tasks()[0]["fingerprint"]
+    with pytest.raises(ValueError, match="different settings"):
+        run_tasks(other, path, workers=1)
+
+
+def test_rows_without_fingerprint_are_refused(tmp_path) -> None:
+    path = tmp_path / "results.jsonl"
+    rows = run_tasks(_tasks()[:1], path, workers=1)
+    legacy = {key: value for key, value in rows[0].items() if key != "fingerprint"}
+    path.write_text(json.dumps(legacy) + chr(10), encoding="utf-8")
+    with pytest.raises(ValueError, match="different settings"):
+        run_tasks(_tasks()[:1], path, workers=1)
+
+
 def test_task_failure_becomes_error_row(tmp_path) -> None:
     task = dict(_tasks()[0], config={"broken": True}, key="bad")
     rows = run_tasks([task], tmp_path / "r.jsonl", workers=1)
