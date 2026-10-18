@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from evolution_sim.climate.assess import BIOLOGY_DISCLAIMER
+from evolution_sim.climate.data import SSP_WARMING, ssp_rate_c_per_year
 
 SECTION_TITLES = (
     "The question and the answer",
@@ -115,6 +116,24 @@ def _headline(context: dict[str, Any]) -> str:
     return text
 
 
+def critical_generation_times(critical: dict[str, Any]) -> list[dict[str, Any]]:
+    """Generation time beyond which a species falls behind each SSP's warming.
+
+    k_c is in °C per generation and an SSP warms at r °C per year, so a species
+    keeps pace only while generation_time * r < k_c, i.e. g < k_c / r.
+    """
+    if critical.get("estimate") is None:
+        return []
+    rows = []
+    for ssp in SSP_WARMING:
+        rate = ssp_rate_c_per_year(ssp)
+        ci = critical.get("ci95")
+        rows.append({"ssp": ssp, "rate_c_per_year": rate,
+                     "years": critical["estimate"] / rate,
+                     "ci95": [ci[0] / rate, ci[1] / rate] if ci else None})
+    return rows
+
+
 def _sweep_sections(context: dict[str, Any], figures: dict[str, bytes]) -> list[str]:
     summary = context["sweep"]["summary"]
     curve_rows = []
@@ -137,7 +156,8 @@ def _sweep_sections(context: dict[str, Any], figures: dict[str, bytes]) -> list[
         + _figure(figures, "survival_curve", "Survival fraction against warming rate",
                   "Survival vs warming rate with Wilson 95 % intervals and logistic fits.")
         + f"<ul>{critical}</ul>"
-        + _table(["Arm", "Rate (°C/gen)", "Survived", "p (Wilson 95 %)"], curve_rows)))
+        + _table(["Arm", "Rate (°C/gen)", "Survived", "p (Wilson 95 %)"], curve_rows)
+        + _generation_time_block(summary["critical_rate"].get("heritable") or {})))
     gain = summary.get("rescue_gain") or {}
     shift_rows = [[escape(arm), _fmt(row["rate"]), _fmt(row["mean_shift_c"]),
                    _fmt(row["rate"] * summary.get("warming_generations", 20)), row["n"]]
@@ -167,6 +187,24 @@ def _sweep_sections(context: dict[str, Any], figures: dict[str, bytes]) -> list[
         + f"<p>Slope {_fmt(lag.get('slope'))} °C per (°C/gen), Pearson r = "
           f"{_fmt(lag.get('pearson_r'))}, n = {_fmt(lag.get('n'))}.</p>"))
     return [section_critical, section_evolution, section_lag]
+
+
+def _generation_time_block(critical: dict[str, Any]) -> str:
+    rows = critical_generation_times(critical)
+    if not rows:
+        return ""
+    return ("<h3>Critical generation time</h3><p>Warming per generation is warming per "
+            "year times generation time. Under each scenario's global-mean warming rate, "
+            "species whose generations are longer than this fall behind the reference "
+            "organism's critical rate:</p>"
+            + _table(["Scenario", "Warming (°C/yr)", "Critical generation time (years)",
+                      "95 % CI (years)"],
+                     [[escape(row["ssp"]), f"{row['rate_c_per_year']:.4f}",
+                       f"{row['years']:.1f}",
+                       (f"{row['ci95'][0]:.1f}&ndash;{row['ci95'][1]:.1f}"
+                        if row["ci95"] else "&mdash;")] for row in rows])
+            + "<p class=small>Applies to the reference organism (tolerance breadth "
+              "4 °C, Western Ghats seasonality) at regional factor 1.</p>")
 
 
 def _sensitivity_section(context: dict[str, Any], figures: dict[str, bytes]) -> str:

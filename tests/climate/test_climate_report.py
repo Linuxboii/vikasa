@@ -71,6 +71,22 @@ def test_figures_are_png(context) -> None:
     assert all(data.startswith(b"\x89PNG") for data in figures.values())
 
 
+def test_critical_generation_time_table() -> None:
+    from evolution_sim.climate.report import critical_generation_times
+
+    rows = critical_generation_times({"estimate": 0.255, "ci95": [0.17, 0.34]})
+    by_ssp = {row["ssp"]: row for row in rows}
+    assert by_ssp["SSP2-4.5"]["years"] == pytest.approx(0.255 / (1.8 / 85))
+    assert by_ssp["SSP2-4.5"]["ci95"] == pytest.approx([0.17 / (1.8 / 85), 0.34 / (1.8 / 85)])
+    assert by_ssp["SSP1-2.6"]["years"] > by_ssp["SSP5-8.5"]["years"]
+    assert critical_generation_times({"estimate": None, "ci95": None}) == []
+
+
+def test_report_shows_critical_generation_time(context) -> None:
+    html = render_report(context, {})
+    assert "Critical generation time" in html and "SSP5-8.5" in html
+
+
 def test_two_variants_of_one_region_get_separate_figures(context) -> None:
     local = dict(context["assessments"][0], id="western-ghats-local",
                  label="Locally adapted organism")
