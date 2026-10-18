@@ -107,11 +107,19 @@ def plan_ssp(request: AssessmentRequest, ssp: str, generation_ticks: int) -> dic
     }
 
 
-def _in_sweep_domain(request: AssessmentRequest, domain: dict[str, float]) -> bool:
-    return (abs(request.region.seasonal_amplitude_c - domain["amplitude_c"])
+def _in_sweep_domain(request: AssessmentRequest, domain: dict[str, float], rate: float,
+                     founder_sd: float, segregation_sd: float) -> bool:
+    """The sweep curve applies only to conditions like the ones it was measured in."""
+    if not (abs(request.region.seasonal_amplitude_c - domain["amplitude_c"])
             <= DOMAIN_TOLERANCE * domain["amplitude_c"]
             and abs(request.breadth_c - domain["breadth_c"])
-            <= DOMAIN_TOLERANCE * domain["breadth_c"])
+            <= DOMAIN_TOLERANCE * domain["breadth_c"]):
+        return False
+    if "max_rate" in domain and not 0.0 <= rate <= domain["max_rate"]:
+        return False
+    return all(math.isclose(value, domain[key]) for key, value in
+               (("founder_sd_c", founder_sd), ("segregation_sd_c", segregation_sd))
+               if key in domain)
 
 
 def _cached_calibration(path: Path, base: dict[str, Any], request: AssessmentRequest,
@@ -245,7 +253,8 @@ def assess(request: AssessmentRequest, base: dict[str, Any], *, results_dir: Pat
                  "observed_trend_c_per_decade": request.region.trend_c_per_decade,
                  "sweep": None, "surrogate": None}
         if logistic and sweep_domain:
-            if _in_sweep_domain(request, sweep_domain):
+            if _in_sweep_domain(request, sweep_domain, plan["rate_c_per_generation"],
+                                founder_sd, segregation_sd):
                 z = logistic["b0"] + logistic["b1"] * plan["rate_c_per_generation"]
                 entry["sweep"] = {"p": 1.0 / (1.0 + math.exp(-z))}
             else:
