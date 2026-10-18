@@ -71,6 +71,12 @@ def test_figures_are_png(context) -> None:
     assert all(data.startswith(b"\x89PNG") for data in figures.values())
 
 
+def test_non_viable_assessment_gets_no_empty_figure(context) -> None:
+    dead = dict(context["assessments"][0], id="delhi-ncr", baseline_viable=False)
+    figures = build_figures(dict(context, assessments=[dead]))
+    assert "assessment_delhi-ncr" not in figures
+
+
 def test_critical_generation_time_table() -> None:
     from evolution_sim.climate.report import critical_generation_times
 
