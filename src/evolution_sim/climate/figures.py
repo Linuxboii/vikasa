@@ -181,13 +181,14 @@ def assessment_panel(assessment: dict[str, Any]) -> bytes:
     high = np.clip(np.array([e["direct"]["wilson"][1] for e in entries]) - p, 0, None)
     ax.errorbar(x, p, yerr=[low, high], fmt="o", ms=7, color=SERIES[0], capsize=4, lw=1.5,
                 label="Direct simulation (Wilson 95 %)")
-    for key, color, marker, label in (("surrogate", SERIES[2], "D", "Surrogate"),
-                                      ("sweep", SERIES[3], "s", "Reference sweep curve")):
+    for key, color, marker, label, offset in (
+            ("surrogate", SERIES[2], "D", "Surrogate", 0.12),
+            ("sweep", SERIES[3], "s", "Reference sweep curve", 0.24)):
         values = [(i, e[key]["p"]) for i, e in enumerate(entries)
                   if isinstance(e.get(key), dict) and "p" in e[key]]
         if values:
             xi, yi = np.array(values).T
-            ax.scatter(xi + 0.12, yi, marker=marker, s=40, color=color, label=label,
+            ax.scatter(xi + offset, yi, marker=marker, s=40, color=color, label=label,
                        edgecolor=SURFACE, linewidth=1, zorder=3)
     for threshold in (0.2, 0.8):
         ax.axhline(threshold, color=GRID, lw=1, ls="--")
@@ -216,12 +217,16 @@ def build_figures(context: dict[str, Any]) -> dict[str, bytes]:
             figures["trajectories"] = trajectories(rows, picks)
     sensitivity = context.get("sensitivity")
     if sensitivity:
-        figures["sobol_bars"] = sobol_bars(sensitivity["names"],
-                                           sensitivity["sobol"]["survival"])
+        params = sensitivity.get("params")
+        labels = ([p.get("description", p["name"]) for p in params] if params
+                  else sensitivity["names"])
+        figures["sobol_bars"] = sobol_bars(labels, sensitivity["sobol"]["survival"])
     validation = context.get("surrogate_validation")
     if validation and validation.get("holdout", {}).get("observed_ratio"):
         figures["surrogate_parity"] = surrogate_parity(validation)
     for assessment in context.get("assessments") or []:
+        if assessment.get("baseline_viable") is False:
+            continue  # nothing was simulated; the report table explains why
         key = assessment.get("id") or assessment["request"]["region"]
         figures[f"assessment_{key}"] = assessment_panel(assessment)
     return figures
