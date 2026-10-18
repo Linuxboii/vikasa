@@ -1,6 +1,6 @@
 # Vikasa — Living Biome
 
-[What's new in 2.0](#vikasa-20--the-living-biome-showcase) · [Showcase guide](docs/SHOWCASE.md) · [Visual evidence and graph-reading guide](#visual-evidence-and-how-to-read-the-graphs) · [Mathematics PDF](output/pdf/Vikasa_Mathematics_Guide.pdf) · [Desktop setup](#run-the-3d-living-biome)
+[Climate rescue](#climate-rescue-can-evolution-outrun-warming) · [What's new in 2.0](#vikasa-20--the-living-biome-showcase) · [Showcase guide](docs/SHOWCASE.md) · [Visual evidence and graph-reading guide](#visual-evidence-and-how-to-read-the-graphs) · [Mathematics PDF](output/pdf/Vikasa_Mathematics_Guide.pdf) · [Desktop setup](#run-the-3d-living-biome)
 
 ![Golden hour over the floating Vikasa biome](docs/images/showcase-hero.jpg)
 
@@ -35,6 +35,44 @@ Launch it (Windows) after the [one-time setup](#run-the-3d-living-biome):
 ```
 
 Press **F1** in the app for every shortcut.
+
+## Climate rescue: can evolution outrun warming?
+
+**New in 2.1.** Vikasa now asks a real-world question. Can a population evolve fast
+enough to survive a warming climate, and how fast is too fast? Each animal inherits a
+thermal optimum. Temperature comes from real NASA POWER observations for Indian regions,
+plus IPCC AR6 warming pathways (SSP1-2.6 to SSP5-8.5).
+
+| Result (full run, 12 seeds per cell) | Value |
+| --- | --- |
+| Critical warming rate, heritable tolerance | **0.262 °C per generation** (95 % CI 0.234–0.291) |
+| Critical rate without heritability (control) | 0.067 °C per generation (0.052–0.080) |
+| Extra warming that evolution makes survivable | **+0.196 °C per generation** (0.165–0.230) |
+| Generation time beyond which species fall behind, SSP5-8.5 | about **6 years** (≈ 25 years under SSP1-2.6) |
+
+![Survival against warming rate](docs/results/climate-rescue-2026-10-18/figures/survival_curve.png)
+
+```powershell
+# One command, resumable, writes an offline HTML report
+.\.venv\Scripts\vikasa.exe climate pipeline --profile full --root exports\climate\full
+# Any place on Earth, any organism
+.\.venv\Scripts\vikasa.exe climate fetch --lat 18.52 --lon 73.86 --name Pune --key pune --output data\pune.json
+.\.venv\Scripts\vikasa.exe climate assess --root exports\climate\full --region data\pune.json --generation-years 2 --breadth 3
+# Watch warming in the 3D biome (live °C and adaptation lag in the top bar)
+.\.venv\Scripts\vikasa.exe godot --config config\climate-demo.json --seed 2026
+```
+
+![Warming demo with live temperature readout](docs/images/climate-hud.png)
+
+It includes a sensitivity analysis (Sobol indices over six biological and climatic
+inputs) and a Gaussian-process surrogate. It also lists the success criteria fixed
+before the run, including the three that failed and why.
+
+- **Read the evidence:** [report](docs/results/climate-rescue-2026-10-18/index.html)
+- **Method:** [ODD protocol, method and results](docs/CLIMATE_RESCUE.md)
+
+The climate data is real; the organism is a generic model, not a calibrated real
+species.
 
 ## Research views
 
