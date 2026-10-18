@@ -1,0 +1,98 @@
+{
+  "world": {
+    "width": 480,
+    "height": 320,
+    "boundary": "collision"
+  },
+  "genome": {
+    "traits": {
+      "size": [
+        2.5,
+        8.0
+      ],
+      "speed": [
+        0.5,
+        4.0
+      ],
+      "perception": [
+        20.0,
+        80.0
+      ],
+      "metabolism": [
+        0.65,
+        1.5
+      ],
+      "reproduction_threshold": [
+        70.0,
+        150.0
+      ],
+      "fertility": [
+        0.15,
+        0.55
+      ]
+    },
+    "mutation_probability": 0.1,
+    "mutation_sigma": 0.075,
+    "crossover": "arithmetic"
+  },
+  "energy": {
+    "initial": 125.0,
+    "basal_cost": 0.09,
+    "movement_cost": 0.026,
+    "maximum": 230.0
+  },
+  "reproduction": {
+    "minimum_age": 40,
+    "cooldown": 40,
+    "mate_radius": 80.0,
+    "offspring_energy": 60.0,
+    "population_cap": 70
+  },
+  "resources": {
+    "initial_count": 90,
+    "spawn_rate": 0.45,
+    "maximum_count": 200,
+    "energy_value": 30.0
+  },
+  "metrics": {
+    "sample_interval": 50,
+    "diversity_sample": 24
+  },
+  "initial_population": 40,
+  "maximum_age": 3000,
+  "wander_change_probability": 0.03,
+  "demography": {
+    "mode": "gompertz",
+    "background_hazard": 2e-05,
+    "senescence_age": 450,
+    "senescence_rate": 0.004
+  },
+  "climate": {
+    "enabled": true,
+    "ticks_per_year": 300,
+    "monthly_c": [
+      23.695,
+      25.342,
+      27.481,
+      28.224,
+      27.458,
+      25.393,
+      24.415,
+      24.181,
+      24.377,
+      24.846,
+      24.504,
+      23.423
+    ],
+    "anomaly_c": [],
+    "tolerance_breadth_c": 4.0,
+    "warm_side_ratio": 0.6,
+    "stress_metabolic_gain": 1.5,
+    "stress_injury_rate": 0.02,
+    "fertility_stress_limit": 0.7,
+    "inheritance": "heritable",
+    "founder_sd_c": 1.0,
+    "segregation_sd_c": 0.4,
+    "mutation_sd_c": 0.1
+  }
+}
