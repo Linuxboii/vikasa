@@ -3,3 +3,6 @@ docs/results/**/report.json text eol=lf
 docs/results/**/index.html text eol=lf
 docs/results/**/manifest.json text eol=lf
 docs/results/spatial-performance-2026-10-08.json text eol=lf
+# Evidence packages are hash-verified: keep their bytes exact on every platform.
+docs/results/climate-rescue-*/** -text
+src/evolution_sim/climate/data/*.json -text
