@@ -20,6 +20,7 @@ from urllib.parse import parse_qs, urlsplit
 import numpy as np
 
 from evolution_sim.analytics.trait_space import population_genetics
+from evolution_sim.climate.thermal import population_summary
 from evolution_sim.config import SimulationConfig
 from evolution_sim.simulation.behavior import ActionName
 from evolution_sim.simulation.engine import SimulationEngine
@@ -645,7 +646,11 @@ class GodotSimulationServer:
                 "starving_count": starving,
                 "fight_count": sum(item.fights_won for item in engine.creatures.values()),
                 "death_causes": dict(engine.death_causes),
+                "climate": (population_summary(engine)
+                            if engine.climate is not None else None),
                 "environment": {
+                    **({"temperature_c": engine.environment.temperature_c}
+                       if engine.environment.temperature_c is not None else {}),
                     "season": engine.environment.season,
                     "temperature": engine.environment.temperature,
                     "rainfall": engine.environment.rainfall,

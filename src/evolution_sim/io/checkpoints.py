@@ -59,9 +59,12 @@ def _validate_finite(value: Any, path: str = "root") -> None:
             _validate_finite(item, f"{path}[{index}]")
 
 
-def _creature_to_dict(creature: Creature) -> dict[str, Any]:
+def _creature_to_dict(creature: Creature, *, climate: bool = False) -> dict[str, Any]:
     behavior = creature.behavior_state
+    thermal = ({"thermal_optimum": creature.thermal_optimum,
+                "thermal_stress": creature.thermal_stress} if climate else {})
     return {
+        **thermal,
         "id": creature.id,
         "position": creature.position.tolist(),
         "velocity": creature.velocity.tolist(),
@@ -125,7 +128,9 @@ def checkpoint_payload(engine: SimulationEngine) -> dict[str, Any]:
         "seed": engine.seed,
         "tick": engine.tick,
         "rng_state": engine.rng.bit_generator.state,
-        "creatures": [_creature_to_dict(engine.creatures[key]) for key in sorted(engine.creatures)],
+        "creatures": [_creature_to_dict(engine.creatures[key],
+                                        climate=engine.config.climate.enabled)
+                      for key in sorted(engine.creatures)],
         "resources": [_resource_to_dict(engine.resources[key]) for key in sorted(engine.resources)],
         "lineage": engine.lineage.to_records(),
         "environment": engine.environment.to_dict(),
@@ -243,6 +248,8 @@ def _restore_creature(data: dict[str, Any], *, strict_v3: bool = False) -> Creat
             },
             reason=state.get("reason", "Exploring nearby"),
         ),
+        thermal_optimum=float(data.get("thermal_optimum", 0.0)),
+        thermal_stress=float(data.get("thermal_stress", 0.0)),
         home_center=np.asarray(
             data["home_center"] if strict_v3 else data.get("home_center", data["position"]),
             dtype=float,
@@ -336,6 +343,9 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
             raise CheckpointError("Interventions must be an array of records")
         engine.interventions = [dict(entry) for entry in records]
         engine.rng.bit_generator.state = payload["rng_state"]
+        if config.climate.enabled and any("thermal_optimum" not in item
+                                          for item in payload["creatures"]):
+            raise CheckpointError("Missing thermal_optimum for climate-enabled checkpoint")
         creatures = [
             _restore_creature(item, strict_v3=version >= 3)
             for item in payload["creatures"]
@@ -357,6 +367,7 @@ def load_checkpoint(path: str | Path) -> SimulationEngine:
             raise CheckpointError("Checkpoint contains duplicate resource IDs")
         engine.lineage = LineageStore.from_records(payload["lineage"])
         engine.environment = EnvironmentState.from_dict(payload["environment"])
+        engine.environment.climate = engine.climate
         if config.ecology.enabled:
             engine.habitat = HabitatField.from_dict(
                 payload["habitat"], config.ecology, width=config.world.width,
