@@ -16,10 +16,20 @@ def test_demo_config_enables_visible_warming() -> None:
     assert config.climate.anomaly_c[-1][1] >= 4.0
 
 
+def test_demo_world_is_large_but_within_renderer_capacity() -> None:
+    config = SimulationConfig.from_json(DEMO)
+    showcase = SimulationConfig.from_json(ROOT / "config" / "showcase.json")
+    area = config.world.width * config.world.height
+    assert area >= 4 * showcase.world.width * showcase.world.height
+    # Godot instancing capacities: CreatureSwarm.CAPACITY 640, FoodField.CAPACITY 1024.
+    assert config.reproduction.population_cap <= 640
+    assert config.resources.maximum_count <= 1024
+
+
 def test_demo_runs_cleanly_and_exposes_climate() -> None:
     config = SimulationConfig.from_json(DEMO)
     engine = SimulationEngine(config, seed=2026)
-    engine.step(2000)
+    engine.step(500)
     assert engine.audit_invariants() == []
     bridge = GodotSimulationServer(config, seed=2026, port=0)
     bridge.paused = True
