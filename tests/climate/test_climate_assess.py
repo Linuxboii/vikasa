@@ -75,6 +75,22 @@ def test_outside_domains_reported(tmp_path) -> None:
     assert entry["surrogate"] == {"status": "outside surrogate domain"}
 
 
+def test_region_too_harsh_at_baseline_is_reported_not_crashed(tmp_path) -> None:
+    harsh = replace(REGION, key="harsh", seasonal_amplitude_c=15.0,
+                    monthly_c=tuple(25.0 + 16.0 * np.sin(2 * np.pi * (m + 0.5) / 12)
+                                    for m in range(12)))
+    result = assess(request(region=harsh, breadth_c=1.0), BASE, results_dir=tmp_path,
+                    workers=1, calibration_kwargs={"seeds": [101], "burn_in_ticks": 400,
+                                                   "measure_ticks": 400})
+    json.dumps(result, allow_nan=False)
+    assert result["baseline_viable"] is False
+    entry = result["ssps"][0]
+    assert entry["verdict"] == "not viable in present-day climate"
+    assert entry["direct"]["n"] == 0
+    assert not (tmp_path / "results.jsonl").exists()
+    assert any("present-day" in caveat for caveat in result["caveats"])
+
+
 def test_assess_end_to_end_small(tmp_path) -> None:
     sweep_summary = {"critical_rate": {"heritable": {"logistic": {"b0": 3.0, "b1": -10.0}}}}
     result = assess(replace(request(), ssps=("SSP1-2.6", "SSP5-8.5"),
