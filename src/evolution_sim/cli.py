@@ -80,11 +80,20 @@ def build_parser() -> argparse.ArgumentParser:
     bridge.add_argument("--config", type=Path, default=Path("config/showcase.json"))
     bridge.add_argument("--seed", type=int, default=2026)
     bridge.add_argument("--port", type=int, default=8765)
+
+    commands.add_parser(
+        "climate", add_help=False,
+        help="Evolutionary rescue under real climate warming (see 'vikasa climate --help')")
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    if arguments[:1] == ["climate"]:
+        from evolution_sim.climate.cli import main as climate_main
+
+        return climate_main(arguments[1:])
+    args = build_parser().parse_args(arguments)
     try:
         if args.command == "validate":
             SimulationConfig.from_json(args.config)
