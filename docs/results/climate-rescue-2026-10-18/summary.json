@@ -1,0 +1,2290 @@
+{
+  "assessments": [
+    {
+      "baseline_viable": false,
+      "calibration": null,
+      "caveats": [
+        "Climate forcing is observed data; the organism is a generic model, not a calibrated real species.",
+        "With a tolerance breadth of 4 \u00b0C the population died out under the region's present-day seasonal cycle (seasonal amplitude 11.1 \u00b0C) with no warming at all, so no warming scenario was simulated. Try a broader tolerance breadth.",
+        "Calibration detail: Calibration seed 101 went extinct before measurement"
+      ],
+      "id": "delhi-ncr",
+      "label": "Delhi NCR: reference organism (tolerance breadth 4 \u00b0C)",
+      "request": {
+        "breadth_c": 4.0,
+        "end_year": 2100,
+        "founder_sd_c": null,
+        "generation_years": 1.0,
+        "max_warming_generations": 40.0,
+        "region": "delhi-ncr",
+        "region_name": "Delhi NCR",
+        "regional_factor": 1.0,
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "segregation_sd_c": null,
+        "ssps": [
+          "SSP1-2.6",
+          "SSP2-4.5",
+          "SSP3-7.0",
+          "SSP5-8.5"
+        ],
+        "start_year": 2025
+      },
+      "schema": "vikasa-climate-assessment-v1",
+      "ssps": [
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": null,
+            "n": 0,
+            "p": null,
+            "survived": 0,
+            "wilson": [
+              0.0,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": -0.11957180500658812,
+          "plan": {
+            "founder_mean_c": 25.833625816993464,
+            "knots": [
+              [
+                0.0,
+                0.21176470588235294
+              ],
+              [
+                5.0,
+                0.21176470588235294
+              ],
+              [
+                45.0,
+                0.6352941176470588
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.010588235294117647,
+            "rate_c_per_year": 0.010588235294117647,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP1-2.6",
+            "start_anomaly_c": 0.21176470588235294,
+            "ticks_per_year": 4,
+            "truncated": true,
+            "warming_c": 0.4235294117647059
+          },
+          "ssp": "SSP1-2.6",
+          "surrogate": null,
+          "sweep": null,
+          "verdict": "not viable in present-day climate"
+        },
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": null,
+            "n": 0,
+            "p": null,
+            "survived": 0,
+            "wilson": [
+              0.0,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": -0.11957180500658812,
+          "plan": {
+            "founder_mean_c": 26.045390522875817,
+            "knots": [
+              [
+                0.0,
+                0.4235294117647059
+              ],
+              [
+                5.0,
+                0.4235294117647059
+              ],
+              [
+                45.0,
+                1.2705882352941176
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.021176470588235293,
+            "rate_c_per_year": 0.021176470588235293,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP2-4.5",
+            "start_anomaly_c": 0.4235294117647059,
+            "ticks_per_year": 4,
+            "truncated": true,
+            "warming_c": 0.8470588235294118
+          },
+          "ssp": "SSP2-4.5",
+          "surrogate": null,
+          "sweep": null,
+          "verdict": "not viable in present-day climate"
+        },
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": null,
+            "n": 0,
+            "p": null,
+            "survived": 0,
+            "wilson": [
+              0.0,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": -0.11957180500658812,
+          "plan": {
+            "founder_mean_c": 26.28068464052288,
+            "knots": [
+              [
+                0.0,
+                0.6588235294117646
+              ],
+              [
+                5.0,
+                0.6588235294117646
+              ],
+              [
+                45.0,
+                1.9764705882352938
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.03294117647058823,
+            "rate_c_per_year": 0.03294117647058823,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP3-7.0",
+            "start_anomaly_c": 0.6588235294117646,
+            "ticks_per_year": 4,
+            "truncated": true,
+            "warming_c": 1.3176470588235292
+          },
+          "ssp": "SSP3-7.0",
+          "surrogate": null,
+          "sweep": null,
+          "verdict": "not viable in present-day climate"
+        },
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": null,
+            "n": 0,
+            "p": null,
+            "survived": 0,
+            "wilson": [
+              0.0,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": -0.11957180500658812,
+          "plan": {
+            "founder_mean_c": 26.44539052287582,
+            "knots": [
+              [
+                0.0,
+                0.8235294117647058
+              ],
+              [
+                5.0,
+                0.8235294117647058
+              ],
+              [
+                45.0,
+                2.4705882352941178
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.041176470588235294,
+            "rate_c_per_year": 0.041176470588235294,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP5-8.5",
+            "start_anomaly_c": 0.8235294117647058,
+            "ticks_per_year": 4,
+            "truncated": true,
+            "warming_c": 1.6470588235294117
+          },
+          "ssp": "SSP5-8.5",
+          "surrogate": null,
+          "sweep": null,
+          "verdict": "not viable in present-day climate"
+        }
+      ]
+    },
+    {
+      "baseline_viable": true,
+      "calibration": {
+        "breadth_c": 16.588500000000003,
+        "burn_in_ticks": 1500,
+        "generation_ticks": 428,
+        "measure_ticks": 6000,
+        "monthly_c": [
+          13.830666666666666,
+          17.366333333333333,
+          23.476000000000003,
+          30.27933333333334,
+          35.121,
+          35.94866666666667,
+          32.535,
+          29.929333333333332,
+          28.287999999999997,
+          25.075,
+          20.147,
+          15.466
+        ],
+        "seeds": [
+          101,
+          102
+        ],
+        "slopes": [
+          0.0025122286979562844,
+          0.0021560077385061145
+        ],
+        "ticks_per_second": [
+          363.86795831446415,
+          400.57486231438503
+        ]
+      },
+      "caveats": [
+        "Climate forcing is observed data; the organism is a generic model, not a calibrated real species.",
+        "Warming pathway: IPCC AR6 WG1 Ch. 4 Table 4.5 (2081-2100 vs 1995-2014, global mean); linear pathway between period centres, scaled by a regional factor; regional factor 1.",
+        "Direct simulation is authoritative; sweep and surrogate values are references from the fixed 20-generation protocol.",
+        "Warming capped at 40 generations: only the first part of the 2025-2100 pathway was simulated."
+      ],
+      "id": "delhi-ncr-local",
+      "label": "Delhi NCR: locally adapted organism (breadth 1.5 x seasonal amplitude = 16.6 \u00b0C)",
+      "request": {
+        "breadth_c": 16.588500000000003,
+        "end_year": 2100,
+        "founder_sd_c": null,
+        "generation_years": 1.0,
+        "max_warming_generations": 40.0,
+        "region": "delhi-ncr",
+        "region_name": "Delhi NCR",
+        "regional_factor": 1.0,
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "segregation_sd_c": null,
+        "ssps": [
+          "SSP1-2.6",
+          "SSP2-4.5",
+          "SSP3-7.0",
+          "SSP5-8.5"
+        ],
+        "start_year": 2025
+      },
+      "schema": "vikasa-climate-assessment-v1",
+      "ssps": [
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": 1.3363296682104113,
+            "n": 12,
+            "p": 1.0,
+            "survived": 12,
+            "wilson": [
+              0.7575059933447592,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": -0.11957180500658812,
+          "plan": {
+            "founder_mean_c": 25.833625816993464,
+            "knots": [
+              [
+                0.0,
+                0.21176470588235294
+              ],
+              [
+                5.0,
+                0.21176470588235294
+              ],
+              [
+                45.0,
+                0.6352941176470588
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.010588235294117647,
+            "rate_c_per_year": 0.010588235294117647,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP1-2.6",
+            "start_anomaly_c": 0.21176470588235294,
+            "ticks_per_year": 428,
+            "truncated": true,
+            "warming_c": 0.4235294117647059
+          },
+          "ssp": "SSP1-2.6",
+          "surrogate": {
+            "status": "outside surrogate domain"
+          },
+          "sweep": {
+            "status": "outside sweep domain"
+          },
+          "verdict": "likely persists"
+        },
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": 1.383360930488286,
+            "n": 12,
+            "p": 1.0,
+            "survived": 12,
+            "wilson": [
+              0.7575059933447592,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": -0.11957180500658812,
+          "plan": {
+            "founder_mean_c": 26.045390522875817,
+            "knots": [
+              [
+                0.0,
+                0.4235294117647059
+              ],
+              [
+                5.0,
+                0.4235294117647059
+              ],
+              [
+                45.0,
+                1.2705882352941176
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.021176470588235293,
+            "rate_c_per_year": 0.021176470588235293,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP2-4.5",
+            "start_anomaly_c": 0.4235294117647059,
+            "ticks_per_year": 428,
+            "truncated": true,
+            "warming_c": 0.8470588235294118
+          },
+          "ssp": "SSP2-4.5",
+          "surrogate": {
+            "status": "outside surrogate domain"
+          },
+          "sweep": {
+            "status": "outside sweep domain"
+          },
+          "verdict": "likely persists"
+        },
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": 1.3333256756671592,
+            "n": 12,
+            "p": 1.0,
+            "survived": 12,
+            "wilson": [
+              0.7575059933447592,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": -0.11957180500658812,
+          "plan": {
+            "founder_mean_c": 26.28068464052288,
+            "knots": [
+              [
+                0.0,
+                0.6588235294117646
+              ],
+              [
+                5.0,
+                0.6588235294117646
+              ],
+              [
+                45.0,
+                1.9764705882352938
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.03294117647058823,
+            "rate_c_per_year": 0.03294117647058823,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP3-7.0",
+            "start_anomaly_c": 0.6588235294117646,
+            "ticks_per_year": 428,
+            "truncated": true,
+            "warming_c": 1.3176470588235292
+          },
+          "ssp": "SSP3-7.0",
+          "surrogate": {
+            "status": "outside surrogate domain"
+          },
+          "sweep": {
+            "status": "outside sweep domain"
+          },
+          "verdict": "likely persists"
+        },
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": 1.1430891801905028,
+            "n": 12,
+            "p": 0.9166666666666666,
+            "survived": 11,
+            "wilson": [
+              0.646120088858883,
+              0.9851349055950829
+            ]
+          },
+          "observed_trend_c_per_decade": -0.11957180500658812,
+          "plan": {
+            "founder_mean_c": 26.44539052287582,
+            "knots": [
+              [
+                0.0,
+                0.8235294117647058
+              ],
+              [
+                5.0,
+                0.8235294117647058
+              ],
+              [
+                45.0,
+                2.4705882352941178
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.041176470588235294,
+            "rate_c_per_year": 0.041176470588235294,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP5-8.5",
+            "start_anomaly_c": 0.8235294117647058,
+            "ticks_per_year": 428,
+            "truncated": true,
+            "warming_c": 1.6470588235294117
+          },
+          "ssp": "SSP5-8.5",
+          "surrogate": {
+            "status": "outside surrogate domain"
+          },
+          "sweep": {
+            "status": "outside sweep domain"
+          },
+          "verdict": "likely persists"
+        }
+      ]
+    },
+    {
+      "baseline_viable": false,
+      "calibration": null,
+      "caveats": [
+        "Climate forcing is observed data; the organism is a generic model, not a calibrated real species.",
+        "With a tolerance breadth of 4 \u00b0C the population died out under the region's present-day seasonal cycle (seasonal amplitude 5.4 \u00b0C) with no warming at all, so no warming scenario was simulated. Try a broader tolerance breadth.",
+        "Calibration detail: Calibration seed 101 went extinct before measurement"
+      ],
+      "id": "sundarbans",
+      "label": "Sundarbans: reference organism (tolerance breadth 4 \u00b0C)",
+      "request": {
+        "breadth_c": 4.0,
+        "end_year": 2100,
+        "founder_sd_c": null,
+        "generation_years": 1.0,
+        "max_warming_generations": 40.0,
+        "region": "sundarbans",
+        "region_name": "Sundarbans",
+        "regional_factor": 1.0,
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "segregation_sd_c": null,
+        "ssps": [
+          "SSP1-2.6",
+          "SSP2-4.5",
+          "SSP3-7.0",
+          "SSP5-8.5"
+        ],
+        "start_year": 2025
+      },
+      "schema": "vikasa-climate-assessment-v1",
+      "ssps": [
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": null,
+            "n": 0,
+            "p": null,
+            "survived": 0,
+            "wilson": [
+              0.0,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": -0.0021332894158975616,
+          "plan": {
+            "founder_mean_c": 26.44773692810458,
+            "knots": [
+              [
+                0.0,
+                0.21176470588235294
+              ],
+              [
+                5.0,
+                0.21176470588235294
+              ],
+              [
+                45.0,
+                0.6352941176470588
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.010588235294117647,
+            "rate_c_per_year": 0.010588235294117647,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP1-2.6",
+            "start_anomaly_c": 0.21176470588235294,
+            "ticks_per_year": 4,
+            "truncated": true,
+            "warming_c": 0.4235294117647059
+          },
+          "ssp": "SSP1-2.6",
+          "surrogate": null,
+          "sweep": null,
+          "verdict": "not viable in present-day climate"
+        },
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": null,
+            "n": 0,
+            "p": null,
+            "survived": 0,
+            "wilson": [
+              0.0,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": -0.0021332894158975616,
+          "plan": {
+            "founder_mean_c": 26.65950163398693,
+            "knots": [
+              [
+                0.0,
+                0.4235294117647059
+              ],
+              [
+                5.0,
+                0.4235294117647059
+              ],
+              [
+                45.0,
+                1.2705882352941176
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.021176470588235293,
+            "rate_c_per_year": 0.021176470588235293,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP2-4.5",
+            "start_anomaly_c": 0.4235294117647059,
+            "ticks_per_year": 4,
+            "truncated": true,
+            "warming_c": 0.8470588235294118
+          },
+          "ssp": "SSP2-4.5",
+          "surrogate": null,
+          "sweep": null,
+          "verdict": "not viable in present-day climate"
+        },
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": null,
+            "n": 0,
+            "p": null,
+            "survived": 0,
+            "wilson": [
+              0.0,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": -0.0021332894158975616,
+          "plan": {
+            "founder_mean_c": 26.894795751633993,
+            "knots": [
+              [
+                0.0,
+                0.6588235294117646
+              ],
+              [
+                5.0,
+                0.6588235294117646
+              ],
+              [
+                45.0,
+                1.9764705882352938
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.03294117647058823,
+            "rate_c_per_year": 0.03294117647058823,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP3-7.0",
+            "start_anomaly_c": 0.6588235294117646,
+            "ticks_per_year": 4,
+            "truncated": true,
+            "warming_c": 1.3176470588235292
+          },
+          "ssp": "SSP3-7.0",
+          "surrogate": null,
+          "sweep": null,
+          "verdict": "not viable in present-day climate"
+        },
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": null,
+            "n": 0,
+            "p": null,
+            "survived": 0,
+            "wilson": [
+              0.0,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": -0.0021332894158975616,
+          "plan": {
+            "founder_mean_c": 27.059501633986933,
+            "knots": [
+              [
+                0.0,
+                0.8235294117647058
+              ],
+              [
+                5.0,
+                0.8235294117647058
+              ],
+              [
+                45.0,
+                2.4705882352941178
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.041176470588235294,
+            "rate_c_per_year": 0.041176470588235294,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP5-8.5",
+            "start_anomaly_c": 0.8235294117647058,
+            "ticks_per_year": 4,
+            "truncated": true,
+            "warming_c": 1.6470588235294117
+          },
+          "ssp": "SSP5-8.5",
+          "surrogate": null,
+          "sweep": null,
+          "verdict": "not viable in present-day climate"
+        }
+      ]
+    },
+    {
+      "baseline_viable": true,
+      "calibration": {
+        "breadth_c": 8.154000000000003,
+        "burn_in_ticks": 1500,
+        "generation_ticks": 389,
+        "measure_ticks": 6000,
+        "monthly_c": [
+          19.322666666666667,
+          23.45166666666667,
+          27.899666666666665,
+          29.994000000000007,
+          30.19466666666667,
+          29.279,
+          28.48266666666667,
+          28.221,
+          27.938666666666666,
+          26.875666666666667,
+          23.474666666666664,
+          19.697333333333333
+        ],
+        "seeds": [
+          101,
+          102
+        ],
+        "slopes": [
+          0.0024334366706602662,
+          0.002702261970956087
+        ],
+        "ticks_per_second": [
+          113.05755332983787,
+          113.39783678476469
+        ]
+      },
+      "caveats": [
+        "Climate forcing is observed data; the organism is a generic model, not a calibrated real species.",
+        "Warming pathway: IPCC AR6 WG1 Ch. 4 Table 4.5 (2081-2100 vs 1995-2014, global mean); linear pathway between period centres, scaled by a regional factor; regional factor 1.",
+        "Direct simulation is authoritative; sweep and surrogate values are references from the fixed 20-generation protocol.",
+        "Warming capped at 40 generations: only the first part of the 2025-2100 pathway was simulated."
+      ],
+      "id": "sundarbans-local",
+      "label": "Sundarbans: locally adapted organism (breadth 1.5 x seasonal amplitude = 8.2 \u00b0C)",
+      "request": {
+        "breadth_c": 8.154000000000003,
+        "end_year": 2100,
+        "founder_sd_c": null,
+        "generation_years": 1.0,
+        "max_warming_generations": 40.0,
+        "region": "sundarbans",
+        "region_name": "Sundarbans",
+        "regional_factor": 1.0,
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "segregation_sd_c": null,
+        "ssps": [
+          "SSP1-2.6",
+          "SSP2-4.5",
+          "SSP3-7.0",
+          "SSP5-8.5"
+        ],
+        "start_year": 2025
+      },
+      "schema": "vikasa-climate-assessment-v1",
+      "ssps": [
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": 1.2578090105832949,
+            "n": 12,
+            "p": 1.0,
+            "survived": 12,
+            "wilson": [
+              0.7575059933447592,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": -0.0021332894158975616,
+          "plan": {
+            "founder_mean_c": 26.44773692810458,
+            "knots": [
+              [
+                0.0,
+                0.21176470588235294
+              ],
+              [
+                5.0,
+                0.21176470588235294
+              ],
+              [
+                45.0,
+                0.6352941176470588
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.010588235294117647,
+            "rate_c_per_year": 0.010588235294117647,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP1-2.6",
+            "start_anomaly_c": 0.21176470588235294,
+            "ticks_per_year": 389,
+            "truncated": true,
+            "warming_c": 0.4235294117647059
+          },
+          "ssp": "SSP1-2.6",
+          "surrogate": {
+            "status": "outside surrogate domain"
+          },
+          "sweep": {
+            "status": "outside sweep domain"
+          },
+          "verdict": "likely persists"
+        },
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": 1.1933397752613046,
+            "n": 12,
+            "p": 1.0,
+            "survived": 12,
+            "wilson": [
+              0.7575059933447592,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": -0.0021332894158975616,
+          "plan": {
+            "founder_mean_c": 26.65950163398693,
+            "knots": [
+              [
+                0.0,
+                0.4235294117647059
+              ],
+              [
+                5.0,
+                0.4235294117647059
+              ],
+              [
+                45.0,
+                1.2705882352941176
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.021176470588235293,
+            "rate_c_per_year": 0.021176470588235293,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP2-4.5",
+            "start_anomaly_c": 0.4235294117647059,
+            "ticks_per_year": 389,
+            "truncated": true,
+            "warming_c": 0.8470588235294118
+          },
+          "ssp": "SSP2-4.5",
+          "surrogate": {
+            "status": "outside surrogate domain"
+          },
+          "sweep": {
+            "status": "outside sweep domain"
+          },
+          "verdict": "likely persists"
+        },
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": 1.2074317809327357,
+            "n": 12,
+            "p": 1.0,
+            "survived": 12,
+            "wilson": [
+              0.7575059933447592,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": -0.0021332894158975616,
+          "plan": {
+            "founder_mean_c": 26.894795751633993,
+            "knots": [
+              [
+                0.0,
+                0.6588235294117646
+              ],
+              [
+                5.0,
+                0.6588235294117646
+              ],
+              [
+                45.0,
+                1.9764705882352938
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.03294117647058823,
+            "rate_c_per_year": 0.03294117647058823,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP3-7.0",
+            "start_anomaly_c": 0.6588235294117646,
+            "ticks_per_year": 389,
+            "truncated": true,
+            "warming_c": 1.3176470588235292
+          },
+          "ssp": "SSP3-7.0",
+          "surrogate": {
+            "status": "outside surrogate domain"
+          },
+          "sweep": {
+            "status": "outside sweep domain"
+          },
+          "verdict": "likely persists"
+        },
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": 1.1504432923150472,
+            "n": 12,
+            "p": 1.0,
+            "survived": 12,
+            "wilson": [
+              0.7575059933447592,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": -0.0021332894158975616,
+          "plan": {
+            "founder_mean_c": 27.059501633986933,
+            "knots": [
+              [
+                0.0,
+                0.8235294117647058
+              ],
+              [
+                5.0,
+                0.8235294117647058
+              ],
+              [
+                45.0,
+                2.4705882352941178
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.041176470588235294,
+            "rate_c_per_year": 0.041176470588235294,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP5-8.5",
+            "start_anomaly_c": 0.8235294117647058,
+            "ticks_per_year": 389,
+            "truncated": true,
+            "warming_c": 1.6470588235294117
+          },
+          "ssp": "SSP5-8.5",
+          "surrogate": {
+            "status": "outside surrogate domain"
+          },
+          "sweep": {
+            "status": "outside sweep domain"
+          },
+          "verdict": "likely persists"
+        }
+      ]
+    },
+    {
+      "baseline_viable": true,
+      "calibration": {
+        "breadth_c": 4.0,
+        "burn_in_ticks": 1500,
+        "generation_ticks": 403,
+        "measure_ticks": 6000,
+        "monthly_c": [
+          23.694666666666663,
+          25.341666666666654,
+          27.48133333333334,
+          28.22366666666666,
+          27.457999999999995,
+          25.392999999999997,
+          24.414666666666665,
+          24.18066666666666,
+          24.377333333333333,
+          24.846000000000004,
+          24.50366666666667,
+          23.423333333333332
+        ],
+        "seeds": [
+          101,
+          102
+        ],
+        "slopes": [
+          0.0023372835859749577,
+          0.00262264362963633
+        ],
+        "ticks_per_second": [
+          409.23805695888996,
+          373.3863474239321
+        ]
+      },
+      "caveats": [
+        "Climate forcing is observed data; the organism is a generic model, not a calibrated real species.",
+        "Warming pathway: IPCC AR6 WG1 Ch. 4 Table 4.5 (2081-2100 vs 1995-2014, global mean); linear pathway between period centres, scaled by a regional factor; regional factor 1.",
+        "Direct simulation is authoritative; sweep and surrogate values are references from the fixed 20-generation protocol.",
+        "Warming capped at 40 generations: only the first part of the 2025-2100 pathway was simulated."
+      ],
+      "id": "western-ghats",
+      "label": "Western Ghats (Agumbe): reference organism (tolerance breadth 4 \u00b0C)",
+      "request": {
+        "breadth_c": 4.0,
+        "end_year": 2100,
+        "founder_sd_c": null,
+        "generation_years": 1.0,
+        "max_warming_generations": 40.0,
+        "region": "western-ghats",
+        "region_name": "Western Ghats (Agumbe)",
+        "regional_factor": 1.0,
+        "seeds": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12
+        ],
+        "segregation_sd_c": null,
+        "ssps": [
+          "SSP1-2.6",
+          "SSP2-4.5",
+          "SSP3-7.0",
+          "SSP5-8.5"
+        ],
+        "start_year": 2025
+      },
+      "schema": "vikasa-climate-assessment-v1",
+      "ssps": [
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": 1.1513747421145826,
+            "n": 12,
+            "p": 1.0,
+            "survived": 12,
+            "wilson": [
+              0.7575059933447592,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": 0.16861550285463295,
+          "plan": {
+            "founder_mean_c": 25.489931372549016,
+            "knots": [
+              [
+                0.0,
+                0.21176470588235294
+              ],
+              [
+                5.0,
+                0.21176470588235294
+              ],
+              [
+                45.0,
+                0.6352941176470588
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.010588235294117647,
+            "rate_c_per_year": 0.010588235294117647,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP1-2.6",
+            "start_anomaly_c": 0.21176470588235294,
+            "ticks_per_year": 403,
+            "truncated": true,
+            "warming_c": 0.4235294117647059
+          },
+          "ssp": "SSP1-2.6",
+          "surrogate": {
+            "p": 0.9881142911042172,
+            "ratio_mean": 0.8058690760274654,
+            "ratio_sd": 0.33433645256301564
+          },
+          "sweep": {
+            "p": 0.9954807786393355
+          },
+          "verdict": "likely persists"
+        },
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": 1.0632978783464841,
+            "n": 12,
+            "p": 0.9166666666666666,
+            "survived": 11,
+            "wilson": [
+              0.646120088858883,
+              0.9851349055950829
+            ]
+          },
+          "observed_trend_c_per_decade": 0.16861550285463295,
+          "plan": {
+            "founder_mean_c": 25.701696078431368,
+            "knots": [
+              [
+                0.0,
+                0.4235294117647059
+              ],
+              [
+                5.0,
+                0.4235294117647059
+              ],
+              [
+                45.0,
+                1.2705882352941176
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.021176470588235293,
+            "rate_c_per_year": 0.021176470588235293,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP2-4.5",
+            "start_anomaly_c": 0.4235294117647059,
+            "ticks_per_year": 403,
+            "truncated": true,
+            "warming_c": 0.8470588235294118
+          },
+          "ssp": "SSP2-4.5",
+          "surrogate": {
+            "p": 0.9883289631147849,
+            "ratio_mean": 0.7976426958982236,
+            "ratio_sd": 0.3296791347492322
+          },
+          "sweep": {
+            "p": 0.9943363531715353
+          },
+          "verdict": "likely persists"
+        },
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": 1.1475685618853488,
+            "n": 12,
+            "p": 1.0,
+            "survived": 12,
+            "wilson": [
+              0.7575059933447592,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": 0.16861550285463295,
+          "plan": {
+            "founder_mean_c": 25.93699019607843,
+            "knots": [
+              [
+                0.0,
+                0.6588235294117646
+              ],
+              [
+                5.0,
+                0.6588235294117646
+              ],
+              [
+                45.0,
+                1.9764705882352938
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.03294117647058823,
+            "rate_c_per_year": 0.03294117647058823,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP3-7.0",
+            "start_anomaly_c": 0.6588235294117646,
+            "ticks_per_year": 403,
+            "truncated": true,
+            "warming_c": 1.3176470588235292
+          },
+          "ssp": "SSP3-7.0",
+          "surrogate": {
+            "p": 0.9881601517833899,
+            "ratio_mean": 0.7856204926979548,
+            "ratio_sd": 0.3251667867850639
+          },
+          "sweep": {
+            "p": 0.9927243525771908
+          },
+          "verdict": "likely persists"
+        },
+        {
+          "direct": {
+            "errors": 0,
+            "mean_ratio": 1.1714690513462274,
+            "n": 12,
+            "p": 1.0,
+            "survived": 12,
+            "wilson": [
+              0.7575059933447592,
+              1.0
+            ]
+          },
+          "observed_trend_c_per_decade": 0.16861550285463295,
+          "plan": {
+            "founder_mean_c": 26.10169607843137,
+            "knots": [
+              [
+                0.0,
+                0.8235294117647058
+              ],
+              [
+                5.0,
+                0.8235294117647058
+              ],
+              [
+                45.0,
+                2.4705882352941178
+              ]
+            ],
+            "phases": {
+              "burn_in": 5.0,
+              "hold": 5.0,
+              "warming": 40.0
+            },
+            "rate_c_per_generation": 0.041176470588235294,
+            "rate_c_per_year": 0.041176470588235294,
+            "simulated_end_year": 2065.0,
+            "span_years": 40.0,
+            "ssp": "SSP5-8.5",
+            "start_anomaly_c": 0.8235294117647058,
+            "ticks_per_year": 403,
+            "truncated": true,
+            "warming_c": 1.6470588235294117
+          },
+          "ssp": "SSP5-8.5",
+          "surrogate": {
+            "p": 0.9877725808946006,
+            "ratio_mean": 0.7753966757564352,
+            "ratio_sd": 0.32241182342875396
+          },
+          "sweep": {
+            "p": 0.9913324099898744
+          },
+          "verdict": "likely persists"
+        }
+      ]
+    }
+  ],
+  "calibration": {
+    "breadth_c": null,
+    "burn_in_ticks": 1500,
+    "generation_ticks": 469,
+    "measure_ticks": 6000,
+    "monthly_c": null,
+    "seeds": [
+      901,
+      902,
+      903
+    ],
+    "slopes": [
+      0.0021637276516950875,
+      0.002271482439091765,
+      0.0019605865394280585
+    ],
+    "ticks_per_second": [
+      46.129853803975365,
+      46.01208888249198,
+      45.58735842127854
+    ]
+  },
+  "criteria": [
+    {
+      "id": "C1",
+      "passed": true,
+      "statement": "Without warming, heritable populations persist",
+      "threshold": "\u2265 0.9",
+      "value": 1.0
+    },
+    {
+      "id": "C2",
+      "passed": true,
+      "statement": "Faster warming lowers survival (Spearman rho)",
+      "threshold": "\u2264 -0.8",
+      "value": -0.8416254115301731
+    },
+    {
+      "id": "C3",
+      "passed": true,
+      "statement": "Heritable adaptation raises the critical rate (gain CI low)",
+      "threshold": "> 0",
+      "value": 0.1647206852131795
+    },
+    {
+      "id": "C4",
+      "passed": false,
+      "statement": "Optima track warming at \u2264 k_c/2 (\u2265 50 % of \u0394T, \u2265 2x control)",
+      "threshold": "all rates pass",
+      "value": [
+        {
+          "control_shift_c": 0.17737106591886007,
+          "heritable_shift_c": 0.34475029077666647,
+          "rate": 0.025,
+          "warming_c": 0.5
+        },
+        {
+          "control_shift_c": 0.38579986719342896,
+          "heritable_shift_c": 0.6451118598890826,
+          "rate": 0.05,
+          "warming_c": 1.0
+        },
+        {
+          "control_shift_c": 0.510857269433491,
+          "heritable_shift_c": 0.974442130855337,
+          "rate": 0.075,
+          "warming_c": 1.5
+        },
+        {
+          "control_shift_c": null,
+          "heritable_shift_c": 1.1663409811293663,
+          "rate": 0.1,
+          "warming_c": 2.0
+        }
+      ]
+    },
+    {
+      "id": "C5",
+      "passed": true,
+      "statement": "Adaptation lag grows with warming rate (Pearson r)",
+      "threshold": "\u2265 0.8",
+      "value": 0.8542169913594923
+    },
+    {
+      "id": "C6",
+      "passed": true,
+      "statement": "No invariant violations or failed runs",
+      "threshold": "0 and 0",
+      "value": {
+        "error_rows": 0,
+        "invariant_error_rows": 0
+      }
+    },
+    {
+      "id": "S9",
+      "passed": false,
+      "statement": "Surrogate predicts held-out simulations",
+      "threshold": "R\u00b2 \u2265 0.7 and AUC \u2265 0.85",
+      "value": {
+        "auc": 0.9285714285714285,
+        "r2": 0.511375760446253
+      }
+    },
+    {
+      "id": "S10",
+      "passed": false,
+      "statement": "Warming rate is a top-2 driver of survival",
+      "threshold": "rate_c_per_gen in top 2 by ST",
+      "value": [
+        "amplitude_c",
+        "breadth_c",
+        "rate_c_per_gen"
+      ]
+    }
+  ],
+  "generated_utc": "2026-10-18T15:35:24Z",
+  "provenance": {
+    "climate_data": "NASA POWER monthly T2M (MERRA-2): https://power.larc.nasa.gov/api/temporal/monthly/point",
+    "config": "climate-rescue.json",
+    "config_sha256": "95e1df606d4524ecb4c7d77075eecc2e125d35cc9c9f57c61919d2e5fa726043",
+    "data_delhi-ncr_retrieved": "2026-10-18T12:02:39Z",
+    "data_delhi-ncr_sha256": "ae6926ca12a4c1e3f7d10dd4e0539ce9f989b5518922fe9e50479bd52568e8b2",
+    "data_sundarbans_retrieved": "2026-10-18T12:02:40Z",
+    "data_sundarbans_sha256": "fe1168efb3127aca35fa73c4ac7272428b468e01e0ec6e74d0b28ef17ed88c46",
+    "data_western-ghats_retrieved": "2026-10-18T12:02:39Z",
+    "data_western-ghats_sha256": "d718f4ba12cf5dfe843d60235c8e78158e44c1d7f13157567439f9afce5d8b8a",
+    "git_commit": "0c19e02ff994ba75baf809e840c528bfa9155b21",
+    "numpy": "2.5.3",
+    "python": "3.12.14",
+    "scikit_learn": "1.9.1",
+    "scipy": "1.18.1",
+    "source_sha256": "fad17274cd2c06040fb0fabc4005bce09e69452a2a992989188839525c49b731",
+    "warming_pathways": "IPCC AR6 WG1 Ch. 4 Table 4.5 (2081-2100 vs 1995-2014, global mean); linear pathway between period centres, scaled by a regional factor"
+  },
+  "sensitivity": {
+    "design_points": 384,
+    "names": [
+      "rate_c_per_gen",
+      "breadth_c",
+      "amplitude_c",
+      "founder_sd_c",
+      "segregation_sd_c",
+      "capacity_scale"
+    ],
+    "params": [
+      {
+        "description": "Warming rate",
+        "high": 0.4,
+        "low": 0.0,
+        "name": "rate_c_per_gen",
+        "unit": "\u00b0C/generation"
+      },
+      {
+        "description": "Thermal tolerance breadth (cold side)",
+        "high": 8.0,
+        "low": 2.0,
+        "name": "breadth_c",
+        "unit": "\u00b0C"
+      },
+      {
+        "description": "Seasonal temperature amplitude",
+        "high": 8.0,
+        "low": 0.5,
+        "name": "amplitude_c",
+        "unit": "\u00b0C"
+      },
+      {
+        "description": "Standing variation in thermal optimum",
+        "high": 2.0,
+        "low": 0.25,
+        "name": "founder_sd_c",
+        "unit": "\u00b0C"
+      },
+      {
+        "description": "Heritable variation among offspring",
+        "high": 1.0,
+        "low": 0.0,
+        "name": "segregation_sd_c",
+        "unit": "\u00b0C"
+      },
+      {
+        "description": "Habitat carrying capacity",
+        "high": 1.5,
+        "low": 0.5,
+        "name": "capacity_scale",
+        "unit": "multiplier"
+      }
+    ],
+    "rate_high": 0.4,
+    "sobol": {
+      "ratio": {
+        "S1": [
+          0.07813133499621205,
+          0.10260916834529271,
+          0.3752149203975955,
+          -0.0008299001843517175,
+          0.06578491205992887,
+          0.063602906165695
+        ],
+        "S1_ci": [
+          [
+            0.044589813302304986,
+            0.10737908819551457
+          ],
+          [
+            0.07432498218036368,
+            0.13563675994614055
+          ],
+          [
+            0.3443045199886364,
+            0.406601795260622
+          ],
+          [
+            -0.028569926867959568,
+            0.028976564087724938
+          ],
+          [
+            0.0342798567283671,
+            0.09950592895246772
+          ],
+          [
+            0.03433649958023413,
+            0.09399635290587674
+          ]
+        ],
+        "ST": [
+          0.2138943036902826,
+          0.25655926146077374,
+          0.6364024371336332,
+          0.0033548382157550815,
+          0.17933858879168915,
+          0.13384460749898172
+        ],
+        "ST_ci": [
+          [
+            0.1979538802170703,
+            0.22986447509025873
+          ],
+          [
+            0.24008506751876693,
+            0.27961476360231236
+          ],
+          [
+            0.6105400543408828,
+            0.6655341384840219
+          ],
+          [
+            0.0030276869277228017,
+            0.003633379197492672
+          ],
+          [
+            0.16414093814298203,
+            0.1938807356412909
+          ],
+          [
+            0.12268170141876081,
+            0.14395149613348238
+          ]
+        ],
+        "evaluations": 32768,
+        "n": 4096
+      },
+      "survival": {
+        "S1": [
+          0.05049262025652783,
+          0.11468658176599866,
+          0.37895632796292217,
+          -0.005187706683226824,
+          0.05847789649754793,
+          0.032510111192434035
+        ],
+        "S1_ci": [
+          [
+            0.02275834241948368,
+            0.08292969437477196
+          ],
+          [
+            0.08144176215138302,
+            0.1470458154473633
+          ],
+          [
+            0.3496704658165085,
+            0.40549121428320073
+          ],
+          [
+            -0.0367447808871745,
+            0.02284406020667954
+          ],
+          [
+            0.02749243929041076,
+            0.08638075867509082
+          ],
+          [
+            -0.0037298441822680153,
+            0.06218001946879817
+          ]
+        ],
+        "ST": [
+          0.21903799460944876,
+          0.29654990513937224,
+          0.6557316524654296,
+          0.0051697457931955335,
+          0.19862471821878042,
+          0.1256621737283655
+        ],
+        "ST_ci": [
+          [
+            0.20309707338107338,
+            0.2366933648203128
+          ],
+          [
+            0.2798221282500948,
+            0.31749655744261374
+          ],
+          [
+            0.6259522935193699,
+            0.6868846250353715
+          ],
+          [
+            0.004618594452023324,
+            0.005663945281466574
+          ],
+          [
+            0.18265255975308808,
+            0.2142814946136475
+          ],
+          [
+            0.11493767153940412,
+            0.13571164487627865
+          ]
+        ],
+        "evaluations": 32768,
+        "n": 4096
+      }
+    }
+  },
+  "surrogate_validation": {
+    "cv": {
+      "auc_folds": [
+        0.9504716981132075,
+        0.9561538461538461,
+        0.9791288566243195,
+        0.9537166900420757,
+        0.9729286300246104
+      ],
+      "auc_mean": 0.9624799441916119,
+      "r2_folds": [
+        0.49709088011010605,
+        0.6129286594906754,
+        0.6633308467352612,
+        0.6204499324048236,
+        0.7013758387187568
+      ],
+      "r2_mean": 0.6190352314919246
+    },
+    "design_rows": 384,
+    "error_rows": 0,
+    "holdout": {
+      "accuracy": 0.7708333333333334,
+      "auc": 0.9285714285714285,
+      "brier": 0.22727441795827996,
+      "n": 48,
+      "observed_ratio": [
+        1.032258064516129,
+        1.4068441064638784,
+        0.0,
+        1.2030075187969924,
+        0.0,
+        1.1374407582938388,
+        1.2328767123287672,
+        0.0,
+        1.4583333333333335,
+        0.0,
+        1.2275449101796407,
+        0.9640522875816993,
+        1.1180124223602483,
+        0.9090909090909091,
+        0.0,
+        0.0,
+        1.8548387096774193,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.1631944444444444,
+        0.625,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.17647058823529413,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "predicted_ratio": [
+        0.7622739474502259,
+        1.2709297465913183,
+        0.987064889045091,
+        0.6035608834689297,
+        0.0,
+        1.199196988771607,
+        0.4105040810836299,
+        0.956391381216416,
+        1.0261073192580268,
+        0.5919250460095276,
+        0.7679450148452747,
+        0.18393967281393267,
+        1.1766368310506135,
+        0.784706519995559,
+        0.0,
+        0.18409971729013375,
+        0.47116053582205103,
+        0.003257855202998705,
+        0.09225967822405279,
+        0.014896419990725274,
+        0.0,
+        0.0,
+        0.2050422769182695,
+        0.009850728596724645,
+        0.26188460501806277,
+        0.007896265144255343,
+        0.0,
+        0.0012223794300224022,
+        0.8847917159544607,
+        0.5997403417343524,
+        0.0,
+        0.048188481342414824,
+        0.10050005687958835,
+        0.35660615310705923,
+        0.17816836681834475,
+        0.04201710754667337,
+        0.0,
+        0.0,
+        0.4759430057583108,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0512119747162062,
+        0.014220394379811263,
+        0.024186940356796416,
+        0.02435313401171657,
+        0.0
+      ],
+      "predicted_sd": [
+        0.34318668676794056,
+        0.3561525126776433,
+        0.33702009793226856,
+        0.32072681474447384,
+        0.35655635071940844,
+        0.3461810536671722,
+        0.3396746482723083,
+        0.3243051093937114,
+        0.3402213957818745,
+        0.3625957485846262,
+        0.33928060415073924,
+        0.3197932594461065,
+        0.37211430532903833,
+        0.3847307632742542,
+        0.3325717187354762,
+        0.33228394202298794,
+        0.3388378683341751,
+        0.32759150969658146,
+        0.3154035431645953,
+        0.3442704164551426,
+        0.33214682414269714,
+        0.3460467571785796,
+        0.38924129789045814,
+        0.32339591456592137,
+        0.3151033676471226,
+        0.3255872916001252,
+        0.3462844010837783,
+        0.3520361489424982,
+        0.34394391824281995,
+        0.32847705269161753,
+        0.32012752363246666,
+        0.32409422285561207,
+        0.3316754972365561,
+        0.33109573385722824,
+        0.37631612527412844,
+        0.3479462115970719,
+        0.34741793561076983,
+        0.3198926039319301,
+        0.34151121459775197,
+        0.3180041887845023,
+        0.3249583806602916,
+        0.3721998167585755,
+        0.32428441429645183,
+        0.38477863855955197,
+        0.3432342889239614,
+        0.34068441292354107,
+        0.32947173293794035,
+        0.3762811160542605
+      ],
+      "r2": 0.511375760446253
+    },
+    "holdout_rows": 48
+  },
+  "sweep": {
+    "summary": {
+      "criteria": [
+        {
+          "id": "C1",
+          "passed": true,
+          "statement": "Without warming, heritable populations persist",
+          "threshold": "\u2265 0.9",
+          "value": 1.0
+        },
+        {
+          "id": "C2",
+          "passed": true,
+          "statement": "Faster warming lowers survival (Spearman rho)",
+          "threshold": "\u2264 -0.8",
+          "value": -0.8416254115301731
+        },
+        {
+          "id": "C3",
+          "passed": true,
+          "statement": "Heritable adaptation raises the critical rate (gain CI low)",
+          "threshold": "> 0",
+          "value": 0.1647206852131795
+        },
+        {
+          "id": "C4",
+          "passed": false,
+          "statement": "Optima track warming at \u2264 k_c/2 (\u2265 50 % of \u0394T, \u2265 2x control)",
+          "threshold": "all rates pass",
+          "value": [
+            {
+              "control_shift_c": 0.17737106591886007,
+              "heritable_shift_c": 0.34475029077666647,
+              "rate": 0.025,
+              "warming_c": 0.5
+            },
+            {
+              "control_shift_c": 0.38579986719342896,
+              "heritable_shift_c": 0.6451118598890826,
+              "rate": 0.05,
+              "warming_c": 1.0
+            },
+            {
+              "control_shift_c": 0.510857269433491,
+              "heritable_shift_c": 0.974442130855337,
+              "rate": 0.075,
+              "warming_c": 1.5
+            },
+            {
+              "control_shift_c": null,
+              "heritable_shift_c": 1.1663409811293663,
+              "rate": 0.1,
+              "warming_c": 2.0
+            }
+          ]
+        },
+        {
+          "id": "C5",
+          "passed": true,
+          "statement": "Adaptation lag grows with warming rate (Pearson r)",
+          "threshold": "\u2265 0.8",
+          "value": 0.8542169913594923
+        },
+        {
+          "id": "C6",
+          "passed": true,
+          "statement": "No invariant violations or failed runs",
+          "threshold": "0 and 0",
+          "value": {
+            "error_rows": 0,
+            "invariant_error_rows": 0
+          }
+        }
+      ],
+      "critical_rate": {
+        "heritable": {
+          "arm": "heritable",
+          "ci95": [
+            0.23373870052024914,
+            0.2911288669082969
+          ],
+          "curve": [
+            {
+              "n": 12,
+              "p": 1.0,
+              "rate": 0.0,
+              "survived": 12,
+              "wilson_hi": 1.0,
+              "wilson_lo": 0.7575059933447592
+            },
+            {
+              "n": 12,
+              "p": 1.0,
+              "rate": 0.025,
+              "survived": 12,
+              "wilson_hi": 1.0,
+              "wilson_lo": 0.7575059933447592
+            },
+            {
+              "n": 12,
+              "p": 1.0,
+              "rate": 0.05,
+              "survived": 12,
+              "wilson_hi": 1.0,
+              "wilson_lo": 0.7575059933447592
+            },
+            {
+              "n": 12,
+              "p": 1.0,
+              "rate": 0.075,
+              "survived": 12,
+              "wilson_hi": 1.0,
+              "wilson_lo": 0.7575059933447592
+            },
+            {
+              "n": 12,
+              "p": 1.0,
+              "rate": 0.1,
+              "survived": 12,
+              "wilson_hi": 1.0,
+              "wilson_lo": 0.7575059933447592
+            },
+            {
+              "n": 12,
+              "p": 1.0,
+              "rate": 0.15,
+              "survived": 12,
+              "wilson_hi": 1.0,
+              "wilson_lo": 0.7575059933447592
+            },
+            {
+              "n": 12,
+              "p": 0.75,
+              "rate": 0.2,
+              "survived": 9,
+              "wilson_hi": 0.9110583316059453,
+              "wilson_lo": 0.46769466506643426
+            },
+            {
+              "n": 12,
+              "p": 0.25,
+              "rate": 0.3,
+              "survived": 3,
+              "wilson_hi": 0.5323053349335657,
+              "wilson_lo": 0.08894166839405471
+            },
+            {
+              "n": 12,
+              "p": 0.0,
+              "rate": 0.4,
+              "survived": 0,
+              "wilson_hi": 0.24249400665524085,
+              "wilson_lo": 2.7755575615628914e-17
+            }
+          ],
+          "estimate": 0.26236311037527205,
+          "logistic": {
+            "b0": 5.62176467063566,
+            "b1": -21.42742042734037
+          },
+          "n_boot": 2000,
+          "undefined_fraction": 0.0
+        },
+        "none": {
+          "arm": "none",
+          "ci95": [
+            0.05189747947956478,
+            0.08016090327320208
+          ],
+          "curve": [
+            {
+              "n": 12,
+              "p": 0.9166666666666666,
+              "rate": 0.0,
+              "survived": 11,
+              "wilson_hi": 0.9851349055950829,
+              "wilson_lo": 0.646120088858883
+            },
+            {
+              "n": 12,
+              "p": 0.9166666666666666,
+              "rate": 0.025,
+              "survived": 11,
+              "wilson_hi": 0.9851349055950829,
+              "wilson_lo": 0.646120088858883
+            },
+            {
+              "n": 12,
+              "p": 0.8333333333333334,
+              "rate": 0.05,
+              "survived": 10,
+              "wilson_hi": 0.9530348578161463,
+              "wilson_lo": 0.5519691377470266
+            },
+            {
+              "n": 12,
+              "p": 0.4166666666666667,
+              "rate": 0.075,
+              "survived": 5,
+              "wilson_hi": 0.6804886874504503,
+              "wilson_lo": 0.19326031365875665
+            },
+            {
+              "n": 12,
+              "p": 0.0,
+              "rate": 0.1,
+              "survived": 0,
+              "wilson_hi": 0.24249400665524085,
+              "wilson_lo": 2.7755575615628914e-17
+            },
+            {
+              "n": 12,
+              "p": 0.0,
+              "rate": 0.15,
+              "survived": 0,
+              "wilson_hi": 0.24249400665524085,
+              "wilson_lo": 2.7755575615628914e-17
+            },
+            {
+              "n": 12,
+              "p": 0.0,
+              "rate": 0.2,
+              "survived": 0,
+              "wilson_hi": 0.24249400665524085,
+              "wilson_lo": 2.7755575615628914e-17
+            },
+            {
+              "n": 12,
+              "p": 0.0,
+              "rate": 0.3,
+              "survived": 0,
+              "wilson_hi": 0.24249400665524085,
+              "wilson_lo": 2.7755575615628914e-17
+            },
+            {
+              "n": 12,
+              "p": 0.0,
+              "rate": 0.4,
+              "survived": 0,
+              "wilson_hi": 0.24249400665524085,
+              "wilson_lo": 2.7755575615628914e-17
+            }
+          ],
+          "estimate": 0.06676842009148827,
+          "logistic": {
+            "b0": 1.8062216945335852,
+            "b1": -27.052035858548713
+          },
+          "n_boot": 2000,
+          "undefined_fraction": 0.0
+        }
+      },
+      "error_rows": 0,
+      "invariant_error_rows": 0,
+      "lag": {
+        "below_rate": 0.26236311037527205,
+        "intercept": -0.056552895854400015,
+        "n": 81,
+        "pearson_r": 0.8542169913594923,
+        "slope": 6.383939360506821
+      },
+      "rescue_gain": {
+        "ci95": [
+          0.1647206852131795,
+          0.2298699921174556
+        ],
+        "estimate": 0.1955946902837838,
+        "undefined_fraction": 0.0
+      },
+      "rows": 216,
+      "shift": {
+        "heritable": [
+          {
+            "mean_shift_c": 0.2700306414118068,
+            "n": 12,
+            "rate": 0.0
+          },
+          {
+            "mean_shift_c": 0.34475029077666647,
+            "n": 12,
+            "rate": 0.025
+          },
+          {
+            "mean_shift_c": 0.6451118598890826,
+            "n": 12,
+            "rate": 0.05
+          },
+          {
+            "mean_shift_c": 0.974442130855337,
+            "n": 12,
+            "rate": 0.075
+          },
+          {
+            "mean_shift_c": 1.1663409811293663,
+            "n": 12,
+            "rate": 0.1
+          },
+          {
+            "mean_shift_c": 2.049117404820769,
+            "n": 12,
+            "rate": 0.15
+          },
+          {
+            "mean_shift_c": 2.9026047204093555,
+            "n": 9,
+            "rate": 0.2
+          },
+          {
+            "mean_shift_c": 4.500853719556955,
+            "n": 3,
+            "rate": 0.3
+          },
+          {
+            "mean_shift_c": null,
+            "n": 0,
+            "rate": 0.4
+          }
+        ],
+        "none": [
+          {
+            "mean_shift_c": -0.08224752643238276,
+            "n": 11,
+            "rate": 0.0
+          },
+          {
+            "mean_shift_c": 0.17737106591886007,
+            "n": 11,
+            "rate": 0.025
+          },
+          {
+            "mean_shift_c": 0.38579986719342896,
+            "n": 10,
+            "rate": 0.05
+          },
+          {
+            "mean_shift_c": 0.510857269433491,
+            "n": 5,
+            "rate": 0.075
+          },
+          {
+            "mean_shift_c": null,
+            "n": 0,
+            "rate": 0.1
+          },
+          {
+            "mean_shift_c": null,
+            "n": 0,
+            "rate": 0.15
+          },
+          {
+            "mean_shift_c": null,
+            "n": 0,
+            "rate": 0.2
+          },
+          {
+            "mean_shift_c": null,
+            "n": 0,
+            "rate": 0.3
+          },
+          {
+            "mean_shift_c": null,
+            "n": 0,
+            "rate": 0.4
+          }
+        ]
+      },
+      "signature": [
+        {
+          "fraction": 0.0,
+          "rate": 0.0
+        },
+        {
+          "fraction": 0.0,
+          "rate": 0.025
+        },
+        {
+          "fraction": 0.0,
+          "rate": 0.05
+        },
+        {
+          "fraction": 0.0,
+          "rate": 0.075
+        },
+        {
+          "fraction": 0.0,
+          "rate": 0.1
+        },
+        {
+          "fraction": 0.08333333333333333,
+          "rate": 0.15
+        },
+        {
+          "fraction": 0.25,
+          "rate": 0.2
+        },
+        {
+          "fraction": 0.16666666666666666,
+          "rate": 0.3
+        },
+        {
+          "fraction": 0.0,
+          "rate": 0.4
+        }
+      ],
+      "warming_generations": 20.0
+    }
+  },
+  "title": "Can evolution outrun warming? Vikasa climate rescue"
+}

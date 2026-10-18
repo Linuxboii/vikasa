@@ -1,0 +1,405 @@
+{
+  "criteria": [
+    {
+      "id": "C1",
+      "passed": true,
+      "statement": "Without warming, heritable populations persist",
+      "threshold": "\u2265 0.9",
+      "value": 1.0
+    },
+    {
+      "id": "C2",
+      "passed": true,
+      "statement": "Faster warming lowers survival (Spearman rho)",
+      "threshold": "\u2264 -0.8",
+      "value": -0.8416254115301731
+    },
+    {
+      "id": "C3",
+      "passed": true,
+      "statement": "Heritable adaptation raises the critical rate (gain CI low)",
+      "threshold": "> 0",
+      "value": 0.1647206852131795
+    },
+    {
+      "id": "C4",
+      "passed": false,
+      "statement": "Optima track warming at \u2264 k_c/2 (\u2265 50 % of \u0394T, \u2265 2x control)",
+      "threshold": "all rates pass",
+      "value": [
+        {
+          "control_shift_c": 0.17737106591886007,
+          "heritable_shift_c": 0.34475029077666647,
+          "rate": 0.025,
+          "warming_c": 0.5
+        },
+        {
+          "control_shift_c": 0.38579986719342896,
+          "heritable_shift_c": 0.6451118598890826,
+          "rate": 0.05,
+          "warming_c": 1.0
+        },
+        {
+          "control_shift_c": 0.510857269433491,
+          "heritable_shift_c": 0.974442130855337,
+          "rate": 0.075,
+          "warming_c": 1.5
+        },
+        {
+          "control_shift_c": null,
+          "heritable_shift_c": 1.1663409811293663,
+          "rate": 0.1,
+          "warming_c": 2.0
+        }
+      ]
+    },
+    {
+      "id": "C5",
+      "passed": true,
+      "statement": "Adaptation lag grows with warming rate (Pearson r)",
+      "threshold": "\u2265 0.8",
+      "value": 0.8542169913594923
+    },
+    {
+      "id": "C6",
+      "passed": true,
+      "statement": "No invariant violations or failed runs",
+      "threshold": "0 and 0",
+      "value": {
+        "error_rows": 0,
+        "invariant_error_rows": 0
+      }
+    }
+  ],
+  "critical_rate": {
+    "heritable": {
+      "arm": "heritable",
+      "ci95": [
+        0.23373870052024914,
+        0.2911288669082969
+      ],
+      "curve": [
+        {
+          "n": 12,
+          "p": 1.0,
+          "rate": 0.0,
+          "survived": 12,
+          "wilson_hi": 1.0,
+          "wilson_lo": 0.7575059933447592
+        },
+        {
+          "n": 12,
+          "p": 1.0,
+          "rate": 0.025,
+          "survived": 12,
+          "wilson_hi": 1.0,
+          "wilson_lo": 0.7575059933447592
+        },
+        {
+          "n": 12,
+          "p": 1.0,
+          "rate": 0.05,
+          "survived": 12,
+          "wilson_hi": 1.0,
+          "wilson_lo": 0.7575059933447592
+        },
+        {
+          "n": 12,
+          "p": 1.0,
+          "rate": 0.075,
+          "survived": 12,
+          "wilson_hi": 1.0,
+          "wilson_lo": 0.7575059933447592
+        },
+        {
+          "n": 12,
+          "p": 1.0,
+          "rate": 0.1,
+          "survived": 12,
+          "wilson_hi": 1.0,
+          "wilson_lo": 0.7575059933447592
+        },
+        {
+          "n": 12,
+          "p": 1.0,
+          "rate": 0.15,
+          "survived": 12,
+          "wilson_hi": 1.0,
+          "wilson_lo": 0.7575059933447592
+        },
+        {
+          "n": 12,
+          "p": 0.75,
+          "rate": 0.2,
+          "survived": 9,
+          "wilson_hi": 0.9110583316059453,
+          "wilson_lo": 0.46769466506643426
+        },
+        {
+          "n": 12,
+          "p": 0.25,
+          "rate": 0.3,
+          "survived": 3,
+          "wilson_hi": 0.5323053349335657,
+          "wilson_lo": 0.08894166839405471
+        },
+        {
+          "n": 12,
+          "p": 0.0,
+          "rate": 0.4,
+          "survived": 0,
+          "wilson_hi": 0.24249400665524085,
+          "wilson_lo": 2.7755575615628914e-17
+        }
+      ],
+      "estimate": 0.26236311037527205,
+      "logistic": {
+        "b0": 5.62176467063566,
+        "b1": -21.42742042734037
+      },
+      "n_boot": 2000,
+      "undefined_fraction": 0.0
+    },
+    "none": {
+      "arm": "none",
+      "ci95": [
+        0.05189747947956478,
+        0.08016090327320208
+      ],
+      "curve": [
+        {
+          "n": 12,
+          "p": 0.9166666666666666,
+          "rate": 0.0,
+          "survived": 11,
+          "wilson_hi": 0.9851349055950829,
+          "wilson_lo": 0.646120088858883
+        },
+        {
+          "n": 12,
+          "p": 0.9166666666666666,
+          "rate": 0.025,
+          "survived": 11,
+          "wilson_hi": 0.9851349055950829,
+          "wilson_lo": 0.646120088858883
+        },
+        {
+          "n": 12,
+          "p": 0.8333333333333334,
+          "rate": 0.05,
+          "survived": 10,
+          "wilson_hi": 0.9530348578161463,
+          "wilson_lo": 0.5519691377470266
+        },
+        {
+          "n": 12,
+          "p": 0.4166666666666667,
+          "rate": 0.075,
+          "survived": 5,
+          "wilson_hi": 0.6804886874504503,
+          "wilson_lo": 0.19326031365875665
+        },
+        {
+          "n": 12,
+          "p": 0.0,
+          "rate": 0.1,
+          "survived": 0,
+          "wilson_hi": 0.24249400665524085,
+          "wilson_lo": 2.7755575615628914e-17
+        },
+        {
+          "n": 12,
+          "p": 0.0,
+          "rate": 0.15,
+          "survived": 0,
+          "wilson_hi": 0.24249400665524085,
+          "wilson_lo": 2.7755575615628914e-17
+        },
+        {
+          "n": 12,
+          "p": 0.0,
+          "rate": 0.2,
+          "survived": 0,
+          "wilson_hi": 0.24249400665524085,
+          "wilson_lo": 2.7755575615628914e-17
+        },
+        {
+          "n": 12,
+          "p": 0.0,
+          "rate": 0.3,
+          "survived": 0,
+          "wilson_hi": 0.24249400665524085,
+          "wilson_lo": 2.7755575615628914e-17
+        },
+        {
+          "n": 12,
+          "p": 0.0,
+          "rate": 0.4,
+          "survived": 0,
+          "wilson_hi": 0.24249400665524085,
+          "wilson_lo": 2.7755575615628914e-17
+        }
+      ],
+      "estimate": 0.06676842009148827,
+      "logistic": {
+        "b0": 1.8062216945335852,
+        "b1": -27.052035858548713
+      },
+      "n_boot": 2000,
+      "undefined_fraction": 0.0
+    }
+  },
+  "error_rows": 0,
+  "invariant_error_rows": 0,
+  "lag": {
+    "below_rate": 0.26236311037527205,
+    "intercept": -0.056552895854400015,
+    "n": 81,
+    "pearson_r": 0.8542169913594923,
+    "slope": 6.383939360506821
+  },
+  "rescue_gain": {
+    "ci95": [
+      0.1647206852131795,
+      0.2298699921174556
+    ],
+    "estimate": 0.1955946902837838,
+    "undefined_fraction": 0.0
+  },
+  "rows": 216,
+  "shift": {
+    "heritable": [
+      {
+        "mean_shift_c": 0.2700306414118068,
+        "n": 12,
+        "rate": 0.0
+      },
+      {
+        "mean_shift_c": 0.34475029077666647,
+        "n": 12,
+        "rate": 0.025
+      },
+      {
+        "mean_shift_c": 0.6451118598890826,
+        "n": 12,
+        "rate": 0.05
+      },
+      {
+        "mean_shift_c": 0.974442130855337,
+        "n": 12,
+        "rate": 0.075
+      },
+      {
+        "mean_shift_c": 1.1663409811293663,
+        "n": 12,
+        "rate": 0.1
+      },
+      {
+        "mean_shift_c": 2.049117404820769,
+        "n": 12,
+        "rate": 0.15
+      },
+      {
+        "mean_shift_c": 2.9026047204093555,
+        "n": 9,
+        "rate": 0.2
+      },
+      {
+        "mean_shift_c": 4.500853719556955,
+        "n": 3,
+        "rate": 0.3
+      },
+      {
+        "mean_shift_c": null,
+        "n": 0,
+        "rate": 0.4
+      }
+    ],
+    "none": [
+      {
+        "mean_shift_c": -0.08224752643238276,
+        "n": 11,
+        "rate": 0.0
+      },
+      {
+        "mean_shift_c": 0.17737106591886007,
+        "n": 11,
+        "rate": 0.025
+      },
+      {
+        "mean_shift_c": 0.38579986719342896,
+        "n": 10,
+        "rate": 0.05
+      },
+      {
+        "mean_shift_c": 0.510857269433491,
+        "n": 5,
+        "rate": 0.075
+      },
+      {
+        "mean_shift_c": null,
+        "n": 0,
+        "rate": 0.1
+      },
+      {
+        "mean_shift_c": null,
+        "n": 0,
+        "rate": 0.15
+      },
+      {
+        "mean_shift_c": null,
+        "n": 0,
+        "rate": 0.2
+      },
+      {
+        "mean_shift_c": null,
+        "n": 0,
+        "rate": 0.3
+      },
+      {
+        "mean_shift_c": null,
+        "n": 0,
+        "rate": 0.4
+      }
+    ]
+  },
+  "signature": [
+    {
+      "fraction": 0.0,
+      "rate": 0.0
+    },
+    {
+      "fraction": 0.0,
+      "rate": 0.025
+    },
+    {
+      "fraction": 0.0,
+      "rate": 0.05
+    },
+    {
+      "fraction": 0.0,
+      "rate": 0.075
+    },
+    {
+      "fraction": 0.0,
+      "rate": 0.1
+    },
+    {
+      "fraction": 0.08333333333333333,
+      "rate": 0.15
+    },
+    {
+      "fraction": 0.25,
+      "rate": 0.2
+    },
+    {
+      "fraction": 0.16666666666666666,
+      "rate": 0.3
+    },
+    {
+      "fraction": 0.0,
+      "rate": 0.4
+    }
+  ],
+  "warming_generations": 20.0
+}
