@@ -373,6 +373,17 @@ func set_state(state: Dictionary, core_only: bool = false) -> void:
 		feed.ingest(state.get("feed", []))
 	var events: Array = env.get("active_events", [])
 	weather.text = str(events[0].get("kind", "Weather")).capitalize() + " active" if not events.is_empty() else "Seasonal cycle"
+	# Climate-rescue runs report real °C plus how far evolution lags the warming.
+	var climate = state.get("climate", null)
+	if env.has("temperature_c") and climate is Dictionary:
+		weather.text += " · %.1f °C" % float(env.get("temperature_c", 0.0))
+		var optimum = climate.get("mean_optimum_c", null)
+		var lag = climate.get("lag_c", null)
+		var stress = climate.get("mean_stress", null)
+		weather.tooltip_text = "Mean thermal optimum %s · adaptation lag %s · mean heat stress %s" % [
+			"—" if optimum == null else "%.2f °C" % float(optimum),
+			"—" if lag == null else "%+.2f °C" % float(lag),
+			"—" if stress == null else "%.0f %%" % (100.0 * float(stress))]
 	var rate := float(state.get("ticks_per_second", 48))
 	for value in speed_buttons: speed_buttons[value].set_pressed_no_signal(is_equal_approx(rate, float(value)))
 	if int(state.get("population", 0)) == 0: set_notice("Population extinct. Restart the simulation to begin a new seeded habitat.", false)
