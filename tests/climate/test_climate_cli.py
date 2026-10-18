@@ -34,6 +34,22 @@ def test_bad_region_is_friendly_error(tmp_path, capsys) -> None:
     assert "Unknown region" in err and "Traceback" not in err
 
 
+def test_calibration_from_another_profile_is_refused(tmp_path, capsys) -> None:
+    (tmp_path / "calibration.json").write_text(
+        json.dumps({"profile": "full", "generation_ticks": 469}), encoding="utf-8")
+    code = main(["calibrate", "--root", str(tmp_path), "--profile", "quick", "--workers", "1"])
+    assert code == 2 and "profile" in capsys.readouterr().err
+
+
+def test_default_root_follows_profile() -> None:
+    from evolution_sim.climate.cli import build_parser, resolve_root
+
+    quick = build_parser().parse_args(["pipeline", "--profile", "quick"])
+    assert resolve_root(quick).as_posix() == "exports/climate/quick"
+    assert resolve_root(build_parser().parse_args(["report"])).as_posix() == \
+        "exports/climate/full"
+
+
 def test_profiles_are_consistent() -> None:
     for profile in PROFILES.values():
         warming = profile["phases"]["warming"]

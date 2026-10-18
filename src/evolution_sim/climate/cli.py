@@ -133,12 +133,17 @@ def stage_calibrate(root: Path, base: dict[str, Any], profile: dict[str, Any],
                     workers: int) -> dict[str, Any]:
     path = root / "calibration.json"
     if path.exists():
-        return _read_json(path)
+        existing = _read_json(path)
+        if existing.get("profile", profile["name"]) != profile["name"]:
+            raise ValueError(f"{root} was calibrated for the '{existing['profile']}' profile; "
+                             f"use a different --root for '{profile['name']}'")
+        return existing
     options = profile["calibration"]
     print(f"Calibrating generation interval with seeds {options['seeds']} ...", flush=True)
     result = calibrate_generation_ticks(base, options["seeds"], workers=workers,
                                         burn_in_ticks=options["burn_in_ticks"],
                                         measure_ticks=options["measure_ticks"])
+    result["profile"] = profile["name"]
     _write_json(path, result)
     print(f"Generation interval: {result['generation_ticks']} ticks", flush=True)
     return result
@@ -244,11 +249,17 @@ def stage_assess(root: Path, base: dict[str, Any], profile: dict[str, Any], work
             max_warming_generations=profile["max_warming_generations"],
             burn_in_generations=profile["phases"]["burn_in"],
             hold_generations=profile["phases"]["hold"])
-        variants = [(region.key, f"{region.name}: reference organism "
-                                 f"(tolerance breadth {breadth_c:g} °C)", request)]
+        # Non-default biology gets its own folder so results never mix.
+        suffix = "".join(part for part, differs in (
+            (f"-g{generation_years:g}", generation_years != profile["generation_years"]),
+            (f"-w{breadth_c:g}", breadth_c != profile["breadth_c"])) if differs)
+        variants = [(f"{region.key}{suffix}",
+                     f"{region.name}: reference organism (tolerance breadth {breadth_c:g} °C"
+                     + (f", generation {generation_years:g} years)" if suffix else ")"), request)]
         local = local_breadth(region, profile)
-        if local is not None and not math.isclose(local, breadth_c):
-            variants.append((f"{region.key}-local",
+        if (local is not None and breadth_c == profile["breadth_c"]
+                and not math.isclose(local, breadth_c)):
+            variants.append((f"{region.key}{suffix}-local",
                              f"{region.name}: locally adapted organism (breadth "
                              f"{profile['local_breadth_factor']:g} x seasonal amplitude = "
                              f"{local:.1f} °C)", replace(request, breadth_c=local)))
@@ -393,8 +404,9 @@ def build_parser() -> argparse.ArgumentParser:
     workers = max(1, (os.cpu_count() or 2) - 1)
 
     def common(sub: argparse.ArgumentParser) -> None:
-        sub.add_argument("--root", type=Path, default=Path("exports/climate/full"),
-                         help="Evidence directory (resumable; reused across stages)")
+        sub.add_argument("--root", type=Path, default=None,
+                         help="Evidence directory, resumable and reused across stages "
+                              "(default: exports/climate/<profile>)")
         sub.add_argument("--profile", choices=sorted(PROFILES), default="full")
         sub.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
         sub.add_argument("--workers", type=int, default=workers)
@@ -427,10 +439,14 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def resolve_root(args) -> Path:
+    return Path(args.root) if args.root is not None else Path("exports/climate") / args.profile
+
+
 def _stage_inputs(args) -> tuple[dict[str, Any], dict[str, Any]]:
     if args.workers < 1:
         raise ValueError("--workers must be at least 1")
-    return _base(args.config), PROFILES[args.profile]
+    return _base(args.config), {**PROFILES[args.profile], "name": args.profile}
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -448,7 +464,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                   f" ± {region.trend_se_c_per_decade:.3f} °C/decade -> {args.output}")
             return 0
         base, profile = _stage_inputs(args)
-        root = Path(args.root)
+        root = resolve_root(args)
         if args.command == "report":
             code, path = stage_report(root, args.config, profile)
             print(f"Report: {path}")

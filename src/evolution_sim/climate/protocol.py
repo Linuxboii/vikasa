@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import math
 import os
@@ -253,7 +254,8 @@ def _execute(task: dict[str, Any]) -> dict[str, Any]:
                                 RescuePhases.from_dict(task["phases"]))
     except Exception as exc:  # recorded, never silently retried
         outcome = {"status": "error", "error": f"{type(exc).__name__}: {exc}"}
-    return {"key": task["key"], "meta": task["meta"], **outcome}
+    return {"key": task["key"], "meta": task["meta"],
+            "fingerprint": task.get("fingerprint") or task_fingerprint(task), **outcome}
 
 
 def _load_completed(path: Path) -> dict[str, dict[str, Any]]:
@@ -284,6 +286,14 @@ def run_tasks(tasks: list[dict[str, Any]], results_path: Path, *, workers: int,
     if len(set(keys)) != len(keys):
         raise ValueError("task keys must be unique")
     done = _load_completed(results_path)
+    for task in tasks:
+        row = done.get(task["key"])
+        expected = task.get("fingerprint") or task_fingerprint(task)
+        if row is not None and row.get("fingerprint") != expected:
+            raise ValueError(
+                f"{results_path} already holds results for {task['key']} made with different "
+                "settings (profile, phases, calibration or climate). Use a new --root, or "
+                "delete that file to recompute.")
     pending = [task for task in tasks if task["key"] not in done]
     with results_path.open("a", encoding="utf-8", newline="\n") as stream:
         def record(row: dict[str, Any]) -> None:
@@ -309,9 +319,18 @@ def run_tasks(tasks: list[dict[str, Any]], results_path: Path, *, workers: int,
 def make_task(base: dict[str, Any], condition: RescueCondition, generation_ticks: int,
               phases: RescuePhases, **build_kwargs: Any) -> dict[str, Any]:
     config = build_config(base, condition, generation_ticks, phases, **build_kwargs)
-    return {"key": condition.key(), "config": config.to_dict(), "seed": condition.seed,
+    task = {"key": condition.key(), "config": config.to_dict(), "seed": condition.seed,
             "generation_ticks": generation_ticks, "phases": phases.to_dict(),
             "meta": asdict(condition)}
+    task["fingerprint"] = task_fingerprint(task)
+    return task
+
+
+def task_fingerprint(task: dict[str, Any]) -> str:
+    """Hash of everything that determines a replicate besides its key."""
+    settings = {name: task[name] for name in ("config", "seed", "generation_ticks", "phases")}
+    canonical = json.dumps(settings, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:20]
 
 
 def sweep_tasks(base: dict[str, Any], *, rates: Iterable[float],
