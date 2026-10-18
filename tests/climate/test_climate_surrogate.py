@@ -52,11 +52,21 @@ def test_save_load_round_trip(tmp_path) -> None:
     assert [p.name for p in loaded.params] == [p.name for p in PARAMS]
 
 
-def test_tampered_model_file_is_refused(tmp_path) -> None:
+def test_saved_model_contains_no_pickle(tmp_path) -> None:
     x, ratio, survived = synthetic(30, 7)
     Surrogate(PARAMS).fit(x, ratio, survived).save(tmp_path / "model")
-    (tmp_path / "model" / "model.joblib").write_bytes(b"not a model")
-    with pytest.raises(ValueError, match="hash mismatch"):
+    files = sorted(path.name for path in (tmp_path / "model").iterdir())
+    assert files == ["model.json", "training.npz"]
+    with np.load(tmp_path / "model" / "training.npz", allow_pickle=False) as data:
+        assert set(data.files) == {"x_unit", "ratio", "survived"}
+
+
+def test_object_arrays_in_training_file_are_refused(tmp_path) -> None:
+    x, ratio, survived = synthetic(30, 8)
+    Surrogate(PARAMS).fit(x, ratio, survived).save(tmp_path / "model")
+    np.savez(tmp_path / "model" / "training.npz", x_unit=np.array([object()], dtype=object),
+             ratio=ratio, survived=survived)
+    with pytest.raises(ValueError):
         Surrogate.load(tmp_path / "model")
 
 

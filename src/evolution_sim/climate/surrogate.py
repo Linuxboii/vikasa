@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import hashlib
 import json
 import warnings
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
-import joblib
 import numpy as np
 import sklearn
 from scipy.stats import norm
@@ -21,6 +19,12 @@ from sklearn.model_selection import KFold
 from evolution_sim.climate.sensitivity import Parameter, unscale
 
 RATIO_CLIP = (0.0, 2.0)
+TRAINING_ARRAYS = ("x_unit", "ratio", "survived")
+
+
+def _kernel(d: int):
+    return (ConstantKernel(1.0) * Matern(length_scale=[0.3] * d, nu=2.5)
+            + WhiteKernel(0.01))
 
 
 class Surrogate:
@@ -54,9 +58,8 @@ class Surrogate:
         target = np.clip(np.asarray(ratio, dtype=float), *RATIO_CLIP)
         labels = np.asarray(survived, dtype=int)
         self.regressor = GaussianProcessRegressor(
-            kernel=ConstantKernel(1.0) * Matern(length_scale=[0.3] * d, nu=2.5)
-            + WhiteKernel(0.01),
-            normalize_y=True, n_restarts_optimizer=3, random_state=self.seed)
+            kernel=_kernel(d), normalize_y=True, n_restarts_optimizer=3,
+            random_state=self.seed)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
             self.regressor.fit(unit, target)
@@ -68,6 +71,7 @@ class Surrogate:
             self.constant_probability = None
             self.threshold = float(np.clip((dead.max() + alive.min()) / 2, 0.05, 0.5))
         self.n = len(target)
+        self._training = {"x_unit": unit, "ratio": target, "survived": labels}
         return self
 
     def predict(self, x: np.ndarray) -> dict[str, np.ndarray]:
@@ -87,16 +91,21 @@ class Surrogate:
         return np.all((unit >= -1e-9) & (unit <= 1 + 1e-9), axis=1)
 
     def save(self, directory: Path) -> None:
+        """Persist numbers only (no pickle): fitted kernel hyperparameters plus the
+        training arrays. Loading refits the GP with those hyperparameters fixed,
+        which reproduces the same predictions without executing stored code."""
+        if self.regressor is None:
+            raise ValueError("Surrogate has not been fitted")
         directory = Path(directory)
         directory.mkdir(parents=True, exist_ok=True)
-        joblib.dump({"regressor": self.regressor},
-                    directory / "model.joblib")
-        digest = hashlib.sha256((directory / "model.joblib").read_bytes()).hexdigest()
-        metadata = {"model_sha256": digest, "params": [asdict(p) for p in self.params],
-                    "seed": self.seed,
+        for stale in ("model.joblib",):
+            (directory / stale).unlink(missing_ok=True)
+        np.savez(directory / "training.npz", **self._training)
+        metadata = {"params": [asdict(p) for p in self.params], "seed": self.seed,
                     "n": self.n, "degenerate_survival": self.degenerate_survival,
                     "threshold": self.threshold,
                     "constant_probability": self.constant_probability,
+                    "kernel_theta": self.regressor.kernel_.theta.tolist(),
                     "regressor_kernel": str(self.regressor.kernel_),
                     "sklearn": sklearn.__version__}
         (directory / "model.json").write_text(json.dumps(metadata, indent=2, sort_keys=True)
@@ -106,14 +115,23 @@ class Surrogate:
     def load(cls, directory: Path) -> Surrogate:
         directory = Path(directory)
         metadata = json.loads((directory / "model.json").read_text(encoding="utf-8"))
-        # joblib unpickles, which can execute code: only load models this tool wrote.
-        # The recorded hash catches accidental replacement or corruption of the file.
-        digest = hashlib.sha256((directory / "model.joblib").read_bytes()).hexdigest()
-        if digest != metadata.get("model_sha256"):
-            raise ValueError(f"Surrogate model file hash mismatch in {directory}; refusing to load")
         model = cls(tuple(Parameter(**p) for p in metadata["params"]), metadata["seed"])
-        models = joblib.load(directory / "model.joblib")
-        model.regressor = models["regressor"]
+        # allow_pickle=False: object arrays are refused, so loading cannot run code.
+        with np.load(directory / "training.npz", allow_pickle=False) as data:
+            if set(data.files) != set(TRAINING_ARRAYS):
+                raise ValueError(f"Unexpected arrays in {directory / 'training.npz'}")
+            training = {name: np.asarray(data[name], dtype=float) for name in TRAINING_ARRAYS}
+        unit = training["x_unit"]
+        if unit.ndim != 2 or unit.shape[1] != len(model.params):
+            raise ValueError("Surrogate training inputs do not match its parameters")
+        kernel = _kernel(unit.shape[1]).clone_with_theta(np.asarray(metadata["kernel_theta"]))
+        model.regressor = GaussianProcessRegressor(kernel=kernel, optimizer=None,
+                                                   normalize_y=True)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            model.regressor.fit(unit, training["ratio"])
+        model._training = {"x_unit": unit, "ratio": training["ratio"],
+                           "survived": training["survived"].astype(int)}
         model.degenerate_survival = metadata["degenerate_survival"]
         model.threshold = metadata["threshold"]
         model.constant_probability = metadata["constant_probability"]
