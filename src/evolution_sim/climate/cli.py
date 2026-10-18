@@ -231,7 +231,10 @@ def stage_assess(root: Path, base: dict[str, Any], profile: dict[str, Any], work
     climate = base["climate"]
     monthly = climate["monthly_c"]
     domain = {"amplitude_c": (max(monthly) - min(monthly)) / 2,
-              "breadth_c": float(climate.get("tolerance_breadth_c", 4.0))}
+              "breadth_c": float(climate.get("tolerance_breadth_c", 4.0)),
+              "max_rate": float(max(profile["rates"])),
+              "founder_sd_c": float(climate.get("founder_sd_c", 1.0)),
+              "segregation_sd_c": float(climate.get("segregation_sd_c", 0.4))}
     results = []
     for spec in region_specs:
         region = resolve_region(spec)

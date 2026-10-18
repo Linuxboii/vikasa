@@ -75,6 +75,23 @@ def test_outside_domains_reported(tmp_path) -> None:
     assert entry["surrogate"] == {"status": "outside surrogate domain"}
 
 
+def test_sweep_reference_withheld_beyond_swept_rates(tmp_path) -> None:
+    sweep_summary = {"critical_rate": {"heritable": {"logistic": {"b0": 3.0, "b1": -10.0}}}}
+    domain = {"amplitude_c": 2.0, "breadth_c": 4.0, "max_rate": 0.4,
+              "founder_sd_c": 1.0, "segregation_sd_c": 0.4}
+    # 20-year generations: SSP5-8.5 is ~0.82 °C/generation, twice the swept maximum.
+    result = assess(request(generation_years=20.0, ssps=("SSP5-8.5",),
+                            max_warming_generations=1, seeds=(1,)), BASE,
+                    results_dir=tmp_path, workers=1, sweep_summary=sweep_summary,
+                    sweep_domain=domain, calibration_override={"generation_ticks": 60})
+    assert result["ssps"][0]["sweep"] == {"status": "outside sweep domain"}
+    other = assess(request(ssps=("SSP5-8.5",), max_warming_generations=1, seeds=(1,),
+                           founder_sd_c=2.0), BASE, results_dir=tmp_path / "b", workers=1,
+                   sweep_summary=sweep_summary, sweep_domain=domain,
+                   calibration_override={"generation_ticks": 60})
+    assert other["ssps"][0]["sweep"] == {"status": "outside sweep domain"}
+
+
 def test_region_too_harsh_at_baseline_is_reported_not_crashed(tmp_path) -> None:
     harsh = replace(REGION, key="harsh", seasonal_amplitude_c=15.0,
                     monthly_c=tuple(25.0 + 16.0 * np.sin(2 * np.pi * (m + 0.5) / 12)
