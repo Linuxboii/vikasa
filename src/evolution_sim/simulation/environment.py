@@ -8,6 +8,7 @@ from typing import Any
 
 import numpy as np
 
+from evolution_sim.climate.forcing import ClimateForcing
 from evolution_sim.config import EcologyConfig
 
 EVENT_KINDS = {
@@ -69,7 +70,9 @@ class EnvironmentEvent:
 
 
 class EnvironmentState:
-    def __init__(self) -> None:
+    def __init__(self, climate: ClimateForcing | None = None) -> None:
+        self.climate = climate
+        self.temperature_c: float | None = None
         self.events: list[EnvironmentEvent] = []
         self.history: list[dict[str, Any]] = []
         self.food_multiplier = 1.0
@@ -95,9 +98,14 @@ class EnvironmentState:
         self.movement_multiplier = 1.0
         self.health_pressure = 0.0
         self.resource_decay = 0.0
-        season_index = (tick // 96) % 4
+        if self.climate is None:
+            season_index = (tick // 96) % 4
+            self.temperature = (0.58, 0.82, 0.55, 0.3)[season_index]
+        else:
+            season_index = self.climate.season_index(tick)
+            self.temperature_c = self.climate.temperature_c(tick)
+            self.temperature = self.climate.normalized(self.temperature_c)
         self.season = ("spring", "summer", "autumn", "winter")[season_index]
-        self.temperature = (0.58, 0.82, 0.55, 0.3)[season_index]
         self.rainfall = (0.76, 0.38, 0.62, 0.52)[season_index]
         self.seasonal_food_multiplier = (1.12, 0.96, 0.84, 0.72)[season_index]
         self.seasonal_metabolic_multiplier = (0.96, 1.04, 0.98, 1.14)[season_index]
@@ -150,7 +158,9 @@ class EnvironmentState:
         return tuple(event for event in self.events if event.active_at(self.current_tick))
 
     def to_dict(self) -> dict[str, Any]:
+        extra = {} if self.temperature_c is None else {"temperature_c": self.temperature_c}
         return {
+            **extra,
             "events": [event.to_dict() for event in self.events],
             "history": list(self.history),
             "food_multiplier": self.food_multiplier,
@@ -184,6 +194,8 @@ class EnvironmentState:
         state.temperature = float(data.get("temperature", 0.58))
         state.rainfall = float(data.get("rainfall", 0.64))
         state.current_tick = int(data.get("current_tick", -1))
+        if data.get("temperature_c") is not None:
+            state.temperature_c = float(data["temperature_c"])
         return state
 
 
