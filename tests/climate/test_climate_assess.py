@@ -122,6 +122,25 @@ def test_worker_crash_is_not_reported_as_non_viable(tmp_path, monkeypatch) -> No
     assert not (tmp_path / "assessment.json").exists()
 
 
+def test_legacy_calibration_cache_is_reused(tmp_path, monkeypatch) -> None:
+    from evolution_sim.climate import assess as module
+
+    legacy = {"generation_ticks": 60, "seeds": [101, 102], "breadth_c": 4.0,
+              "monthly_c": list(MONTHLY), "slopes": [0.016, 0.017]}
+    (tmp_path / "calibration.json").write_text(json.dumps(legacy), encoding="utf-8")
+
+    def fail(*args, **kwargs):
+        raise AssertionError("legacy calibration should have been reused")
+
+    monkeypatch.setattr(module, "calibrate_generation_ticks", fail)
+    result = assess(request(max_warming_generations=1, seeds=(1,)), BASE,
+                    results_dir=tmp_path, workers=1,
+                    calibration_kwargs={"reference_generation_ticks": 400})
+    assert result["calibration"]["generation_ticks"] == 60
+    assert result["calibration_legacy"] is True
+    assert any("earlier calibration" in caveat for caveat in result["caveats"])
+
+
 def test_calibration_uses_the_assessment_seasonal_clock(tmp_path, monkeypatch) -> None:
     from evolution_sim.climate import assess as module
 

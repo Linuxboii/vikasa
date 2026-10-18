@@ -137,9 +137,13 @@ def _cached_calibration(path: Path, base: dict[str, Any], request: AssessmentReq
                                                if reference else 300)}
     if path.exists():
         cached = json.loads(path.read_text(encoding="utf-8"))
-        if (cached.get("breadth_c") == request.breadth_c
-                and cached.get("monthly_c") == list(request.region.monthly_c)
-                and all(cached.get(key) == value for key, value in settings.items())):
+        same_climate = (cached.get("breadth_c") == request.breadth_c
+                        and cached.get("monthly_c") == list(request.region.monthly_c))
+        if same_climate and "provisional_ticks_per_year" not in cached:
+            # Written before calibration followed the assessment's seasonal clock;
+            # reused so finished assessments stay valid, and flagged in the result.
+            return {**cached, "legacy": True}
+        if same_climate and all(cached.get(key) == value for key, value in settings.items()):
             return cached
     calibration = calibrate_generation_ticks(
         base, settings["seeds"], breadth_c=request.breadth_c,
@@ -275,12 +279,17 @@ def assess(request: AssessmentRequest, base: dict[str, Any], *, results_dir: Pat
                f"Warming pathway: {SSP_SOURCE}; regional factor {request.regional_factor:g}.",
                "Direct simulation is authoritative; sweep and surrogate values are references "
                "from the fixed 20-generation protocol."]
+    if calibration.get("legacy"):
+        caveats.append("Generation interval reused from an earlier calibration run on a "
+                       "300-ticks-per-year seasonal clock and 2 seeds, not this assessment's "
+                       "own clock.")
     if any(plan["truncated"] for plan in plans.values()):
         caveats.append(f"Warming capped at {request.max_warming_generations:g} generations: "
                        "only the first part of the 2025-2100 pathway was simulated.")
     return _write_assessment(results_dir, {
         "schema": "vikasa-climate-assessment-v1", **identity, "request": request.to_dict(),
-        "calibration": calibration, "baseline_viable": True,
+        "calibration": calibration, "calibration_legacy": bool(calibration.get("legacy")),
+        "baseline_viable": True,
         "baseline_viability": {"survived": calibration.get("viable_seeds"),
                                "n": len(calibration.get("seeds", []))},
         "ssps": entries, "caveats": caveats})
