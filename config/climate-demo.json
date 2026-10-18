@@ -1,0 +1,111 @@
+{
+  "world": {
+    "width": 720,
+    "height": 480,
+    "boundary": "collision"
+  },
+  "genome": {
+    "traits": {
+      "size": [
+        2.5,
+        8.0
+      ],
+      "speed": [
+        0.5,
+        4.0
+      ],
+      "perception": [
+        25.0,
+        150.0
+      ],
+      "metabolism": [
+        0.65,
+        1.5
+      ],
+      "reproduction_threshold": [
+        70.0,
+        150.0
+      ],
+      "fertility": [
+        0.15,
+        0.55
+      ]
+    },
+    "mutation_probability": 0.1,
+    "mutation_sigma": 0.075,
+    "crossover": "arithmetic"
+  },
+  "energy": {
+    "initial": 125.0,
+    "basal_cost": 0.09,
+    "movement_cost": 0.026,
+    "maximum": 230.0
+  },
+  "reproduction": {
+    "minimum_age": 90,
+    "cooldown": 100,
+    "mate_radius": 90.0,
+    "offspring_energy": 60.0,
+    "population_cap": 180
+  },
+  "resources": {
+    "initial_count": 180,
+    "spawn_rate": 0.9,
+    "maximum_count": 400,
+    "energy_value": 30.0
+  },
+  "metrics": {
+    "sample_interval": 8,
+    "diversity_sample": 48
+  },
+  "initial_population": 64,
+  "maximum_age": 12000,
+  "wander_change_probability": 0.03,
+  "demography": {
+    "mode": "gompertz",
+    "background_hazard": 2e-05,
+    "senescence_age": 1800,
+    "senescence_rate": 0.002
+  },
+  "climate": {
+    "enabled": true,
+    "ticks_per_year": 384,
+    "monthly_c": [
+      23.695,
+      25.342,
+      27.481,
+      28.224,
+      27.458,
+      25.393,
+      24.415,
+      24.181,
+      24.377,
+      24.846,
+      24.504,
+      23.423
+    ],
+    "anomaly_c": [
+      [
+        0,
+        0.0
+      ],
+      [
+        3,
+        0.0
+      ],
+      [
+        23,
+        6.0
+      ]
+    ],
+    "tolerance_breadth_c": 4.0,
+    "warm_side_ratio": 0.6,
+    "stress_metabolic_gain": 1.5,
+    "stress_injury_rate": 0.02,
+    "fertility_stress_limit": 0.7,
+    "inheritance": "heritable",
+    "founder_sd_c": 1.0,
+    "segregation_sd_c": 0.4,
+    "mutation_sd_c": 0.1
+  }
+}
