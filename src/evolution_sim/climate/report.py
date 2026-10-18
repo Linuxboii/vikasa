@@ -238,11 +238,12 @@ def _assessment_section(context: dict[str, Any], figures: dict[str, bytes]) -> s
         trend = assessment["ssps"][0].get("observed_trend_c_per_decade") if \
             assessment["ssps"] else None
         parts.append(
-            f"<h3>{escape(str(request.get('region_name', request['region'])))}</h3>"
+            f"<h3>{escape(str(assessment.get('label')
+                              or request.get('region_name', request['region'])))}</h3>"
             f"<p class=small>Generation time {_fmt(request['generation_years'])} years · "
             f"tolerance breadth {_fmt(request['breadth_c'])} °C · observed local trend "
             f"1981&ndash;present {_fmt(trend)} °C/decade.</p>"
-            + _figure(figures, f"assessment_{request['region']}",
+            + _figure(figures, f"assessment_{assessment.get('id') or request['region']}",
                       f"Survival by scenario for {request['region']}",
                       "Direct-simulation survival with Wilson 95 % intervals; dashed lines "
                       "mark the 0.2 and 0.8 verdict thresholds.")

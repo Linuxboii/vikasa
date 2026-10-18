@@ -12,7 +12,7 @@ import platform
 import subprocess
 import sys
 from collections.abc import Sequence
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 from typing import Any
 
@@ -69,7 +69,7 @@ PROFILES: dict[str, dict[str, Any]] = {
         "n_boot": 2000,
         "regions": tuple(BUNDLED_REGIONS), "ssps": tuple(SSP_WARMING),
         "assess_seeds": 12, "generation_years": 1.0, "breadth_c": 4.0,
-        "max_warming_generations": 40.0,
+        "max_warming_generations": 40.0, "local_breadth_factor": 1.5,
     },
 }
 DESIGN_SEED, HOLDOUT_SEED = 2026, 2027
@@ -240,15 +240,37 @@ def stage_assess(root: Path, base: dict[str, Any], profile: dict[str, Any], work
             max_warming_generations=profile["max_warming_generations"],
             burn_in_generations=profile["phases"]["burn_in"],
             hold_generations=profile["phases"]["hold"])
-        print(f"Assessing {region.name} ({', '.join(ssps)}) ...", flush=True)
-        results.append(assess(request, base, results_dir=root / "assess" / region.key,
-                              workers=workers, sweep_summary=sweep_summary,
-                              sweep_domain=domain, surrogate=surrogate,
-                              calibration_kwargs={"seeds": [101, 102],
-                                                  **{k: v for k, v in
-                                                     profile["calibration"].items()
-                                                     if k != "seeds"}}))
+        variants = [(region.key, f"{region.name}: reference organism "
+                                 f"(tolerance breadth {breadth_c:g} °C)", request)]
+        local = local_breadth(region, profile)
+        if local is not None and not math.isclose(local, breadth_c):
+            variants.append((f"{region.key}-local",
+                             f"{region.name}: locally adapted organism (breadth "
+                             f"{profile['local_breadth_factor']:g} x seasonal amplitude = "
+                             f"{local:.1f} °C)", replace(request, breadth_c=local)))
+        calibration = {"seeds": [101, 102], **{key: value for key, value in
+                                               profile["calibration"].items() if key != "seeds"}}
+        for identifier, label, variant in variants:
+            print(f"Assessing {label} ({', '.join(ssps)}) ...", flush=True)
+            results.append(assess(variant, base, results_dir=root / "assess" / identifier,
+                                  workers=workers, sweep_summary=sweep_summary,
+                                  sweep_domain=domain, surrogate=surrogate,
+                                  calibration_kwargs=calibration, assessment_id=identifier,
+                                  label=label))
     return results
+
+
+def local_breadth(region, profile: dict[str, Any]) -> float | None:
+    """Tolerance breadth for an organism adapted to the region's own seasonality.
+
+    Thermal tolerance breadth widens with the climatic variability a species
+    experiences (climatic variability hypothesis), so the locally adapted variant
+    uses factor * seasonal amplitude, never narrower than the reference organism.
+    """
+    factor = profile.get("local_breadth_factor")
+    if factor is None:
+        return None
+    return max(float(profile["breadth_c"]), factor * region.seasonal_amplitude_c)
 
 
 def _git_commit() -> str | None:

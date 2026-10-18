@@ -71,6 +71,15 @@ def test_figures_are_png(context) -> None:
     assert all(data.startswith(b"\x89PNG") for data in figures.values())
 
 
+def test_two_variants_of_one_region_get_separate_figures(context) -> None:
+    local = dict(context["assessments"][0], id="western-ghats-local",
+                 label="Locally adapted organism")
+    both = dict(context, assessments=[context["assessments"][0], local])
+    figures = build_figures(both)
+    assert {"assessment_western-ghats", "assessment_western-ghats-local"} <= set(figures)
+    assert "Locally adapted organism" in render_report(both, figures)
+
+
 def test_report_is_self_contained(context) -> None:
     html = render_report(context, build_figures(context))
     body = html.split('<section id="provenance"')[0]
