@@ -311,6 +311,19 @@ The launcher detects a per-user WinGet Godot installation. To create or refresh 
 .\.venv\Scripts\vikasa.exe shortcut --config config\showcase.json --seed 2026
 ```
 
+**Shortcut does nothing when clicked?** Run `vikasa shortcut` from a normal terminal, not
+from inside a sandboxed agent or tool. A sandbox can hide the project files from Windows
+while the shortcut is saved, and Windows then stores a target it cannot resolve: the
+shortcut's *Target* field shows up blank and double-clicking it launches nothing. Check with:
+
+```powershell
+(New-Object -ComObject WScript.Shell).CreateShortcut("$([Environment]::GetFolderPath('Desktop'))\Vikasa.lnk").TargetPath
+```
+
+It should print the path to `.venv\Scripts\pythonw.exe`. If it is blank, re-run
+`vikasa shortcut`. Startup takes a few seconds before the browser opens; clicking again
+in the meantime is harmless (a running Vikasa is reused).
+
 ### macOS (Terminal)
 
 With Homebrew installed, run:
