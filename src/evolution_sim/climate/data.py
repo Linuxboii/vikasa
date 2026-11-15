@@ -26,6 +26,18 @@ BUNDLED_REGIONS: dict[str, tuple[str, float, float]] = {
     "sundarbans": ("Sundarbans", 21.95, 88.90),
 }
 
+# Extra places for the Species Risk Checker (tools/build_city_regions.py). Kept apart
+# from BUNDLED_REGIONS so the published rescue pipeline is unchanged.
+CITY_REGIONS: dict[str, tuple[str, float, float]] = {
+    "hyderabad": ("Hyderabad", 17.385, 78.487),
+    "bengaluru": ("Bengaluru", 12.972, 77.594),
+    "chennai": ("Chennai", 13.083, 80.270),
+    "mumbai": ("Mumbai", 19.076, 72.878),
+    "kolkata": ("Kolkata", 22.573, 88.364),
+    "jaipur": ("Jaipur", 26.912, 75.787),
+    "shimla": ("Shimla", 31.104, 77.173),
+}
+
 # IPCC AR6 WG1 Chapter 4, Table 4.5: global surface air temperature change for
 # 2081-2100 relative to 1995-2014, °C: (median, very likely low, very likely high).
 SSP_WARMING: dict[str, tuple[float, float, float]] = {
@@ -150,7 +162,7 @@ def load_region(path: str | Path) -> RegionClimate:
 
 
 def resolve_region(spec: str) -> RegionClimate:
-    if spec in BUNDLED_REGIONS:
+    if spec in BUNDLED_REGIONS or spec in CITY_REGIONS:
         return load_region(DATA_DIR / f"{spec}.json")
     path = Path(spec)
     if path.suffix == ".json" and path.is_file():
