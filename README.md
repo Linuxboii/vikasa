@@ -112,24 +112,19 @@ headless-tested (`godot/tests/DemoPilotSmoke.gd`). Full script:
 
 ![Engineering chapter with live project statistics](docs/images/demo-engineering.png)
 
-## 🖥️ Desktop shortcuts
-
-<img src="docs/images/desktop-shortcuts.png" width="440" alt="Vikasa, Vikasa Demo and Vikasa Risk Checker shortcut icons">
+## 🖥️ Desktop shortcut
 
 ```powershell
-.\.venv\Scripts\vikasa.exe shortcut                 # installs or updates all three
-.\.venv\Scripts\vikasa.exe shortcut --only demo     # just one
+.\.venv\Scripts\vikasa.exe shortcut                          # one "Vikasa" shortcut (3D Living Biome)
+.\.venv\Scripts\vikasa.exe shortcut --only demo --only risk  # optional extra shortcuts
 ```
 
-| Shortcut | Opens |
-|---|---|
-| **Vikasa** | The 3D Living Biome (`config/showcase.json`, seed 2026) |
-| **Vikasa Demo** | The presenter Demo hub |
-| **Vikasa Risk Checker** | The Species Risk Checker |
-
-The shortcuts launch without a console window. Re-running the command replaces older
-shortcuts, so it also upgrades shortcuts made by earlier versions. Windows only;
-macOS and Linux use the commands directly.
+`vikasa shortcut` installs a single **Vikasa** desktop shortcut that opens the 3D Living
+Biome (`config/showcase.json`, seed 2026) without a console window. Demo mode and the
+Risk Checker are launched with `vikasa demo` and `vikasa risk`; dedicated shortcuts for
+them are optional (`--only demo`, `--only risk`). Re-running the command replaces an
+existing shortcut of the same name. Windows only; macOS and Linux use the commands
+directly.
 
 ## ⚡ Quick start (Windows)
 
@@ -137,7 +132,7 @@ macOS and Linux use the commands directly.
 winget install --id GodotEngine.GodotEngine --exact --scope user
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e .
-.\.venv\Scripts\vikasa.exe shortcut      # desktop shortcuts
+.\.venv\Scripts\vikasa.exe shortcut      # desktop shortcut
 .\.venv\Scripts\vikasa.exe demo          # start presenting
 ```
 
@@ -161,7 +156,7 @@ macOS and Linux instructions: [Run the 3D Living Biome](#run-the-3d-living-biome
 | `vikasa ui` | Pygame 2D laboratory |
 | `vikasa climate pipeline · fetch · assess · report` | Full evolutionary-rescue study |
 | `vikasa run · batch · study · contrast · stress · validate` | Headless science and auditing |
-| `vikasa shortcut` | Install or update the desktop shortcuts |
+| `vikasa shortcut` | Install or update the Vikasa desktop shortcut |
 
 ## Vikasa 2.0 — the Living Biome showcase
 
@@ -299,7 +294,7 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\vikasa.exe godot --config config\showcase.json --seed 2026
 ```
 
-The launcher detects a per-user WinGet Godot installation. To create or refresh the desktop shortcuts for this checkout (**Vikasa**, **Vikasa Demo** and **Vikasa Risk Checker**), run:
+The launcher detects a per-user WinGet Godot installation. To create or refresh the **Vikasa** desktop shortcut for this checkout, run:
 
 ```powershell
 .\.venv\Scripts\vikasa.exe shortcut --config config\showcase.json --seed 2026

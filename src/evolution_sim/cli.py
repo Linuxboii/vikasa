@@ -66,11 +66,11 @@ def build_parser() -> argparse.ArgumentParser:
     ui.add_argument("--seed", type=int, default=2026)
 
     shortcut = commands.add_parser(
-        "shortcut", help="Install or update the desktop shortcuts (3D biome, Demo, Risk Checker)")
+        "shortcut", help="Install or update the Vikasa desktop shortcut")
     shortcut.add_argument("--desktop", type=Path)
     shortcut.add_argument("--name", default="Vikasa", help="Name of the 3D biome shortcut")
     shortcut.add_argument("--only", choices=("biome", "demo", "risk"), action="append",
-                          help="Install only these shortcuts (repeatable)")
+                          help="Which shortcut to install (repeatable; default: biome only)")
     shortcut.add_argument("--config", type=Path, default=Path("config/showcase.json"))
     shortcut.add_argument("--seed", type=int, default=2026)
 
@@ -249,14 +249,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             EvolutionApp(SimulationConfig.from_json(args.config), seed=args.seed).run()
             return 0
         if args.command == "shortcut":
-            from evolution_sim.shortcut import SHORTCUTS, install_shortcut_set
+            from evolution_sim.shortcut import install_shortcut_set
 
             installed = install_shortcut_set(
                 desktop=args.desktop,
                 name=args.name,
                 config=args.config,
                 seed=args.seed,
-                modes=tuple(args.only or SHORTCUTS),
+                modes=tuple(args.only or ("biome",)),
             )
             for shortcut in installed:
                 print(f"Desktop shortcut installed: {shortcut}")

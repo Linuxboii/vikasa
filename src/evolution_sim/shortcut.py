@@ -131,12 +131,12 @@ def install_shortcut_set(
     name: str = "Vikasa",
     config: str | Path | None = None,
     seed: int = 2026,
-    modes: tuple[str, ...] = tuple(SHORTCUTS),
+    modes: tuple[str, ...] = ("biome",),
 ) -> list[Path]:
-    """Install the Vikasa shortcuts: 3D biome, Demo mode and Risk Checker.
+    """Install Vikasa desktop shortcuts: by default just the one 3D biome shortcut.
 
-    Re-running replaces existing shortcuts of the same names, so it also updates
-    shortcuts made by older versions.
+    Pass ``modes`` to add the optional Demo mode and Risk Checker shortcuts.
+    Re-running replaces existing shortcuts of the same names.
     """
     installed = []
     for mode in modes:

@@ -70,19 +70,18 @@ def test_godot_runtime_is_discovered_from_user_winget_install(tmp_path, monkeypa
     assert _godot_binary(None) == str(binary)
 
 
-def test_shortcut_set_installs_biome_demo_and_risk(monkeypatch, tmp_path) -> None:
+def test_shortcut_set_installs_one_biome_shortcut_by_default(monkeypatch, tmp_path) -> None:
     from evolution_sim import shortcut
 
     calls = []
     monkeypatch.setattr(shortcut, "install_desktop_shortcut",
                         lambda **kwargs: calls.append(kwargs) or tmp_path / kwargs["name"])
     installed = shortcut.install_shortcut_set(desktop=tmp_path, name="My Vikasa", seed=5)
-    assert [call["mode"] for call in calls] == ["biome", "demo", "risk"]
-    assert [path.name for path in installed] == ["My Vikasa", "Vikasa Demo",
-                                                 "Vikasa Risk Checker"]
+    assert [call["mode"] for call in calls] == ["biome"]
+    assert [path.name for path in installed] == ["My Vikasa"]
     calls.clear()
-    shortcut.install_shortcut_set(desktop=tmp_path, modes=("demo",))
-    assert [call["mode"] for call in calls] == ["demo"]
+    shortcut.install_shortcut_set(desktop=tmp_path, modes=("demo", "risk"))
+    assert [call["mode"] for call in calls] == ["demo", "risk"]
 
 
 def test_demo_shortcut_script_launches_demo_mode_with_its_icon(monkeypatch, tmp_path) -> None:

@@ -7,7 +7,7 @@
 .\.venv\Scripts\vikasa.exe demo --biome-only   # just the 3D biome on autopilot
 ```
 
-Or double-click **Vikasa Demo** on the desktop (`vikasa shortcut` installs it).
+An optional desktop shortcut is available with `vikasa shortcut --only demo`.
 
 ![Demo mode presenter hub](images/demo-mode.png)
 
