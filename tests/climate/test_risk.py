@@ -275,3 +275,44 @@ def test_cli_app_opens_the_home_screen(monkeypatch) -> None:
     assert main(["risk", "--no-browser"]) == 0
     assert main(["demo", "--no-browser"]) == 0
     assert pages == ["/", "/risk", "/demo"]
+
+
+def test_serve_replaces_an_older_running_copy(monkeypatch) -> None:
+    """A Vikasa from before the home screen (no /api/version) is asked to quit."""
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+    from evolution_sim.climate import risk_app
+
+    quits = []
+
+    class OldVikasa(BaseHTTPRequestHandler):
+        def log_message(self, *args):
+            return
+
+        def do_GET(self):
+            self.send_response(404)
+            self.end_headers()
+
+        def do_POST(self):
+            quits.append(self.path)
+            self.send_response(200)
+            self.end_headers()
+            threading.Thread(target=lambda: (old.shutdown(), old.server_close()),
+                             daemon=True).start()
+
+    old = ThreadingHTTPServer(("127.0.0.1", 0), OldVikasa)
+    port = old.server_address[1]
+    threading.Thread(target=old.serve_forever, daemon=True).start()
+    started = []
+    real_make = risk_app.make_server
+
+    def fake_make(app, port_):
+        server = real_make(app, port_)
+        started.append(server)
+        threading.Timer(0.3, server.shutdown).start()
+        return server
+
+    monkeypatch.setattr(risk_app, "make_server", fake_make)
+    assert risk_app.serve(page="/", port=port, open_browser=False) == 0
+    assert quits == ["/api/quit"]
+    assert started and started[0].server_address[1] == port

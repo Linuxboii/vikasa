@@ -6,6 +6,7 @@ Godot Living Biome as a child process for "Watch it in 3D" and the demo tour.
 
 from __future__ import annotations
 
+import contextlib
 import datetime as dt
 import json
 import mimetypes
@@ -13,6 +14,9 @@ import re
 import subprocess
 import sys
 import threading
+import time
+import urllib.error
+import urllib.request
 import webbrowser
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -32,6 +36,7 @@ from evolution_sim.climate.data import (
 WEB_DIR = Path(__file__).resolve().parent / "web"
 EVIDENCE_DIR = risk.ROOT / "docs" / "results" / "climate-rescue-2026-10-18"
 DEFAULT_PORT = 8787
+APP_PROTOCOL = 2  # bump when pages or routes change, so an older running copy is replaced
 PLACE_KEY = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
 
 LAUNCHES: dict[str, tuple[str, list[str]]] = {
@@ -249,6 +254,10 @@ def _handler(app: RiskApp, server_ref: dict[str, ThreadingHTTPServer]):
                     self._json(app.estimate(query))
                 elif url.path.startswith("/api/live/"):
                     self._json(app.live.get(url.path.rsplit("/", 1)[-1]).snapshot())
+                elif url.path == "/api/version":
+                    from evolution_sim import __version__
+
+                    self._json({"app_protocol": APP_PROTOCOL, "version": __version__})
                 elif url.path == "/api/stats":
                     self._json(app.stats())
                 elif url.path == "/api/godot":
@@ -301,15 +310,48 @@ def make_server(app: RiskApp, port: int = DEFAULT_PORT) -> ThreadingHTTPServer:
     return server
 
 
+def _running_protocol(port: int) -> int | None:
+    """App protocol of a Vikasa server already on this port; 0 if it predates versioning."""
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/api/version", timeout=3) as reply:
+            return int(json.loads(reply.read()).get("app_protocol", 0))
+    except urllib.error.HTTPError:
+        return 0
+    except (OSError, ValueError):
+        return None
+
+
+def _ask_to_quit(port: int) -> None:
+    request = urllib.request.Request(f"http://127.0.0.1:{port}/api/quit", data=b"{}",
+                                     headers={"Content-Type": "application/json"})
+    with contextlib.suppress(OSError):
+        urllib.request.urlopen(request, timeout=3).close()
+
+
 def serve(*, page: str = "/", port: int = DEFAULT_PORT, open_browser: bool = True) -> int:
     app = RiskApp()
-    try:
-        server = make_server(app, port)
-    except OSError:
-        # Already running (for example from a second shortcut click): just open it.
-        if open_browser:
-            webbrowser.open(f"http://127.0.0.1:{port}{page}")
-        return 0
+    server = None
+    asked_to_quit = False
+    for _ in range(20):
+        try:
+            server = make_server(app, port)
+            break
+        except OSError:
+            if not asked_to_quit:
+                running = _running_protocol(port)
+                if running is not None and running < APP_PROTOCOL:
+                    # An older Vikasa is still running: shut it down and take over.
+                    _ask_to_quit(port)
+                    asked_to_quit = True
+                    time.sleep(0.5)
+                    continue
+                # The current version is already running (a second click): just open it.
+                if open_browser:
+                    webbrowser.open(f"http://127.0.0.1:{port}{page}")
+                return 0
+            time.sleep(0.5)
+    if server is None:
+        return 2
     url = f"http://127.0.0.1:{server.server_address[1]}{page}"
     print(f"Vikasa is ready at {url}  (Ctrl+C or the Quit button stops it)", flush=True)
     if open_browser:
