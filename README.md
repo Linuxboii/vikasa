@@ -108,6 +108,8 @@ burst. **Any key or click hands control back** and restores your settings. It is
 headless-tested (`godot/tests/DemoPilotSmoke.gd`). Full script:
 [docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
 
+![3D autopilot: narrated director's cut of the Living Biome](docs/images/demo-autopilot.png)
+
 ![Engineering chapter with live project statistics](docs/images/demo-engineering.png)
 
 ## 🖥️ Desktop shortcuts

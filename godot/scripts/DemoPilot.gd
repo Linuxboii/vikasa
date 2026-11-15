@@ -39,19 +39,23 @@ func setup(owner_main: Node) -> void:
 	main = owner_main
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_banner = BiomeUI.label("●  DEMO AUTOPILOT  ·  press any key or click to take control", 14, BiomeUI.ACCENT)
-	_banner.position = Vector2(24, 18)
+	_banner.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP)
+	_banner.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_banner.offset_top = 92
 	_banner.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	_banner.add_theme_constant_override("shadow_outline_size", 5)
 	add_child(_banner)
 	_panel = PanelContainer.new()
 	BiomeUI.panel(_panel)
-	_panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_panel.offset_top = 52
 	_panel.custom_minimum_size = Vector2(640, 0)
+	_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER_TOP, Control.PRESET_MODE_MINSIZE)
+	_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_panel.offset_top = 140
+	_panel.offset_bottom = 140
 	_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var box := VBoxContainer.new()
 	box.add_theme_constant_override("separation", 4)
