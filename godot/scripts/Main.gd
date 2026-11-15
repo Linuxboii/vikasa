@@ -13,7 +13,9 @@ var photo_mode := false
 var ui_hidden := false
 var skip_intro := false
 ## Set by `vikasa godot --demo`: a narrated autopilot tour for presentations.
-var demo_pilot: DemoPilot
+## Loaded by path, not class_name, so it works before Godot rebuilds its class cache.
+const DemoPilotScript := preload("res://scripts/DemoPilot.gd")
+var demo_pilot: Control
 var view_mode := "natural"
 var quality: QualityManager
 var sound: Soundscape
@@ -80,7 +82,7 @@ func _ready() -> void:
 
 func start_demo() -> void:
 	if demo_pilot != null: return
-	demo_pilot = DemoPilot.new()
+	demo_pilot = DemoPilotScript.new()
 	demo_pilot.setup(self)
 	demo_pilot.finished.connect(func(): demo_pilot = null)
 	$Interface.add_child(demo_pilot)

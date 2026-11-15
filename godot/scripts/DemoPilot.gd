@@ -1,5 +1,4 @@
 extends Control
-class_name DemoPilot
 ## Presentation autopilot for `vikasa demo` / `vikasa godot --demo`.
 ##
 ## Runs a narrated, looping tour of the Living Biome: director camera, lenses,

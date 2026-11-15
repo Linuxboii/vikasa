@@ -19,7 +19,7 @@ func _run() -> void:
 	main.skip_intro = true
 	main.start_demo()
 	await process_frame
-	var pilot: DemoPilot = main.demo_pilot
+	var pilot = main.demo_pilot
 	check(pilot != null and pilot.active, "Autopilot did not start")
 	pilot._process(5.0)
 	check(pilot.elapsed == 0.0, "Tour clock ran before the first animals appeared")
@@ -33,7 +33,7 @@ func _run() -> void:
 	check(main.view_mode == "natural", "Lens did not return to natural")
 	check(main.world.atmos.daylight_mode == "night", "Night step did not apply")
 	pilot._process(200.0)
-	check(pilot.elapsed < DemoPilot.LOOP_AT, "Tour did not loop")
+	check(pilot.elapsed < pilot.LOOP_AT, "Tour did not loop")
 	var key := InputEventKey.new()
 	key.pressed = true
 	key.keycode = KEY_A
