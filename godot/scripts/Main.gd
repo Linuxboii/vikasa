@@ -12,6 +12,8 @@ var director := false
 var photo_mode := false
 var ui_hidden := false
 var skip_intro := false
+## Set by `vikasa godot --demo`: a narrated autopilot tour for presentations.
+var demo_pilot: DemoPilot
 var view_mode := "natural"
 var quality: QualityManager
 var sound: Soundscape
@@ -71,8 +73,17 @@ func _ready() -> void:
 	hud.minimap.jump_requested.connect(_jump)
 	inspector.closed.connect(func(): _open_inspector(false))
 	tools.command_requested.connect(_tool_command)
+	if "--demo" in OS.get_cmdline_user_args():
+		start_demo()
 	tools.placement_changed.connect(func(active: bool): world.placement_mode = active; hud.set_hint("Click the habitat to place food · Escape cancels" if active else "Right-drag to orbit · Wheel to zoom · Click an animal to observe"))
 	client.request_state()
+
+func start_demo() -> void:
+	if demo_pilot != null: return
+	demo_pilot = DemoPilot.new()
+	demo_pilot.setup(self)
+	demo_pilot.finished.connect(func(): demo_pilot = null)
+	$Interface.add_child(demo_pilot)
 
 func _on_frame(frame: Dictionary) -> void:
 	world.set_frame(frame)
