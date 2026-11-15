@@ -1,0 +1,94 @@
+{
+ "amplitude_c": 2.4001666666666637,
+ "breadth_c": 4.0,
+ "control": {
+  "ci95": [
+   0.05189747947956478,
+   0.08016090327320208
+  ],
+  "critical_rate": 0.06676842009148827,
+  "logistic": {
+   "b0": 1.8062216945335852,
+   "b1": -27.052035858548713
+  }
+ },
+ "generation_ticks": 469,
+ "heritable": {
+  "ci95": [
+   0.23373870052024914,
+   0.2911288669082969
+  ],
+  "critical_rate": 0.26236311037527205,
+  "curve": [
+   {
+    "n": 12,
+    "p": 1.0,
+    "rate": 0.0,
+    "survived": 12
+   },
+   {
+    "n": 12,
+    "p": 1.0,
+    "rate": 0.025,
+    "survived": 12
+   },
+   {
+    "n": 12,
+    "p": 1.0,
+    "rate": 0.05,
+    "survived": 12
+   },
+   {
+    "n": 12,
+    "p": 1.0,
+    "rate": 0.075,
+    "survived": 12
+   },
+   {
+    "n": 12,
+    "p": 1.0,
+    "rate": 0.1,
+    "survived": 12
+   },
+   {
+    "n": 12,
+    "p": 1.0,
+    "rate": 0.15,
+    "survived": 12
+   },
+   {
+    "n": 12,
+    "p": 0.75,
+    "rate": 0.2,
+    "survived": 9
+   },
+   {
+    "n": 12,
+    "p": 0.25,
+    "rate": 0.3,
+    "survived": 3
+   },
+   {
+    "n": 12,
+    "p": 0.0,
+    "rate": 0.4,
+    "survived": 0
+   }
+  ],
+  "logistic": {
+   "b0": 5.62176467063566,
+   "b1": -21.42742042734037
+  }
+ },
+ "max_rate_c_per_generation": 0.4,
+ "note": "Survival-versus-warming-rate curve measured in the full climate-rescue run (12 seeds per rate, Western Ghats seasons, tolerance breadth 4 \u00b0C, 20 generations of warming). Copied so the Species Risk Checker works from an installed package.",
+ "rescue_gain": {
+  "ci95": [
+   0.1647206852131795,
+   0.2298699921174556
+  ],
+  "estimate": 0.1955946902837838
+ },
+ "schema": "vikasa-risk-reference-v1",
+ "source": "docs/results/climate-rescue-2026-10-18/sweep-summary.json"
+}
