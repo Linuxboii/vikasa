@@ -10,6 +10,17 @@ from pathlib import Path
 
 from evolution_sim.bridge import _godot_binary
 
+ASSETS = Path(__file__).resolve().parent / "assets"
+
+# mode -> (default shortcut name, description, icon file)
+SHORTCUTS: dict[str, tuple[str, str, str]] = {
+    "biome": ("Vikasa", "Launch Vikasa Living Biome 3D", "vikasa-biome.ico"),
+    "demo": ("Vikasa Demo", "Launch Vikasa Demo mode: presenter hub with the 3D Living Biome "
+             "on autopilot", "vikasa-demo.ico"),
+    "risk": ("Vikasa Risk Checker", "Launch the Vikasa Species Risk Checker: will a species "
+             "keep up with warming here?", "vikasa-risk.ico"),
+}
+
 
 def _ps_quote(value: str | Path) -> str:
     return "'" + str(value).replace("'", "''") + "'"
@@ -22,8 +33,15 @@ def install_desktop_shortcut(
     name: str = "Vikasa",
     config: str | Path | None = None,
     seed: int = 2026,
+    mode: str = "biome",
 ) -> Path:
-    """Create a Windows .lnk that launches Vikasa without a console window."""
+    """Create a Windows .lnk that launches Vikasa without a console window.
+
+    ``mode`` picks what the shortcut opens: ``biome`` (the 3D Living Biome),
+    ``demo`` (the presenter Demo hub) or ``risk`` (the Species Risk Checker).
+    """
+    if mode not in SHORTCUTS:
+        raise ValueError(f"mode must be one of {', '.join(SHORTCUTS)}")
     if os.name != "nt":
         raise RuntimeError("Desktop shortcut installation currently supports Windows")
     root = (
@@ -56,10 +74,16 @@ def install_desktop_shortcut(
         if desktop_path is not None
         else "$shell.SpecialFolders.Item('Desktop')"
     )
-    arguments = (
-        f'-m evolution_sim.cli godot --config "{config_path}" --seed {seed} '
-        f'--godot-path "{godot_binary}"'
-    )
+    if mode == "biome":
+        arguments = (
+            f'-m evolution_sim.cli godot --config "{config_path}" --seed {seed} '
+            f'--godot-path "{godot_binary}"'
+        )
+    else:
+        arguments = f"-m evolution_sim.cli {mode}"
+    description = SHORTCUTS[mode][1]
+    icon_file = ASSETS / SHORTCUTS[mode][2]
+    icon = f"{icon_file},0" if icon_file.is_file() else f"{godot_binary},0"
     script = "; ".join(
         (
             "$shell = New-Object -ComObject WScript.Shell",
@@ -70,8 +94,8 @@ def install_desktop_shortcut(
             f"$link.Arguments = {_ps_quote(arguments)}",
             f"$link.WorkingDirectory = {_ps_quote(root)}",
             "$link.WindowStyle = 1",
-            "$link.Description = 'Launch Vikasa Living Biome 3D'",
-            f"$link.IconLocation = {_ps_quote(str(godot_binary) + ',0')}",
+            f"$link.Description = {_ps_quote(description)}",
+            f"$link.IconLocation = {_ps_quote(icon)}",
             "$link.Save()",
             "Write-Output $path",
         )
@@ -99,3 +123,24 @@ def install_desktop_shortcut(
     if not shortcut.is_file():
         raise RuntimeError(f"Windows did not create the shortcut: {shortcut}")
     return shortcut
+
+
+def install_shortcut_set(
+    *,
+    desktop: str | Path | None = None,
+    name: str = "Vikasa",
+    config: str | Path | None = None,
+    seed: int = 2026,
+    modes: tuple[str, ...] = tuple(SHORTCUTS),
+) -> list[Path]:
+    """Install the Vikasa shortcuts: 3D biome, Demo mode and Risk Checker.
+
+    Re-running replaces existing shortcuts of the same names, so it also updates
+    shortcuts made by older versions.
+    """
+    installed = []
+    for mode in modes:
+        label = name if mode == "biome" else SHORTCUTS[mode][0]
+        installed.append(install_desktop_shortcut(desktop=desktop, name=label, config=config,
+                                                  seed=seed, mode=mode))
+    return installed
