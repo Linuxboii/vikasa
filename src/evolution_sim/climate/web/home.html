@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vikasa</title>
+<style>
+:root{--bg:#061015;--glass:#0e222bd9;--edge:#7be0c22e;--edge2:#7be0c266;--ink:#eef4ef;--muted:#9db9b8;--dim:#6f8b88;
+  --accent:#f0cd8a;--teal:#7be0c2;--rose:#f1a07c;--green:#8fdc8a}
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font:16px/1.5 "Segoe UI",system-ui,sans-serif}
+body{background:radial-gradient(1400px 700px at 80% -20%,#1d4a4a66,transparent 60%),radial-gradient(1000px 600px at -10% 120%,#4a3a1d55,transparent 60%),var(--bg);min-height:100vh}
+header{display:flex;align-items:center;gap:16px;padding:18px 34px;border-bottom:1px solid var(--edge)}
+.logo{width:44px;height:44px;border-radius:13px;background:conic-gradient(from 210deg,var(--teal),var(--accent),var(--rose),var(--teal));display:grid;place-items:center;font-weight:800;font-size:22px;color:#06222a;box-shadow:0 0 28px #7be0c244}
+h1{margin:0;font-size:22px;letter-spacing:.3px}
+.sub{color:var(--muted);font-size:13.5px}
+.spacer{flex:1}
+.pill{border:1px solid var(--edge2);border-radius:999px;padding:6px 13px;font-size:13px;color:var(--muted)}
+.pill.on{color:var(--teal);border-color:#7be0c299}
+.btn{appearance:none;border:1px solid var(--edge2);background:#16303acc;color:var(--ink);border-radius:11px;padding:9px 15px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none}
+.btn:hover{border-color:var(--accent)}
+main{max-width:1180px;margin:0 auto;padding:34px 34px 50px}
+.hero h2{font-size:38px;line-height:1.15;margin:0 0 8px;letter-spacing:-.4px}
+.hero h2 em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--rose));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero p{color:var(--muted);margin:0 0 28px;max-width:780px;font-size:17px}
+.section{font-size:12.5px;letter-spacing:1.6px;text-transform:uppercase;color:var(--teal);font-weight:700;margin:26px 0 12px}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+@media (max-width:980px){.tiles{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:640px){.tiles{grid-template-columns:1fr}}
+.tile{position:relative;display:flex;flex-direction:column;gap:8px;text-align:left;background:var(--glass);border:1px solid var(--edge);border-radius:18px;padding:22px 22px 20px;color:var(--ink);font:inherit;cursor:pointer;text-decoration:none;transition:.18s;min-height:178px}
+.tile:hover{transform:translateY(-3px);border-color:var(--accent);box-shadow:0 14px 40px #0008}
+.tile .ic{font-size:30px;line-height:1}
+.tile b{font-size:19px}
+.tile span{color:var(--muted);font-size:14px}
+.tile .go{margin-top:auto;color:var(--accent);font-weight:700;font-size:13.5px}
+.tile.primary{background:linear-gradient(150deg,#174a45dd,#0e222bd9);border-color:#7be0c266}
+.tile.busy{opacity:.6;pointer-events:none}
+.status{margin-top:22px;color:var(--muted);font-size:14px;min-height:22px}
+footer{color:var(--dim);font-size:12.5px;text-align:center;padding:10px 24px 30px}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0b1820f0;border:1px solid var(--edge2);padding:11px 18px;border-radius:12px;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">V</div>
+  <div><h1>Vikasa</h1><div class="sub">Living Biome &amp; Climate Rescue</div></div>
+  <div class="spacer"></div>
+  <span class="pill" id="godot">3D biome: closed</span>
+  <button class="btn" id="stop" style="display:none">Close 3D biome</button>
+  <button class="btn" id="quit" title="Close Vikasa">Quit</button>
+</header>
+<main>
+  <div class="hero">
+    <h2>Watch evolution happen, then ask it <em>a real question</em>.</h2>
+    <p>Every animal inherits its genes and decides for itself. Real NASA climate records and IPCC futures show which species can evolve fast enough to survive warming.</p>
+  </div>
+
+  <div class="section">Watch</div>
+  <div class="tiles">
+    <button class="tile primary" data-launch="biome"><div class="ic">🌿</div><b>Living Biome</b><span>The 3D world: click any animal to see what it's doing and why. Weather, lenses, day and night.</span><div class="go">Open in 3D →</div></button>
+    <button class="tile" data-launch="biome-demo"><div class="ic">🎬</div><b>Autopilot tour</b><span>A narrated, hands-free tour of the biome. Press any key in the 3D window to take control.</span><div class="go">Start the tour →</div></button>
+    <button class="tile" data-launch="climate-demo"><div class="ic">🌡️</div><b>Warming biome</b><span>Real Western Ghats seasons with rising temperature. Watch the population chase a moving target.</span><div class="go">Turn up the heat →</div></button>
+  </div>
+
+  <div class="section">Ask &amp; present</div>
+  <div class="tiles">
+    <a class="tile primary" href="/risk"><div class="ic">🌍</div><b>Species Risk Checker</b><span>Pick a place, a species and a future. Get a survival estimate, a live simulation check and a 3D replay.</span><div class="go">Check a species →</div></a>
+    <a class="tile" href="/demo"><div class="ic">▶️</div><b>Demo mode</b><span>Seven presenter chapters with a talk timer, prepared scenarios and answers to likely questions.</span><div class="go">Start presenting →</div></a>
+    <a class="tile" href="/evidence/index.html" target="_blank"><div class="ic">📊</div><b>The evidence</b><span>The full climate-rescue report: survival curves, sensitivity analysis and every pre-registered criterion.</span><div class="go">Open the report →</div></a>
+  </div>
+  <div class="status" id="status"></div>
+</main>
+<footer>Climate data: NASA POWER and IPCC AR6. The organism is Vikasa's generic model, not a calibrated real species.</footer>
+<div class="toast" id="toast"></div>
+<script>
+const $=id=>document.getElementById(id);
+async function api(path, body){ const r=await fetch(path, body===undefined?{}:{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); const j=await r.json(); if(!r.ok) throw new Error(j.error||r.statusText); return j; }
+function toast(m){ const t=$("toast"); t.textContent=m; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),3500); }
+document.querySelectorAll("[data-launch]").forEach(tile=>tile.onclick=async()=>{
+  tile.classList.add("busy");
+  try{ const r=await api("/api/launch",{what:tile.dataset.launch}); toast(r.launched?`Opening ${r.label}… the 3D window appears in a few seconds.`:"3D launch is disabled in this session."); poll(); }
+  catch(e){ toast(`Could not open: ${e.message}`); }
+  finally{ setTimeout(()=>tile.classList.remove("busy"),2500); }
+});
+async function poll(){ try{ const g=await api("/api/godot"); $("godot").textContent=g.running?`● ${g.label}`:"3D biome: closed"; $("godot").classList.toggle("on",g.running); $("stop").style.display=g.running?"inline-block":"none"; }catch{} }
+$("stop").onclick=async()=>{ await api("/api/stop-godot",{}); setTimeout(poll,800); };
+$("quit").onclick=async()=>{ await api("/api/quit",{}); document.body.innerHTML='<p style="padding:60px;text-align:center;color:#9db9b8">Vikasa closed. You can close this tab.</p>'; };
+poll(); setInterval(poll,3000);
+</script>
+</body>
+</html>

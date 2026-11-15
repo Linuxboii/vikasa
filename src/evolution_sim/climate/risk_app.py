@@ -1,4 +1,4 @@
-"""Local web app for the Species Risk Checker and the presenter Demo hub.
+"""Local Vikasa app: home screen, Species Risk Checker and the presenter Demo hub.
 
 Runs on 127.0.0.1 only, needs no internet for bundled places, and launches the
 Godot Living Biome as a child process for "Watch it in 3D" and the demo tour.
@@ -237,7 +237,9 @@ def _handler(app: RiskApp, server_ref: dict[str, ThreadingHTTPServer]):
             url = urlparse(self.path)
             query = {key: values[-1] for key, values in parse_qs(url.query).items()}
             try:
-                if url.path in ("/", "/risk"):
+                if url.path in ("/", "/home"):
+                    self._file(WEB_DIR / "home.html")
+                elif url.path == "/risk":
                     self._file(WEB_DIR / "risk.html")
                 elif url.path == "/demo":
                     self._file(WEB_DIR / "demo.html")

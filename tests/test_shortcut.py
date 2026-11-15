@@ -21,6 +21,7 @@ def test_installer_creates_launchable_windows_shortcut(tmp_path) -> None:
         name="Vikasa Test",
         config=root / "config" / "showcase.json",
         seed=77,
+        mode="biome",
     )
 
     assert shortcut == tmp_path / "Vikasa Test.lnk"
@@ -70,18 +71,19 @@ def test_godot_runtime_is_discovered_from_user_winget_install(tmp_path, monkeypa
     assert _godot_binary(None) == str(binary)
 
 
-def test_shortcut_set_installs_one_biome_shortcut_by_default(monkeypatch, tmp_path) -> None:
+def test_shortcut_set_installs_one_app_shortcut_by_default(monkeypatch, tmp_path) -> None:
     from evolution_sim import shortcut
 
     calls = []
     monkeypatch.setattr(shortcut, "install_desktop_shortcut",
                         lambda **kwargs: calls.append(kwargs) or tmp_path / kwargs["name"])
     installed = shortcut.install_shortcut_set(desktop=tmp_path, name="My Vikasa", seed=5)
-    assert [call["mode"] for call in calls] == ["biome"]
+    assert [call["mode"] for call in calls] == ["app"]
     assert [path.name for path in installed] == ["My Vikasa"]
     calls.clear()
-    shortcut.install_shortcut_set(desktop=tmp_path, modes=("demo", "risk"))
-    assert [call["mode"] for call in calls] == ["demo", "risk"]
+    shortcut.install_shortcut_set(desktop=tmp_path, modes=("biome", "demo", "risk"))
+    assert [call["mode"] for call in calls] == ["biome", "demo", "risk"]
+    assert [call["name"] for call in calls] == ["Vikasa 3D", "Vikasa Demo", "Vikasa Risk Checker"]
 
 
 def test_demo_shortcut_script_launches_demo_mode_with_its_icon(monkeypatch, tmp_path) -> None:
@@ -108,5 +110,9 @@ def test_demo_shortcut_script_launches_demo_mode_with_its_icon(monkeypatch, tmp_
     assert "-m evolution_sim.cli demo" in script
     assert "vikasa-demo.ico" in script
     assert "Demo mode" in script
+    scripts.clear()
+    shortcut.install_desktop_shortcut(desktop=tmp_path, name="Vikasa Demo")
+    assert "-m evolution_sim.cli app" in scripts[0]
+    assert "vikasa-biome.ico" in scripts[0]
     with pytest.raises(ValueError):
         shortcut.install_desktop_shortcut(desktop=tmp_path, mode="nope")

@@ -68,9 +68,10 @@ def build_parser() -> argparse.ArgumentParser:
     shortcut = commands.add_parser(
         "shortcut", help="Install or update the Vikasa desktop shortcut")
     shortcut.add_argument("--desktop", type=Path)
-    shortcut.add_argument("--name", default="Vikasa", help="Name of the 3D biome shortcut")
-    shortcut.add_argument("--only", choices=("biome", "demo", "risk"), action="append",
-                          help="Which shortcut to install (repeatable; default: biome only)")
+    shortcut.add_argument("--name", default="Vikasa", help="Name of the main shortcut")
+    shortcut.add_argument("--only", choices=("app", "biome", "demo", "risk"), action="append",
+                          help="Which shortcut to install (repeatable; default: app, the "
+                               "single Vikasa home screen)")
     shortcut.add_argument("--config", type=Path, default=Path("config/showcase.json"))
     shortcut.add_argument("--seed", type=int, default=2026)
 
@@ -80,6 +81,11 @@ def build_parser() -> argparse.ArgumentParser:
     godot.add_argument("--godot-path", type=str)
     godot.add_argument("--demo", action="store_true",
                        help="Start the 3D client on presentation autopilot")
+
+    app = commands.add_parser(
+        "app", help="Open Vikasa: one home screen for the 3D biome, Risk Checker and Demo mode")
+    app.add_argument("--port", type=int, default=8787)
+    app.add_argument("--no-browser", action="store_true")
 
     demo = commands.add_parser(
         "demo", help="Presenter Demo mode: guided showcase with one-click launches")
@@ -124,7 +130,7 @@ def _risk(args: argparse.Namespace) -> int:
     if args.risk_command is None:
         from evolution_sim.climate.risk_app import serve
 
-        return serve(page="/", port=args.port, open_browser=not args.no_browser)
+        return serve(page="/risk", port=args.port, open_browser=not args.no_browser)
     if args.risk_command == "places":
         for place in risk.places():
             print(f"{place['key']:<14} {place['name']:<24} mean {place['annual_mean_c']:5.1f} °C"
@@ -256,7 +262,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                 name=args.name,
                 config=args.config,
                 seed=args.seed,
-                modes=tuple(args.only or ("biome",)),
+                modes=tuple(args.only or ("app",)),
             )
             for shortcut in installed:
                 print(f"Desktop shortcut installed: {shortcut}")
@@ -270,6 +276,10 @@ def main(argv: Sequence[str] | None = None) -> int:
                 godot_path=args.godot_path,
                 user_args=["--demo"] if args.demo else None,
             )
+        if args.command == "app":
+            from evolution_sim.climate.risk_app import serve
+
+            return serve(page="/", port=args.port, open_browser=not args.no_browser)
         if args.command == "demo":
             if args.biome_only:
                 from evolution_sim.bridge import launch_godot

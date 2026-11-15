@@ -14,7 +14,9 @@ ASSETS = Path(__file__).resolve().parent / "assets"
 
 # mode -> (default shortcut name, description, icon file)
 SHORTCUTS: dict[str, tuple[str, str, str]] = {
-    "biome": ("Vikasa", "Launch Vikasa Living Biome 3D", "vikasa-biome.ico"),
+    "app": ("Vikasa", "Open Vikasa: the 3D Living Biome, Species Risk Checker and Demo mode in "
+            "one place", "vikasa-biome.ico"),
+    "biome": ("Vikasa 3D", "Launch Vikasa Living Biome 3D", "vikasa-biome.ico"),
     "demo": ("Vikasa Demo", "Launch Vikasa Demo mode: presenter hub with the 3D Living Biome "
              "on autopilot", "vikasa-demo.ico"),
     "risk": ("Vikasa Risk Checker", "Launch the Vikasa Species Risk Checker: will a species "
@@ -33,12 +35,13 @@ def install_desktop_shortcut(
     name: str = "Vikasa",
     config: str | Path | None = None,
     seed: int = 2026,
-    mode: str = "biome",
+    mode: str = "app",
 ) -> Path:
     """Create a Windows .lnk that launches Vikasa without a console window.
 
-    ``mode`` picks what the shortcut opens: ``biome`` (the 3D Living Biome),
-    ``demo`` (the presenter Demo hub) or ``risk`` (the Species Risk Checker).
+    ``mode`` picks what the shortcut opens: ``app`` (the Vikasa home screen, from which
+    everything else launches), ``biome`` (straight into the 3D Living Biome), ``demo``
+    (the presenter Demo hub) or ``risk`` (the Species Risk Checker).
     """
     if mode not in SHORTCUTS:
         raise ValueError(f"mode must be one of {', '.join(SHORTCUTS)}")
@@ -131,16 +134,16 @@ def install_shortcut_set(
     name: str = "Vikasa",
     config: str | Path | None = None,
     seed: int = 2026,
-    modes: tuple[str, ...] = ("biome",),
+    modes: tuple[str, ...] = ("app",),
 ) -> list[Path]:
-    """Install Vikasa desktop shortcuts: by default just the one 3D biome shortcut.
+    """Install Vikasa desktop shortcuts: by default the single Vikasa home-screen shortcut.
 
-    Pass ``modes`` to add the optional Demo mode and Risk Checker shortcuts.
+    Pass ``modes`` to add optional direct shortcuts (biome, demo, risk).
     Re-running replaces existing shortcuts of the same names.
     """
     installed = []
     for mode in modes:
-        label = name if mode == "biome" else SHORTCUTS[mode][0]
+        label = name if mode == "app" else SHORTCUTS[mode][0]
         installed.append(install_desktop_shortcut(desktop=desktop, name=label, config=config,
                                                   seed=seed, mode=mode))
     return installed

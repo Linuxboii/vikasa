@@ -13,7 +13,7 @@
 ![Deterministic](https://img.shields.io/badge/runs-100%25%20reproducible-7be0c2)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
-[Species Risk Checker](#-species-risk-checker) · [Demo mode](#-demo-mode) · [Quick start](#-quick-start-windows) · [Climate rescue](#climate-rescue-can-evolution-outrun-warming) · [Living Biome](#vikasa-20--the-living-biome-showcase) · [Evidence](#visual-evidence-and-how-to-read-the-graphs) · [Mathematics PDF](output/pdf/Vikasa_Mathematics_Guide.pdf) · [Desktop setup](#run-the-3d-living-biome)
+[One app](#-one-app-one-shortcut) · [Species Risk Checker](#-species-risk-checker) · [Demo mode](#-demo-mode) · [Quick start](#-quick-start-windows) · [Climate rescue](#climate-rescue-can-evolution-outrun-warming) · [Living Biome](#vikasa-20--the-living-biome-showcase) · [Evidence](#visual-evidence-and-how-to-read-the-graphs) · [Mathematics PDF](output/pdf/Vikasa_Mathematics_Guide.pdf) · [Desktop setup](#run-the-3d-living-biome)
 
 ![Golden hour over the floating Vikasa biome](docs/images/showcase-hero.jpg)
 
@@ -112,19 +112,29 @@ headless-tested (`godot/tests/DemoPilotSmoke.gd`). Full script:
 
 ![Engineering chapter with live project statistics](docs/images/demo-engineering.png)
 
-## 🖥️ Desktop shortcut
+## 🏠 One app, one shortcut
+
+![Vikasa home screen](docs/images/vikasa-home.png)
 
 ```powershell
-.\.venv\Scripts\vikasa.exe shortcut                          # one "Vikasa" shortcut (3D Living Biome)
-.\.venv\Scripts\vikasa.exe shortcut --only demo --only risk  # optional extra shortcuts
+.\.venv\Scripts\vikasa.exe app        # the Vikasa home screen
+.\.venv\Scripts\vikasa.exe shortcut   # one "Vikasa" desktop shortcut that opens it
 ```
 
-`vikasa shortcut` installs a single **Vikasa** desktop shortcut that opens the 3D Living
-Biome (`config/showcase.json`, seed 2026) without a console window. Demo mode and the
-Risk Checker are launched with `vikasa demo` and `vikasa risk`; dedicated shortcuts for
-them are optional (`--only demo`, `--only risk`). Re-running the command replaces an
-existing shortcut of the same name. Windows only; macOS and Linux use the commands
-directly.
+Everything starts from one place. The **Vikasa** desktop shortcut opens the home screen,
+which launches every feature with one click:
+
+| Watch | Ask & present |
+|---|---|
+| 🌿 **Living Biome**: the 3D world | 🌍 **Species Risk Checker** |
+| 🎬 **Autopilot tour**: narrated and hands-free | ▶️ **Demo mode**: presenter hub |
+| 🌡️ **Warming biome**: real seasons, rising heat | 📊 **The evidence**: the full report |
+
+The home screen shows whether a 3D window is open, can close it, and has a **Quit**
+button that shuts everything down. The shortcut opens without a console window, and
+re-running `vikasa shortcut` replaces an older Vikasa shortcut (including ones that
+went straight into the 3D biome). Optional direct shortcuts: `--only biome`,
+`--only demo`, `--only risk`. Windows only; macOS and Linux run `vikasa app`.
 
 ## ⚡ Quick start (Windows)
 
@@ -132,8 +142,8 @@ directly.
 winget install --id GodotEngine.GodotEngine --exact --scope user
 py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e .
-.\.venv\Scripts\vikasa.exe shortcut      # desktop shortcut
-.\.venv\Scripts\vikasa.exe demo          # start presenting
+.\.venv\Scripts\vikasa.exe shortcut      # one "Vikasa" desktop shortcut
+.\.venv\Scripts\vikasa.exe app           # open the Vikasa home screen
 ```
 
 macOS and Linux instructions: [Run the 3D Living Biome](#run-the-3d-living-biome).
@@ -149,6 +159,7 @@ macOS and Linux instructions: [Run the 3D Living Biome](#run-the-3d-living-biome
 
 | Command | Purpose |
 |---|---|
+| `vikasa app` | The Vikasa home screen: every feature in one place |
 | `vikasa demo` | Presenter Demo hub (`--biome-only` for the 3D autopilot alone) |
 | `vikasa risk` · `vikasa risk check` · `vikasa risk places` | Species Risk Checker app, terminal verdicts, bundled places |
 | `vikasa godot [--demo]` | 3D Living Biome (Windows and macOS launch the bridge and client together) |
@@ -156,7 +167,7 @@ macOS and Linux instructions: [Run the 3D Living Biome](#run-the-3d-living-biome
 | `vikasa ui` | Pygame 2D laboratory |
 | `vikasa climate pipeline · fetch · assess · report` | Full evolutionary-rescue study |
 | `vikasa run · batch · study · contrast · stress · validate` | Headless science and auditing |
-| `vikasa shortcut` | Install or update the Vikasa desktop shortcut |
+| `vikasa shortcut` | Install or update the one Vikasa desktop shortcut (opens the home screen) |
 
 ## Vikasa 2.0 — the Living Biome showcase
 
@@ -294,7 +305,7 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\vikasa.exe godot --config config\showcase.json --seed 2026
 ```
 
-The launcher detects a per-user WinGet Godot installation. To create or refresh the **Vikasa** desktop shortcut for this checkout, run:
+The launcher detects a per-user WinGet Godot installation. To create or refresh the **Vikasa** desktop shortcut for this checkout (it opens the Vikasa home screen, which launches the 3D biome and everything else), run:
 
 ```powershell
 .\.venv\Scripts\vikasa.exe shortcut --config config\showcase.json --seed 2026

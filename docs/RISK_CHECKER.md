@@ -135,11 +135,11 @@ the adaptation lag.
 
 ## 5. Local API
 
-`vikasa risk` and `vikasa demo` serve on `http://127.0.0.1:8787` (loopback only):
+`vikasa app`, `vikasa risk` and `vikasa demo` serve on `http://127.0.0.1:8787` (loopback only):
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/` · `/demo` | Risk Checker · presenter Demo hub |
+| GET | `/` · `/risk` · `/demo` | Home screen · Risk Checker · presenter Demo hub |
 | GET | `/api/meta` | Places, presets, tolerance modes, SSPs, reference curve |
 | GET | `/api/estimate?place=&generation_years=&tolerance=&ssp=` | Instant estimate |
 | POST | `/api/live` · GET `/api/live/<id>` | Start and poll a live check |

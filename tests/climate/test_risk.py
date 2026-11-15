@@ -186,7 +186,11 @@ def app_server(tmp_path):
 
 def test_app_serves_pages_estimates_and_stats(app_server) -> None:
     call, _app = app_server
-    assert b"Species Risk Checker" in call("/")
+    home = call("/")
+    for tile in (b'data-launch="biome"', b'data-launch="biome-demo"', b'data-launch="climate-demo"',
+                 b'href="/risk"', b'href="/demo"', b'href="/evidence/index.html"'):
+        assert tile in home
+    assert b"Species Risk Checker" in call("/risk")
     assert b"DEMO MODE" in call("/demo")
     meta = call("/api/meta")
     assert {place["key"] for place in meta["places"]} >= {"hyderabad", "western-ghats"}
@@ -259,3 +263,15 @@ def test_launch_godot_passes_user_arguments_after_a_separator(monkeypatch, tiny_
     monkeypatch.setattr(bridge.GodotSimulationServer, "stop", lambda self: None)
     assert bridge.launch_godot(tiny_config, seed=1, user_args=["--demo"]) == 0
     assert commands[0][-2:] == ["--", "--demo"]
+
+
+def test_cli_app_opens_the_home_screen(monkeypatch) -> None:
+    from evolution_sim.cli import main
+    from evolution_sim.climate import risk_app
+
+    pages = []
+    monkeypatch.setattr(risk_app, "serve", lambda **kwargs: pages.append(kwargs["page"]) or 0)
+    assert main(["app", "--no-browser"]) == 0
+    assert main(["risk", "--no-browser"]) == 0
+    assert main(["demo", "--no-browser"]) == 0
+    assert pages == ["/", "/risk", "/demo"]
