@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vikasa · Demo mode</title>
+<style>
+:root{--bg:#061015;--glass:#0e222bd9;--edge:#7be0c22e;--edge2:#7be0c266;--ink:#eef4ef;--muted:#9db9b8;--dim:#6f8b88;
+  --accent:#f0cd8a;--teal:#7be0c2;--rose:#f1a07c;--red:#ef6f6c;--green:#8fdc8a}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:16px/1.5 "Segoe UI",system-ui,sans-serif;overflow:hidden}
+body{background:radial-gradient(1400px 700px at 80% -20%,#1d4a4a66,transparent 60%),radial-gradient(1000px 600px at -10% 120%,#4a3a1d55,transparent 60%),var(--bg)}
+.top{display:flex;align-items:center;gap:16px;padding:14px 26px;border-bottom:1px solid var(--edge)}
+.logo{width:34px;height:34px;border-radius:10px;background:conic-gradient(from 210deg,var(--teal),var(--accent),var(--rose),var(--teal));display:grid;place-items:center;font-weight:800;color:#06222a}
+.badge{font-size:11px;font-weight:800;letter-spacing:1.6px;color:#2a1d05;background:var(--accent);padding:4px 10px;border-radius:999px}
+.spacer{flex:1}
+.timer{font:700 22px ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums;color:var(--accent)}
+.timer.over{color:var(--red)}
+.btn{appearance:none;border:1px solid var(--edge2);background:#16303acc;color:var(--ink);border-radius:11px;padding:9px 15px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
+.btn:hover{border-color:var(--accent)}
+.btn.big{padding:14px 22px;font-size:16px;background:linear-gradient(135deg,#2c7a6a,#1d5a63);border-color:#7be0c288}
+.btn.gold{background:linear-gradient(135deg,#7a5f2c,#5a4419);border-color:#f0cd8a99}
+.layout{display:grid;grid-template-columns:270px 1fr;height:calc(100% - 64px)}
+nav{border-right:1px solid var(--edge);padding:16px 12px;overflow:auto}
+nav .ch{display:flex;gap:10px;padding:10px 12px;border-radius:12px;cursor:pointer;color:var(--muted);margin-bottom:4px}
+nav .ch:hover{background:#0e222b}
+nav .ch.on{background:#16303a;color:var(--ink);box-shadow:inset 3px 0 0 var(--accent)}
+nav .ch.done .n{background:var(--teal);color:#06222a}
+nav .n{width:24px;height:24px;flex:none;border-radius:50%;border:1px solid var(--edge2);display:grid;place-items:center;font-size:12px;font-weight:700}
+nav .t{font-weight:600;font-size:14px;line-height:1.25}
+nav .d{font-size:11.5px;color:var(--dim)}
+.keys{color:var(--dim);font-size:11.5px;margin:18px 12px 0;line-height:1.7}
+kbd{border:1px solid var(--edge2);border-radius:5px;padding:0 5px;font-size:11px;color:var(--muted)}
+.stage{overflow:auto;padding:34px 46px 40px;position:relative}
+.slide{display:none;max-width:1180px;margin:0 auto;animation:in .45s ease}
+.slide.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.kicker{color:var(--teal);font-weight:700;letter-spacing:1.6px;text-transform:uppercase;font-size:12.5px}
+h2{font-size:44px;line-height:1.1;margin:8px 0 14px;letter-spacing:-.5px}
+h2 em{font-style:normal;background:linear-gradient(90deg,var(--accent),var(--rose));-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:20px;color:var(--muted);max-width:860px;margin:0 0 26px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.grid.four{grid-template-columns:repeat(4,1fr)}
+@media (max-width:1100px){.grid,.grid.four{grid-template-columns:repeat(2,1fr)}}
+.card{background:var(--glass);border:1px solid var(--edge);border-radius:16px;padding:18px}
+.stat b{display:block;font-size:34px;line-height:1.1;font-variant-numeric:tabular-nums}
+.stat span{color:var(--muted);font-size:13.5px}
+.talk{margin-top:24px;border-left:3px solid var(--accent);padding:6px 0 6px 18px}
+.talk h4{margin:0 0 6px;font-size:12px;letter-spacing:1.4px;text-transform:uppercase;color:var(--accent)}
+.talk ul{margin:0;padding-left:18px;color:var(--ink)}
+.talk li+li{margin-top:6px}
+.actions{display:flex;gap:12px;flex-wrap:wrap;margin:22px 0 8px}
+.status{color:var(--muted);font-size:13px;margin-top:6px;min-height:20px}
+.fig{width:100%;border-radius:12px;border:1px solid var(--edge);background:#fff}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:8px 10px;border-bottom:1px solid var(--edge);text-align:left;vertical-align:top}
+th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.8px}
+.pass{color:var(--green);font-weight:800}.fail{color:var(--red);font-weight:800}
+.qa details{background:var(--glass);border:1px solid var(--edge);border-radius:14px;padding:12px 16px;margin-bottom:10px}
+.qa summary{cursor:pointer;font-weight:650;font-size:16px}
+.qa p{color:var(--muted);margin:10px 0 2px}
+.flow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:6px 0 18px}
+.flow .node{background:#0b1b23;border:1px solid var(--edge2);border-radius:12px;padding:10px 14px;font-size:14px}
+.flow .node small{display:block;color:var(--dim);font-size:11.5px}
+.flow .arrow{color:var(--accent);font-size:20px}
+.foot{position:fixed;bottom:12px;right:20px;display:flex;gap:8px}
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="logo">V</div>
+  <div><b>Vikasa</b> <span style="color:var(--muted)">· Living Biome &amp; Climate Rescue</span></div>
+  <span class="badge">DEMO MODE</span>
+  <div class="spacer"></div>
+  <span id="godot" style="color:var(--muted);font-size:13px">3D biome idle</span>
+  <span class="timer" id="timer" title="Space starts or pauses the talk timer">0:00</span>
+  <button class="btn" id="timerBtn">Start timer</button>
+  <button class="btn" id="fs">⛶ Fullscreen</button>
+  <a class="btn" href="/">Risk Checker</a>
+</div>
+<div class="layout">
+  <nav id="nav"></nav>
+  <div class="stage" id="stage">
+
+    <section class="slide" data-title="The question" data-sub="30 s · why this matters" data-seconds="30">
+      <div class="kicker">Chapter 1 · The question</div>
+      <h2>Which species will climate change wipe out, and which can <em>evolve fast enough</em> to survive?</h2>
+      <p class="lead">Vikasa is an individual-based evolution simulator. Each animal inherits genes, and those genes decide how it lives. We pair it with real NASA temperature records for Indian places and the IPCC's warming scenarios.</p>
+      <div class="grid four">
+        <div class="card stat"><b id="sKc">0.262 °C</b><span>per generation: the fastest warming a population can evolve through</span></div>
+        <div class="card stat"><b id="sGain">≈ 4×</b><span>more warming survivable with inheritance than without it</span></div>
+        <div class="card stat"><b>~6 years</b><span>generation time beyond which species fall behind under very high emissions (SSP5-8.5)</span></div>
+        <div class="card stat"><b>10 places</b><span>real NASA POWER climate records, with any point on Earth one click away</span></div>
+      </div>
+      <div class="talk"><h4>Say this</h4><ul>
+        <li>"Climate change isn't only about how hot it gets. It's about whether life can adapt in time."</li>
+        <li>"Fast-breeding species like insects and frogs can evolve. Slow-breeding ones can't keep up. We measured where that line is."</li>
+      </ul></div>
+    </section>
+
+    <section class="slide" data-title="The living biome" data-sub="90 s · creativity" data-seconds="90">
+      <div class="kicker">Chapter 2 · Watch evolution happen</div>
+      <h2>A world you can <em>watch like a nature film</em></h2>
+      <p class="lead">Autopilot mode flies the camera, finds fights, births and families, captions them, and brings in night and a storm. Press any key in the 3D window to take control.</p>
+      <div class="actions">
+        <button class="btn big" data-launch="biome-demo">▶ Launch the biome on autopilot</button>
+        <button class="btn" data-launch="biome">Launch without autopilot</button>
+      </div>
+      <div class="status" data-status></div>
+      <div class="talk"><h4>Point out</h4><ul>
+        <li><b>Every animal decides for itself.</b> Click one to see its action and the reason behind it: hunger, danger, a mate, its young.</li>
+        <li><b>Genes are visible.</b> Size, ears, ridges and tail come from inherited genes. Press <kbd>V</kbd> to recolour by dynasty or generation.</li>
+        <li><b>Day and night, weather, sound.</b> All procedural: no audio files, a 26,000-blade grass field, the whole population drawn in two GPU draw calls.</li>
+        <li><b>Stress it.</b> Press <kbd>T</kbd>, apply a storm, and watch vulnerable animals die while survivors carry on.</li>
+      </ul></div>
+    </section>
+
+    <section class="slide" data-title="Warming in 3D" data-sub="60 s · the real-world link" data-seconds="60">
+      <div class="kicker">Chapter 3 · Turn up the heat</div>
+      <h2>Real seasons. <em>Rising temperature.</em> Natural selection live.</h2>
+      <p class="lead">The Western Ghats' monthly temperatures from NASA, with steady warming added. Each animal carries a heat-tolerance gene, and you can watch the population chase a moving target.</p>
+      <div class="actions"><button class="btn big" data-launch="climate-demo">▶ Launch the warming biome</button></div>
+      <div class="status" data-status></div>
+      <div class="talk"><h4>Point out</h4><ul>
+        <li>The live °C in the top bar. Hover it to see the <b>adaptation lag</b>: how far the population's average comfort temperature trails the climate.</li>
+        <li>"Below a critical speed, evolution keeps pace with a constant lag. Above it, the lag grows until the population dies out. That's textbook theory from 1993, and our simulation reproduces it."</li>
+      </ul></div>
+    </section>
+
+    <section class="slide" data-title="Species Risk Checker" data-sub="90 s · real-world use" data-seconds="90">
+      <div class="kicker">Chapter 4 · Ask your own question</div>
+      <h2>Give me <em>any place</em> and <em>any species</em>.</h2>
+      <p class="lead">The Species Risk Checker turns the research into a tool. Pick a place, describe the species (how fast it breeds and how much heat it takes), and pick a future. You get an instant estimate, a full simulation check, and a 3D replay.</p>
+      <div class="actions">
+        <a class="btn big" href="/?place=hyderabad&preset=frog&ssp=SSP5-8.5">🐸 Frog in Hyderabad</a>
+        <a class="btn gold" href="/?place=hyderabad&gen=6&ssp=SSP5-8.5">6-year species in Hyderabad</a>
+        <a class="btn" href="/?place=delhi-ncr&preset=tortoise&ssp=SSP3-7.0">Tortoise in Delhi</a>
+        <a class="btn" href="/">Blank checker</a>
+      </div>
+      <div class="talk"><h4>Run it like this</h4><ul>
+        <li>Start with the frog: <b>likely persists</b>, because a 1-year generation means evolution keeps up.</li>
+        <li>Drag the generation time to 6 years: the verdict turns <b>at risk</b>. That's the danger line.</li>
+        <li>Switch to Specialist tolerance: <b>not viable</b> even today. Hyderabad's May heat alone stops it breeding.</li>
+        <li>Ask a judge for a city. If it isn't listed, add it by latitude and longitude (needs internet).</li>
+        <li>Press <b>Run live check</b> to simulate the real thing, then <b>Watch it in 3D</b>.</li>
+      </ul></div>
+    </section>
+
+    <section class="slide" data-title="The evidence" data-sub="45 s · honesty" data-seconds="45">
+      <div class="kicker">Chapter 5 · Show your working</div>
+      <h2>Success criteria fixed <em>before</em> the run, failures included</h2>
+      <div class="grid" style="grid-template-columns:1.1fr 1fr">
+        <img class="fig" src="/evidence/figures/survival_curve.png" alt="Survival against warming rate">
+        <div class="card" style="padding:6px 10px">
+          <table><thead><tr><th>ID</th><th>Criterion</th><th>Result</th></tr></thead><tbody id="criteria"></tbody></table>
+        </div>
+      </div>
+      <div class="actions"><a class="btn" href="/evidence/index.html" target="_blank">Open the full offline report</a></div>
+      <div class="talk"><h4>Say this</h4><ul>
+        <li>"12 random seeds per condition, bootstrap confidence intervals, a sensitivity analysis and a machine-learning surrogate."</li>
+        <li>"Three criteria failed, and we report why instead of tuning parameters until they pass."</li>
+      </ul></div>
+    </section>
+
+    <section class="slide" data-title="Under the hood" data-sub="45 s · code expertise" data-seconds="45">
+      <div class="kicker">Chapter 6 · Engineering</div>
+      <h2>Built like research software, <em>runs like a game</em></h2>
+      <div class="flow">
+        <div class="node">Python engine<small>authoritative, seeded, deterministic</small></div><div class="arrow">⇄</div>
+        <div class="node">Loopback bridge<small>binary motion stream + JSON state</small></div><div class="arrow">⇄</div>
+        <div class="node">Godot 4 client<small>GPU-instanced 3D, shaders, audio</small></div><div class="arrow">+</div>
+        <div class="node">Climate science stack<small>NASA POWER · IPCC · Sobol · GP surrogate</small></div>
+      </div>
+      <div class="grid four" id="stats">
+        <div class="card stat"><b id="stTests">–</b><span>automated tests</span></div>
+        <div class="card stat"><b id="stPy">–</b><span>lines of Python</span></div>
+        <div class="card stat"><b id="stGd">–</b><span>lines of GDScript and shaders</span></div>
+        <div class="card stat"><b>60 FPS</b><span>locked on integrated Intel Iris Xe (was 13–35)</span></div>
+        <div class="card stat"><b>~20</b><span>draw calls for the whole 3D world (was ~2,300)</span></div>
+        <div class="card stat"><b>100%</b><span>reproducible: same seed, same world, every time</span></div>
+        <div class="card stat"><b>0</b><span>invariant violations across the published runs</span></div>
+        <div class="card stat"><b>SHA-256</b><span>manifests on every evidence package</span></div>
+      </div>
+    </section>
+
+    <section class="slide qa" data-title="Judges' questions" data-sub="prepared answers" data-seconds="0">
+      <div class="kicker">Cheat sheet</div>
+      <h2>Likely questions</h2>
+      <details><summary>Is this a real species?</summary><p>No. The climate is real data; the organism is a generic model. The Risk Checker lets you enter a real species' generation time and heat tolerance, and calibrating to Western Ghats frogs and lizards is the next step.</p></details>
+      <details><summary>How do you know the simulation is right?</summary><p>It reproduces established theory (Lynch &amp; Lande 1993): the adaptation lag grows linearly with warming rate (r = 0.85), and survival drops sharply at a critical rate. Success criteria were fixed before running, and the failures are published.</p></details>
+      <details><summary>What's actually new here?</summary><p>Not the theory. The novelty is combining a watchable, explainable individual-based simulation with real climate records, IPCC scenarios, sensitivity analysis and a decision tool in one reproducible package.</p></details>
+      <details><summary>Why does the instant estimate differ from the live check?</summary><p>The estimate uses the survival curve measured for one reference organism. The live check simulates your exact place and tolerance directly. When they differ, the live check is the answer, and the app labels which is which.</p></details>
+      <details><summary>Who would use this?</summary><p>Biology teachers showing evolution in action; students exploring climate risk for their own city; and, once calibrated to real species, conservation planners screening which local species need attention first.</p></details>
+      <details><summary>What would you build next?</summary><p>Real species data (GlobTherm heat tolerances, GBIF ranges), downscaled CMIP6 projections, and shade-seeking and migration behaviour. Those three are the model's main stated limitations.</p></details>
+    </section>
+  </div>
+</div>
+<div class="foot"><button class="btn" id="prev">← Back</button><button class="btn" id="next">Next →</button></div>
+
+<script>
+const $=id=>document.getElementById(id);
+const slides=[...document.querySelectorAll(".slide")];
+let at=0, elapsed=0, running=false, tick=null;
+async function api(path, body){ const r=await fetch(path, body===undefined?{}:{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)}); const j=await r.json(); if(!r.ok) throw new Error(j.error||r.statusText); return j; }
+function nav(){
+  $("nav").innerHTML = slides.map((s,i)=>`<div class="ch ${i===at?"on":""} ${i<at?"done":""}" data-i="${i}"><div class="n">${i+1}</div><div><div class="t">${s.dataset.title}</div><div class="d">${s.dataset.sub}</div></div></div>`).join("")
+   + `<div class="keys"><kbd>→</kbd>/<kbd>←</kbd> chapters · <kbd>Space</kbd> timer<br><kbd>F</kbd> fullscreen · <kbd>1</kbd>–<kbd>7</kbd> jump</div>`;
+  document.querySelectorAll(".ch").forEach(el=>el.onclick=()=>go(+el.dataset.i));
+}
+function go(i){ at=Math.max(0,Math.min(slides.length-1,i)); slides.forEach((s,j)=>s.classList.toggle("on",j===at)); nav(); $("stage").scrollTop=0; history.replaceState(null,"",`#${at+1}`); }
+function budget(){ return slides.reduce((a,s)=>a+(+s.dataset.seconds||0),0); }
+function drawTimer(){ const m=Math.floor(elapsed/60), s=elapsed%60; $("timer").textContent=`${m}:${String(s).padStart(2,"0")}`; $("timer").classList.toggle("over", elapsed>budget()); }
+function toggleTimer(){ running=!running; $("timerBtn").textContent=running?"Pause":"Resume"; if(running){ tick=setInterval(()=>{elapsed++; drawTimer();},1000);} else clearInterval(tick); }
+document.querySelectorAll("[data-launch]").forEach(b=>b.onclick=async()=>{
+  const status=b.closest(".slide").querySelector("[data-status]");
+  try{ const r=await api("/api/launch",{what:b.dataset.launch}); status.textContent=r.launched?`Opening: ${r.label}. The 3D window appears in a few seconds.`:"3D launch is disabled in this session."; }
+  catch(e){ status.textContent=`Could not launch: ${e.message}`; }
+});
+async function poll(){ try{ const g=await api("/api/godot"); $("godot").textContent=g.running?`● ${g.label}`:"3D biome idle"; $("godot").style.color=g.running?"var(--teal)":"var(--muted)"; }catch{} }
+async function loadEvidence(){
+  try{
+    const m=await api("/api/meta"); $("sKc").textContent=`${m.reference.critical_rate.toFixed(3)} °C`;
+    $("sGain").textContent=`≈ ${(m.reference.critical_rate/m.reference.control_critical_rate).toFixed(1)}×`;
+    const st=await api("/api/stats"); $("stTests").textContent=st.tests.toLocaleString(); $("stPy").textContent=st.python_lines.toLocaleString(); $("stGd").textContent=st.godot_lines.toLocaleString();
+    $("criteria").innerHTML=st.criteria.map(c=>`<tr><td>${c.id}</td><td>${c.statement}</td><td class="${c.passed?"pass":"fail"}">${c.passed?"PASS":"FAIL"}</td></tr>`).join("");
+  }catch(e){ console.warn(e); }
+}
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT") return;
+  if(e.key==="ArrowRight"||e.key==="PageDown") go(at+1);
+  else if(e.key==="ArrowLeft"||e.key==="PageUp") go(at-1);
+  else if(e.key===" "){ e.preventDefault(); toggleTimer(); }
+  else if(e.key.toLowerCase()==="f") fullscreen();
+  else if(/^[1-9]$/.test(e.key)) go(+e.key-1);
+});
+function fullscreen(){ document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen().catch(()=>{}); }
+$("fs").onclick=fullscreen; $("timerBtn").onclick=toggleTimer; $("prev").onclick=()=>go(at-1); $("next").onclick=()=>go(at+1);
+go(Math.max(0,(+location.hash.slice(1)||1)-1)); drawTimer(); loadEvidence(); poll(); setInterval(poll,4000);
+</script>
+</body>
+</html>

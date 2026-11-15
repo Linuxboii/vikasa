@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "vikasa"
-version = "2.1.0"
+version = "2.2.0"
 description = "A deterministic artificial-life laboratory for observable evolution"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -32,7 +32,7 @@ vikasa = "evolution_sim.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/evolution_sim"]
-artifacts = ["src/evolution_sim/climate/data/*.json"]
+artifacts = ["src/evolution_sim/climate/data/*.json", "src/evolution_sim/climate/web/*.html", "src/evolution_sim/assets/*"]
 
 [tool.pytest.ini_options]
 addopts = "--strict-markers --strict-config"

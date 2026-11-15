@@ -65,9 +65,12 @@ def build_parser() -> argparse.ArgumentParser:
     ui.add_argument("--config", type=Path, default=Path("config/default.json"))
     ui.add_argument("--seed", type=int, default=2026)
 
-    shortcut = commands.add_parser("shortcut", help="Install a desktop shortcut")
+    shortcut = commands.add_parser(
+        "shortcut", help="Install or update the desktop shortcuts (3D biome, Demo, Risk Checker)")
     shortcut.add_argument("--desktop", type=Path)
-    shortcut.add_argument("--name", default="Vikasa")
+    shortcut.add_argument("--name", default="Vikasa", help="Name of the 3D biome shortcut")
+    shortcut.add_argument("--only", choices=("biome", "demo", "risk"), action="append",
+                          help="Install only these shortcuts (repeatable)")
     shortcut.add_argument("--config", type=Path, default=Path("config/showcase.json"))
     shortcut.add_argument("--seed", type=int, default=2026)
 
@@ -75,6 +78,34 @@ def build_parser() -> argparse.ArgumentParser:
     godot.add_argument("--config", type=Path, default=Path("config/showcase.json"))
     godot.add_argument("--seed", type=int, default=2026)
     godot.add_argument("--godot-path", type=str)
+    godot.add_argument("--demo", action="store_true",
+                       help="Start the 3D client on presentation autopilot")
+
+    demo = commands.add_parser(
+        "demo", help="Presenter Demo mode: guided showcase with one-click launches")
+    demo.add_argument("--port", type=int, default=8787)
+    demo.add_argument("--no-browser", action="store_true")
+    demo.add_argument("--biome-only", action="store_true",
+                      help="Skip the presenter hub and open the 3D biome on autopilot")
+    demo.add_argument("--godot-path", type=str)
+
+    risk = commands.add_parser(
+        "risk", help="Species Risk Checker: will a species keep up with warming here?")
+    risk.add_argument("--port", type=int, default=8787)
+    risk.add_argument("--no-browser", action="store_true")
+    risk_commands = risk.add_subparsers(dest="risk_command")
+    check = risk_commands.add_parser("check", help="Print an assessment in the terminal")
+    check.add_argument("--place", default="hyderabad",
+                       help="Bundled place key or a region JSON from 'vikasa climate fetch'")
+    check.add_argument("--generation-years", type=float, default=1.0)
+    check.add_argument("--tolerance", default="local",
+                       help="specialist, local, generalist, or a breadth in °C")
+    check.add_argument("--ssp", default="SSP5-8.5")
+    check.add_argument("--live", action="store_true",
+                       help="Also run the direct simulation check (about a minute)")
+    check.add_argument("--seeds", type=int, default=4)
+    check.add_argument("--json", action="store_true", help="Print machine-readable JSON")
+    risk_commands.add_parser("places", help="List the bundled places")
 
     bridge = commands.add_parser("serve", help="Run the local simulation bridge for Godot")
     bridge.add_argument("--config", type=Path, default=Path("config/showcase.json"))
@@ -85,6 +116,45 @@ def build_parser() -> argparse.ArgumentParser:
         "climate", add_help=False,
         help="Evolutionary rescue under real climate warming (see 'vikasa climate --help')")
     return parser
+
+
+def _risk(args: argparse.Namespace) -> int:
+    from evolution_sim.climate import risk
+
+    if args.risk_command is None:
+        from evolution_sim.climate.risk_app import serve
+
+        return serve(page="/", port=args.port, open_browser=not args.no_browser)
+    if args.risk_command == "places":
+        for place in risk.places():
+            print(f"{place['key']:<14} {place['name']:<24} mean {place['annual_mean_c']:5.1f} °C"
+                  f"  seasons ±{place['seasonal_amplitude_c']:4.1f} °C  ({place['kind']})")
+        return 0
+    try:
+        tolerance: str | float = float(args.tolerance)
+    except ValueError:
+        tolerance = args.tolerance
+    estimate = risk.instant_estimate(args.place, generation_years=args.generation_years,
+                                     tolerance=tolerance, ssp=args.ssp)
+    live = None
+    if args.live:
+        print("Running the live simulation check ...", file=sys.stderr, flush=True)
+        job = risk.LiveChecks().start(args.place, generation_years=args.generation_years,
+                                      tolerance=tolerance, ssp=args.ssp, seeds=args.seeds,
+                                      run_inline=True)
+        live = job.snapshot()
+        if live["status"] != "done":
+            raise RuntimeError(live["error"] or "live check failed")
+    if args.json:
+        print(json.dumps({"estimate": estimate, "live": live}, indent=2, allow_nan=False))
+        return 0
+    print(risk.describe(estimate))
+    if live is not None:
+        direct = live["result"]["direct"]
+        print(f"  LIVE CHECK  {direct['survived']}/{direct['n']} populations survived to "
+              f"{live['result']['plan']['simulated_end_year']:.0f} -> "
+              f"{live['result']['verdict'].upper()} ({live['elapsed_seconds']:.0f} s)")
+    return 0
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -179,15 +249,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             EvolutionApp(SimulationConfig.from_json(args.config), seed=args.seed).run()
             return 0
         if args.command == "shortcut":
-            from evolution_sim.shortcut import install_desktop_shortcut
+            from evolution_sim.shortcut import SHORTCUTS, install_shortcut_set
 
-            shortcut = install_desktop_shortcut(
+            installed = install_shortcut_set(
                 desktop=args.desktop,
                 name=args.name,
                 config=args.config,
                 seed=args.seed,
+                modes=tuple(args.only or SHORTCUTS),
             )
-            print(f"Desktop shortcut installed: {shortcut}")
+            for shortcut in installed:
+                print(f"Desktop shortcut installed: {shortcut}")
             return 0
         if args.command == "godot":
             from evolution_sim.bridge import launch_godot
@@ -196,7 +268,20 @@ def main(argv: Sequence[str] | None = None) -> int:
                 SimulationConfig.from_json(args.config),
                 seed=args.seed,
                 godot_path=args.godot_path,
+                user_args=["--demo"] if args.demo else None,
             )
+        if args.command == "demo":
+            if args.biome_only:
+                from evolution_sim.bridge import launch_godot
+
+                return launch_godot(
+                    SimulationConfig.from_json(Path("config/showcase.json")), seed=2026,
+                    godot_path=args.godot_path, user_args=["--demo"])
+            from evolution_sim.climate.risk_app import serve
+
+            return serve(page="/demo", port=args.port, open_browser=not args.no_browser)
+        if args.command == "risk":
+            return _risk(args)
         if args.command == "serve":
             if not 1 <= args.port <= 65_535:
                 raise ValueError("port must be between 1 and 65535")

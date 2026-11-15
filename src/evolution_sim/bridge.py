@@ -849,6 +849,7 @@ def launch_godot(
     seed: int,
     godot_path: str | None = None,
     project_path: Path | None = None,
+    user_args: list[str] | None = None,
 ) -> int:
     binary = _godot_binary(godot_path)
     project = project_path or Path(__file__).resolve().parents[2] / "godot"
@@ -858,7 +859,10 @@ def launch_godot(
     try:
         bridge.start()
         time.sleep(0.15)
-        process = subprocess.Popen([binary, "--path", str(project)])
+        command = [binary, "--path", str(project)]
+        if user_args:
+            command += ["--", *user_args]
+        process = subprocess.Popen(command)
         return process.wait()
     finally:
         bridge.stop()

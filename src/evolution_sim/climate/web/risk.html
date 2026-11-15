@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vikasa · Species Risk Checker</title>
+<style>
+:root{
+  --bg:#071218; --bg2:#0b1b23; --glass:#0e222bcc; --edge:#7be0c22e; --edge2:#7be0c255;
+  --ink:#eef4ef; --muted:#9db9b8; --dim:#6f8b88; --accent:#f0cd8a; --teal:#7be0c2;
+  --rose:#f1a07c; --red:#ef6f6c; --green:#8fdc8a; --amber:#f0cd8a;
+  --ssp1:#7be0c2; --ssp2:#b7d97a; --ssp3:#f0b26a; --ssp5:#ef6f6c;
+  --radius:16px; --mono:ui-monospace,SFMono-Regular,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI",system-ui,-apple-system,sans-serif}
+body{background:
+  radial-gradient(1200px 600px at 85% -10%,#1d4a4a55,transparent 60%),
+  radial-gradient(900px 500px at -10% 110%,#4a3a1d44,transparent 60%),var(--bg);min-height:100vh}
+a{color:var(--teal)}
+header{display:flex;align-items:center;gap:18px;padding:18px 28px;border-bottom:1px solid var(--edge);
+  background:#06101588;backdrop-filter:blur(10px);position:sticky;top:0;z-index:5}
+.logo{width:38px;height:38px;border-radius:11px;background:conic-gradient(from 210deg,var(--teal),var(--accent),var(--rose),var(--teal));
+  display:grid;place-items:center;font-weight:800;color:#06222a;font-size:19px;box-shadow:0 0 24px #7be0c244}
+h1{font-size:19px;margin:0;letter-spacing:.2px}
+.sub{color:var(--muted);font-size:13px}
+.spacer{flex:1}
+.pill{border:1px solid var(--edge2);border-radius:999px;padding:5px 12px;font-size:12px;color:var(--muted);white-space:nowrap}
+.btn{appearance:none;border:1px solid var(--edge2);background:#16303acc;color:var(--ink);border-radius:11px;
+  padding:9px 15px;font:inherit;font-weight:600;cursor:pointer;transition:.15s;text-decoration:none;display:inline-block}
+.btn:hover{border-color:var(--accent);background:#22495499}
+.btn.primary{background:linear-gradient(135deg,#2c7a6a,#1d5a63);border-color:#7be0c288}
+.btn.gold{background:linear-gradient(135deg,#7a5f2c,#5a4419);border-color:#f0cd8a99}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+main{display:grid;grid-template-columns:minmax(360px,440px) 1fr;gap:22px;padding:22px 28px 40px;max-width:1500px;margin:0 auto}
+@media (max-width:1050px){main{grid-template-columns:1fr}}
+.card{background:var(--glass);border:1px solid var(--edge);border-radius:var(--radius);padding:18px 18px 16px;box-shadow:0 10px 40px #0007}
+.step{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.step b{width:24px;height:24px;border-radius:50%;background:var(--accent);color:#2a1d05;display:grid;place-items:center;font-size:13px}
+.step h2{font-size:15px;margin:0}
+.step span{color:var(--muted);font-size:12.5px;margin-left:auto}
+.stack>*+*{margin-top:16px}
+.places{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;max-height:330px;overflow:auto;padding-right:4px}
+.place{border:1px solid var(--edge);border-radius:12px;padding:8px 10px;cursor:pointer;background:#0b1b23;transition:.15s;position:relative}
+.place:hover{border-color:var(--edge2)}
+.place.on{border-color:var(--accent);background:#1d2f2a;box-shadow:inset 0 0 0 1px #f0cd8a55}
+.place .n{font-weight:650;font-size:13.5px}
+.place .m{color:var(--muted);font-size:11.5px}
+.place svg{position:absolute;right:8px;top:9px}
+.place .tag{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.6px}
+details summary{cursor:pointer;color:var(--teal);font-size:13px;margin-top:10px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+input[type=text],input[type=number]{background:#06141a;border:1px solid var(--edge2);color:var(--ink);border-radius:9px;padding:7px 9px;font:inherit;width:100%}
+.chips{display:flex;flex-wrap:wrap;gap:7px}
+.chip{border:1px solid var(--edge);border-radius:999px;padding:6px 11px;cursor:pointer;font-size:13px;background:#0b1b23;transition:.15s;user-select:none}
+.chip:hover{border-color:var(--edge2)}
+.chip.on{border-color:var(--accent);background:#2b2a1c;color:#fff}
+.chip small{color:var(--muted)}
+.slider{width:100%;accent-color:var(--accent)}
+.gen{display:flex;justify-content:space-between;align-items:baseline;margin-top:12px}
+.gen strong{font-size:22px;font-variant-numeric:tabular-nums}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--edge2);border-radius:11px;overflow:hidden;margin-top:6px}
+.seg div{padding:7px 4px;text-align:center;font-size:12.5px;cursor:pointer;border-right:1px solid var(--edge)}
+.seg div:last-child{border-right:0}
+.seg div.on{background:#2a5a52dd;color:#fff}
+.hint{color:var(--muted);font-size:12px;margin-top:6px}
+.ssps{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.ssp{border:1px solid var(--edge);border-radius:12px;padding:9px 11px;cursor:pointer;background:#0b1b23;transition:.15s}
+.ssp .k{font-weight:700;font-size:13.5px}
+.ssp .d{color:var(--muted);font-size:11.5px}
+.ssp.on{border-color:currentColor;background:#14262b}
+.hero{display:grid;grid-template-columns:170px 1fr;gap:22px;align-items:center}
+@media (max-width:640px){.hero{grid-template-columns:1fr}}
+.ring{position:relative;width:170px;height:170px}
+.ring .v{position:absolute;inset:0;display:grid;place-items:center;text-align:center}
+.ring .v b{font-size:38px;line-height:1;font-variant-numeric:tabular-nums}
+.ring .v span{font-size:11.5px;color:var(--muted);display:block;margin-top:4px}
+.verdict{display:inline-block;font-size:13px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;padding:6px 12px;border-radius:999px;margin-bottom:10px}
+.v-ok{background:#8fdc8a22;color:var(--green);border:1px solid #8fdc8a66}
+.v-risk{background:#f0cd8a22;color:var(--amber);border:1px solid #f0cd8a66}
+.v-lost{background:#ef6f6c22;color:var(--red);border:1px solid #ef6f6c66}
+.story{font-size:18px;line-height:1.45;margin:0}
+.story em{font-style:normal;color:var(--accent)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:16px}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#081820;border:1px solid var(--edge);border-radius:12px;padding:10px 12px}
+.kpi .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.kpi .x{font-size:21px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:11.5px;color:var(--dim)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media (max-width:1250px){.grid2{grid-template-columns:1fr}}
+.chart h3{margin:0 0 2px;font-size:14px}
+.chart p{margin:0 0 8px;color:var(--muted);font-size:12.5px}
+svg text{fill:var(--muted);font-size:11px;font-family:inherit}
+.axis{stroke:#7be0c233}
+.notes{margin:0;padding-left:18px;color:var(--muted);font-size:12.5px}
+.notes li+li{margin-top:4px}
+.live{display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center}
+.bar{height:9px;background:#22363c;border-radius:9px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--teal),var(--accent));transition:width .4s}
+.compare{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#0b1820ee;border:1px solid var(--edge2);
+  padding:10px 16px;border-radius:12px;opacity:0;transition:.3s;pointer-events:none;z-index:9}
+.toast.show{opacity:1}
+footer{color:var(--dim);font-size:12px;text-align:center;padding:0 24px 30px;max-width:1100px;margin:0 auto}
+.skeleton{opacity:.45}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">V</div>
+  <div>
+    <h1>Species Risk Checker</h1>
+    <div class="sub">Can evolution outrun warming here? · Real NASA POWER climate · IPCC AR6 scenarios · Vikasa simulation evidence</div>
+  </div>
+  <div class="spacer"></div>
+  <span class="pill" id="godotPill">3D biome: idle</span>
+  <a class="btn" href="/demo">▶ Demo mode</a>
+  <button class="btn" id="quit" title="Stop the local server">Quit</button>
+</header>
+
+<main>
+  <section class="stack">
+    <div class="card">
+      <div class="step"><b>1</b><h2>Choose a place</h2><span>monthly temperature, 1991–2020</span></div>
+      <div class="places" id="places"></div>
+      <details>
+        <summary>+ Add any place on Earth (needs internet)</summary>
+        <div class="row" style="margin-top:10px">
+          <input type="text" id="fName" placeholder="Name, e.g. Pune" style="flex:2">
+          <input type="number" id="fLat" placeholder="Lat" step="0.01" style="flex:1">
+          <input type="number" id="fLon" placeholder="Lon" step="0.01" style="flex:1">
+          <button class="btn" id="fetchBtn">Fetch</button>
+        </div>
+        <div class="hint">Downloads 45 years of NASA POWER monthly temperature for that point.</div>
+      </details>
+    </div>
+
+    <div class="card">
+      <div class="step"><b>2</b><h2>Describe the species</h2><span>how fast it breeds, how much heat it takes</span></div>
+      <div class="chips" id="presets"></div>
+      <div class="gen"><span class="sub">Generation time</span><strong id="genLabel">1 year</strong></div>
+      <input class="slider" type="range" id="gen" min="0" max="1000" value="500">
+      <div class="hint" id="presetNote"></div>
+      <div class="sub" style="margin-top:14px">Thermal tolerance</div>
+      <div class="seg" id="tol">
+        <div data-v="specialist">Specialist</div><div data-v="local">Local</div><div data-v="generalist">Generalist</div><div data-v="custom">Custom</div>
+      </div>
+      <div class="row" id="customRow" style="display:none;margin-top:8px">
+        <input type="number" id="customBreadth" value="4" min="0.5" max="50" step="0.5" style="width:110px"><span class="sub">°C tolerance breadth</span>
+      </div>
+      <div class="hint" id="tolHint"></div>
+    </div>
+
+    <div class="card">
+      <div class="step"><b>3</b><h2>Pick a future</h2><span>IPCC AR6 warming pathway</span></div>
+      <div class="ssps" id="ssps"></div>
+    </div>
+  </section>
+
+  <section class="stack">
+    <div class="card">
+      <div class="hero">
+        <div class="ring"><svg id="ring" width="170" height="170" viewBox="0 0 170 170"></svg>
+          <div class="v"><div><b id="pct">–</b><span>chance of survival<br>to 2100</span></div></div></div>
+        <div>
+          <div id="verdict" class="verdict v-risk">…</div>
+          <p class="story" id="story">Loading the climate record…</p>
+          <div class="kpis">
+            <div class="kpi"><div class="l">Warming / generation</div><div class="x" id="kRate">–</div><div class="s" id="kRateS"></div></div>
+            <div class="kpi"><div class="l">Danger line</div><div class="x" id="kLine">–</div><div class="s">longest generation that keeps up</div></div>
+            <div class="kpi"><div class="l">Without evolution</div><div class="x" id="kNoEvo">–</div><div class="s">same animals, no inheritance</div></div>
+            <div class="kpi"><div class="l">Today's seasons</div><div class="x" id="kToday">–</div><div class="s" id="kTodayS"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card chart">
+        <h3>Today's seasons vs the species' comfort zone</h3>
+        <p>Monthly temperature now (solid) and in 2100 (dashed). Outside the band, heat stress stops breeding.</p>
+        <svg id="season" viewBox="0 0 520 250" width="100%"></svg>
+      </div>
+      <div class="card chart">
+        <h3>The danger line: who keeps up?</h3>
+        <p>Survival against generation time for each future. The dot is your species.</p>
+        <svg id="danger" viewBox="0 0 520 250" width="100%"></svg>
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card chart">
+        <h3>Every future, side by side</h3>
+        <p>Estimated survival for this species and place under each pathway.</p>
+        <svg id="bars" viewBox="0 0 520 210" width="100%"></svg>
+      </div>
+      <div class="card">
+        <h3 style="margin:0 0 6px;font-size:14px">Check it for real</h3>
+        <p class="sub" style="margin:0 0 12px">The estimate uses the published survival curve. The live check simulates individual animals in this exact place and future, generation by generation.</p>
+        <div class="live">
+          <div>
+            <div id="liveStage" class="sub">Not started · about a minute on a laptop</div>
+            <div class="bar"><i id="liveBar"></i></div>
+          </div>
+          <button class="btn primary" id="liveBtn">Run live check</button>
+        </div>
+        <div class="compare" id="liveResult" style="display:none"></div>
+        <div class="row" style="margin-top:16px">
+          <button class="btn gold" id="watchBtn">🌍 Watch it in 3D</button>
+          <span class="sub">Opens the Living Biome with this place's seasons and future in fast-forward.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="margin:0 0 6px;font-size:14px">What this is based on</h3>
+      <ul class="notes" id="notes"></ul>
+    </div>
+  </section>
+</main>
+<footer>
+  Climate forcing is observed data (NASA POWER MERRA-2, 1981–2025) and IPCC AR6 WG1 Table 4.5 warming medians.
+  The organism is Vikasa's generic individual-based model: inherited thermal optimum, asymmetric thermal performance, heat-induced sterility.
+  Species presets are illustrative; use a species' own generation time and tolerance for a specific assessment.
+  <a href="/evidence/index.html" target="_blank">Open the full evidence report</a>.
+</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const SSP_COLORS = {"SSP1-2.6":"var(--ssp1)","SSP2-4.5":"var(--ssp2)","SSP3-7.0":"var(--ssp3)","SSP5-8.5":"var(--ssp5)"};
+const SSP_NAMES = {"SSP1-2.6":"Strong action","SSP2-4.5":"Middle of the road","SSP3-7.0":"Rivalry, high emissions","SSP5-8.5":"Fossil-fuelled, very high"};
+const S = {place:"hyderabad", gen:1, tol:"local", custom:4, ssp:"SSP5-8.5", preset:"frog", est:null, meta:null, job:null};
+const GEN_MIN = 0.1, GEN_MAX = 50;
+const genFromSlider = v => GEN_MIN * Math.pow(GEN_MAX/GEN_MIN, v/1000);
+const sliderFromGen = g => Math.round(1000*Math.log(g/GEN_MIN)/Math.log(GEN_MAX/GEN_MIN));
+const fmtGen = g => g < 1 ? `${Math.round(g*12)} months` : `${g < 10 ? g.toFixed(1).replace(/\.0$/,"") : Math.round(g)} year${g>=1.05||g<0.95?"s":""}`;
+const pct = p => `${Math.round(p*100)}%`;
+const toast = msg => { const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),3200); };
+async function api(path, body){
+  const r = await fetch(path, body===undefined?{}:{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const j = await r.json(); if(!r.ok) throw new Error(j.error||r.statusText); return j;
+}
+const logistic = (l, r) => 1/(1+Math.exp(-(l.b0 + l.b1*r)));
+
+function spark(monthly, w=56, h=22){
+  const lo=Math.min(...monthly), hi=Math.max(...monthly), span=Math.max(hi-lo,1);
+  const pts = monthly.map((v,i)=>`${(i/11*w).toFixed(1)},${(h-2-(v-lo)/span*(h-4)).toFixed(1)}`).join(" ");
+  return `<svg width="${w}" height="${h}"><polyline points="${pts}" fill="none" stroke="var(--accent)" stroke-width="1.6" opacity=".8"/></svg>`;
+}
+
+function renderPlaces(){
+  $("places").innerHTML = S.meta.places.map(p=>`
+    <div class="place ${p.key===S.place?"on":""}" data-k="${p.key}">
+      <div class="tag">${p.kind}</div><div class="n">${p.name}</div>
+      <div class="m">${p.annual_mean_c.toFixed(1)} °C · ±${p.seasonal_amplitude_c.toFixed(1)} °C</div>${spark(p.monthly_c)}
+    </div>`).join("");
+  document.querySelectorAll(".place").forEach(el=>el.onclick=()=>{S.place=el.dataset.k; renderPlaces(); update();});
+}
+function renderPresets(){
+  $("presets").innerHTML = S.meta.presets.map(p=>`<div class="chip ${p.key===S.preset?"on":""}" data-k="${p.key}">${p.icon} ${p.label} <small>${fmtGen(p.generation_years)}</small></div>`).join("");
+  document.querySelectorAll(".chip").forEach(el=>el.onclick=()=>{
+    const p = S.meta.presets.find(x=>x.key===el.dataset.k); S.preset=p.key; S.gen=p.generation_years;
+    if(p.breadth_c){S.tol="custom"; S.custom=p.breadth_c; $("customBreadth").value=p.breadth_c;}
+    $("gen").value = sliderFromGen(S.gen); renderPresets(); renderTol(); update();
+  });
+  $("genLabel").textContent = fmtGen(S.gen);
+}
+function renderTol(){
+  document.querySelectorAll("#tol div").forEach(d=>d.classList.toggle("on", d.dataset.v===S.tol));
+  $("customRow").style.display = S.tol==="custom"?"flex":"none";
+  $("tolHint").textContent = S.tol==="custom" ? "Width of the thermal performance curve; the hot side is 40% narrower." : (S.meta.tolerance_modes[S.tol]||"");
+}
+function renderSsps(){
+  $("ssps").innerHTML = Object.entries(S.meta.ssps).map(([k,v])=>`
+    <div class="ssp ${k===S.ssp?"on":""}" data-k="${k}" style="color:${SSP_COLORS[k]}">
+      <div class="k">${k}</div><div class="d">${SSP_NAMES[k]} · +${v.median_2081_2100_c} °C by 2090</div></div>`).join("");
+  document.querySelectorAll(".ssp").forEach(el=>el.onclick=()=>{S.ssp=el.dataset.k; renderSsps(); update();});
+}
+
+let pending = null;
+function update(){
+  clearTimeout(pending); pending = setTimeout(load, 60);
+  $("liveResult").style.display="none"; $("liveStage").textContent="Not started · about a minute on a laptop"; $("liveBar").style.width="0";
+}
+async function load(){
+  const tol = S.tol==="custom" ? S.custom : S.tol;
+  const q = new URLSearchParams({place:S.place, generation_years:S.gen, tolerance:tol, ssp:S.ssp});
+  try { S.est = await api(`/api/estimate?${q}`); render(); } catch(e){ toast(e.message); }
+}
+
+function ring(p, color){
+  const r=70, c=2*Math.PI*r, off=c*(1-p);
+  $("ring").innerHTML = `<circle cx="85" cy="85" r="${r}" fill="none" stroke="#22363c" stroke-width="13"/>
+    <circle cx="85" cy="85" r="${r}" fill="none" stroke="${color}" stroke-width="13" stroke-linecap="round" opacity="${p < 0.005 ? 0 : 1}"
+      stroke-dasharray="${c}" stroke-dashoffset="${off}" transform="rotate(-90 85 85)" style="transition:stroke-dashoffset .6s"/>`;
+}
+
+function render(){
+  const e = S.est, sc = e.scenario, sea = e.seasonal, place = e.place;
+  const preset = S.meta.presets.find(p=>p.key===S.preset);
+  const species = preset && Math.abs(preset.generation_years - S.gen) < 1e-9 ? preset.label.toLowerCase() : `species that breeds every ${fmtGen(S.gen)}`;
+  const cls = e.verdict.startsWith("likely persists") ? "v-ok" : e.verdict.startsWith("at risk") ? "v-risk" : "v-lost";
+  const color = cls==="v-ok"?"var(--green)":cls==="v-risk"?"var(--amber)":"var(--red)";
+  $("verdict").className = `verdict ${cls}`; $("verdict").textContent = e.verdict;
+  $("pct").textContent = pct(e.survival_probability); ring(e.survival_probability, color);
+  if (sea.status === "not viable") {
+    $("story").innerHTML = `A ${species} with a <em>${e.organism.breadth_c.toFixed(1)} °C</em> tolerance cannot breed through ${place.name}'s <em>${sea.limiting_season}</em> even today, before any warming. Try a broader tolerance.`;
+  } else {
+    $("story").innerHTML = `A ${species} in <em>${place.name}</em> faces <em>${sc.rate_c_per_generation.toFixed(3)} °C</em> of warming per generation under ${e.ssp}: <em>${Math.round(sc.pressure*100)}%</em> of the fastest change evolution can track. Species breeding slower than every <em>${sc.critical_generation_years.toFixed(1)} years</em> fall behind.`;
+  }
+  $("kRate").textContent = `${sc.rate_c_per_generation.toFixed(3)} °C`; $("kRateS").textContent = `${Math.round(sc.pressure*100)}% of critical (${e.reference.critical_rate.toFixed(3)})`;
+  $("kLine").textContent = `${sc.critical_generation_years.toFixed(1)} yr`;
+  $("kNoEvo").textContent = sea.status==="not viable" ? "0%" : pct(sc.p_without_evolution);
+  $("kToday").textContent = sea.status; $("kToday").style.color = sea.status==="viable"?"var(--green)":sea.status==="borderline"?"var(--amber)":"var(--red)";
+  $("kTodayS").textContent = `peak stress ${sea.peak_stress.toFixed(2)} (limit ${sea.breeding_limit})`;
+  $("notes").innerHTML = [
+    `Climate: NASA POWER monthly 2 m temperature for ${place.name}; mean ${place.annual_mean_c.toFixed(1)} °C, seasons ±${place.seasonal_amplitude_c.toFixed(1)} °C, observed trend ${place.trend_c_per_decade>=0?"+":""}${place.trend_c_per_decade.toFixed(3)} °C/decade (1981–2025).`,
+    `Future: ${e.ssp} adds ${sc.warming_2025_2100_c.toFixed(2)} °C between 2025 and 2100 (IPCC AR6 global median; regional factor ${e.regional_factor}).`,
+    `Evolution: the published sweep measured a critical rate of ${e.reference.critical_rate.toFixed(3)} °C per generation (95% CI ${e.reference.critical_rate_ci95.map(x=>x.toFixed(3)).join("–")}) with heredity, ${e.reference.control_critical_rate.toFixed(3)} without.`,
+    ...e.notes].map(n=>`<li>${n}</li>`).join("");
+  drawSeason(); drawDanger(); drawBars();
+}
+
+function drawSeason(){
+  const e=S.est, m=e.place.monthly_c, w=e.organism.breadth_c, mean=e.place.annual_mean_c, add=e.scenario.anomaly_2100_c;
+  const k=Math.sqrt(2*Math.log(1/(1-e.seasonal.breeding_limit)));
+  const hot=mean+0.6*w*k, cold=mean-w*k;
+  const W=520,H=250,L=40,R=12,T=12,B=28;
+  const lo=Math.min(...m, cold)-1.5, hi=Math.max(...m.map(v=>v+add), hot)+1.5;
+  const x=i=>L+(W-L-R)*i/11, y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
+  let s=`<rect x="${L}" y="${y(hot)}" width="${W-L-R}" height="${y(cold)-y(hot)}" fill="#7be0c214" stroke="#7be0c244" stroke-dasharray="3 3"/>`;
+  s+=`<text x="${W-R-4}" y="${y(hot)-5}" text-anchor="end">breeding stops above ${hot.toFixed(1)} °C</text>`;
+  s+=`<text x="${W-R-4}" y="${y(cold)+14}" text-anchor="end">and below ${cold.toFixed(1)} °C</text>`;
+  for(let v=Math.ceil(lo/5)*5; v<=hi; v+=5) s+=`<line class="axis" x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}"/><text x="${L-6}" y="${y(v)+4}" text-anchor="end">${v}°</text>`;
+  "JFMAMJJASOND".split("").forEach((c,i)=>s+=`<text x="${x(i)}" y="${H-8}" text-anchor="middle">${c}</text>`);
+  const line=(arr,extra)=>`<polyline fill="none" points="${arr.map((v,i)=>`${x(i)},${y(v)}`).join(" ")}" ${extra}/>`;
+  s+=line(m.map(v=>v+add),`stroke="var(--rose)" stroke-width="2" stroke-dasharray="6 5"`);
+  s+=line(m,`stroke="var(--accent)" stroke-width="2.6"`);
+  m.forEach((v,i)=>s+=`<circle cx="${x(i)}" cy="${y(v)}" r="3" fill="${v>hot||v<cold?"var(--red)":"var(--accent)"}"/>`);
+  s+=`<text x="${L+6}" y="${T+12}" fill="var(--accent)">today</text><text x="${L+50}" y="${T+12}" style="fill:var(--rose)">2100 (+${add.toFixed(1)} °C)</text>`;
+  $("season").innerHTML=s;
+}
+
+function drawDanger(){
+  const ref=S.meta.reference, W=520,H=250,L=40,R=14,T=14,B=30;
+  const gx=g=>L+(W-L-R)*Math.log(g/GEN_MIN)/Math.log(GEN_MAX/GEN_MIN), py=p=>T+(H-T-B)*(1-p);
+  const viable = S.est.seasonal.status!=="not viable";
+  let s="";
+  [0,0.25,0.5,0.75,1].forEach(p=>s+=`<line class="axis" x1="${L}" x2="${W-R}" y1="${py(p)}" y2="${py(p)}"/><text x="${L-6}" y="${py(p)+4}" text-anchor="end">${p*100}%</text>`);
+  [0.1,0.25,0.5,1,2,5,10,25,50].forEach(g=>s+=`<text x="${gx(g)}" y="${H-10}" text-anchor="middle">${g<1?g:g}${g===50?" yr":""}</text>`);
+  Object.entries(S.meta.ssps).forEach(([k,v])=>{
+    const pts=[]; for(let i=0;i<=120;i++){const g=GEN_MIN*Math.pow(GEN_MAX/GEN_MIN,i/120); pts.push(`${gx(g).toFixed(1)},${py(logistic(ref.logistic, v.rate_c_per_year*g)).toFixed(1)}`);}
+    const on=k===S.ssp; s+=`<polyline fill="none" points="${pts.join(" ")}" stroke="${SSP_COLORS[k]}" stroke-width="${on?3:1.4}" opacity="${on?1:.45}"/>`;
+  });
+  const line=S.est.scenario.critical_generation_years;
+  if(line<=GEN_MAX) s+=`<line x1="${gx(line)}" x2="${gx(line)}" y1="${T}" y2="${H-B}" stroke="var(--ssp5)" stroke-dasharray="4 4" opacity=".8"/><text x="${gx(line)+5}" y="${T+10}" style="fill:var(--rose)">danger line ${line.toFixed(1)} yr</text>`;
+  const p=viable?S.est.survival_probability:0;
+  s+=`<circle cx="${gx(Math.min(Math.max(S.gen,GEN_MIN),GEN_MAX))}" cy="${py(p)}" r="8" fill="var(--ink)" stroke="var(--bg)" stroke-width="3"/>`;
+  s+=`<text x="${gx(Math.min(Math.max(S.gen,GEN_MIN),GEN_MAX))}" y="${py(p)-13}" text-anchor="middle" style="fill:var(--ink);font-weight:700">you</text>`;
+  $("danger").innerHTML=s;
+}
+
+function drawBars(){
+  const sc=S.est.scenarios, viable=S.est.seasonal.status!=="not viable", W=520,H=210,L=96,R=50,T=10,row=46;
+  let s="";
+  Object.keys(sc).forEach((k,i)=>{
+    const p=viable?sc[k].p_with_evolution:0, q=viable?sc[k].p_without_evolution:0, y=T+i*row, w=W-L-R;
+    s+=`<text x="${L-10}" y="${y+17}" text-anchor="end" style="fill:${SSP_COLORS[k]};font-weight:${k===S.ssp?800:500}">${k}</text>`;
+    s+=`<rect x="${L}" y="${y+4}" width="${w}" height="18" rx="9" fill="#22363c"/>`;
+    s+=`<rect x="${L}" y="${y+4}" width="${Math.max(0.001,w*p)}" height="18" rx="9" fill="${SSP_COLORS[k]}" opacity="${k===S.ssp?1:.65}" style="transition:width .5s"/>`;
+    s+=`<rect x="${L}" y="${y+26}" width="${Math.max(0.001,w*q)}" height="5" rx="3" fill="#9db9b8" opacity=".55"/>`;
+    s+=`<text x="${L+w+8}" y="${y+18}" style="fill:var(--ink)">${pct(p)}</text>`;
+  });
+  s+=`<text x="${L}" y="${H-4}">thin grey bar: same animals without inheritance</text>`;
+  $("bars").innerHTML=s;
+}
+
+async function runLive(){
+  const tol = S.tol==="custom" ? S.custom : S.tol;
+  $("liveBtn").disabled=true; $("liveResult").style.display="none";
+  try {
+    let job = await api("/api/live", {place:S.place, generation_years:S.gen, tolerance:tol, ssp:S.ssp, seeds:4});
+    S.job = job.id;
+    while(true){
+      $("liveStage").textContent = `${job.stage} · ${job.elapsed_seconds.toFixed(0)} s`;
+      $("liveBar").style.width = `${Math.max(6, 100*job.done/job.total)}%`;
+      if(job.status==="done"||job.status==="error") break;
+      await new Promise(r=>setTimeout(r,1000));
+      if(S.job!==job.id) return;
+      job = await api(`/api/live/${job.id}`);
+    }
+    if(job.status==="error") throw new Error(job.error);
+    const r=job.result, d=r.direct;
+    $("liveBar").style.width="100%";
+    $("liveStage").innerHTML = `Done in ${job.elapsed_seconds.toFixed(0)} s · <b>${r.verdict}</b>`;
+    $("liveResult").style.display="grid";
+    $("liveResult").innerHTML = `
+      <div class="kpi"><div class="l">Populations survived</div><div class="x">${d.survived} / ${d.n}</div><div class="s">${d.p===null?"":`95% range ${pct(d.wilson[0])}–${pct(d.wilson[1])}`}</div></div>
+      <div class="kpi"><div class="l">Simulated to</div><div class="x">${Math.round(r.plan.simulated_end_year)}</div><div class="s">${r.plan.warming_c.toFixed(2)} °C applied${r.plan.truncated?" (capped)":""}</div></div>
+      <div class="kpi"><div class="l">Estimate said</div><div class="x">${pct(S.est.survival_probability)}</div><div class="s">${S.est.in_reference_domain?"same conditions as the curve":"curve measured elsewhere"}</div></div>`;
+  } catch(e){ $("liveStage").textContent = `Live check failed: ${e.message}`; }
+  finally { $("liveBtn").disabled=false; }
+}
+
+async function watch(){
+  const tol = S.tol==="custom" ? S.custom : S.tol;
+  try { const r = await api("/api/watch",{place:S.place, generation_years:S.gen, tolerance:tol, ssp:S.ssp});
+        toast(r.launched ? `Opening the 3D biome: ${r.label}` : "3D launch disabled in this session"); pollGodot(); }
+  catch(e){ toast(e.message); }
+}
+async function pollGodot(){ try{ const g=await api("/api/godot"); $("godotPill").textContent = g.running?`3D biome: ${g.label}`:"3D biome: idle"; }catch{} }
+
+async function fetchPlace(){
+  const body={name:$("fName").value, latitude:+$("fLat").value, longitude:+$("fLon").value};
+  $("fetchBtn").disabled=true; toast("Downloading 45 years of NASA POWER data…");
+  try { const r=await api("/api/fetch", body); S.meta=await api("/api/meta"); S.place=r.key; renderPlaces(); update(); toast(`${r.name} added`); }
+  catch(e){ toast(e.message); } finally { $("fetchBtn").disabled=false; }
+}
+
+async function init(){
+  S.meta = await api("/api/meta");
+  const params = new URLSearchParams(location.search);
+  if(params.get("place")) S.place=params.get("place");
+  if(params.get("ssp")) S.ssp=params.get("ssp");
+  if(params.get("preset")){ const p=S.meta.presets.find(x=>x.key===params.get("preset")); if(p){S.preset=p.key; S.gen=p.generation_years;} }
+  if(params.get("gen")) { S.gen=+params.get("gen"); S.preset=""; }
+  $("presetNote").textContent = S.meta.preset_note;
+  $("gen").value = sliderFromGen(S.gen);
+  $("gen").oninput = ()=>{ S.gen=+genFromSlider(+$("gen").value).toPrecision(3); S.preset=(S.meta.presets.find(p=>Math.abs(p.generation_years-S.gen)<1e-9)||{}).key||""; renderPresets(); update(); };
+  document.querySelectorAll("#tol div").forEach(d=>d.onclick=()=>{S.tol=d.dataset.v; renderTol(); update();});
+  $("customBreadth").oninput = ()=>{ S.custom=+$("customBreadth").value||4; update(); };
+  $("liveBtn").onclick=runLive; $("watchBtn").onclick=watch; $("fetchBtn").onclick=fetchPlace;
+  $("quit").onclick=async()=>{ await api("/api/quit",{}); document.body.innerHTML='<p style="padding:40px;text-align:center">Vikasa stopped. You can close this tab.</p>'; };
+  renderPlaces(); renderPresets(); renderTol(); renderSsps(); load(); setInterval(pollGodot, 4000); pollGodot();
+}
+init().catch(e=>{ $("story").textContent = `Could not reach the local Vikasa server: ${e.message}`; });
+</script>
+</body>
+</html>
