@@ -1,5 +1,40 @@
 # 3–5 minute demonstration
 
+## Fastest path: Demo mode
+
+```powershell
+.\.venv\Scripts\vikasa.exe demo                # presenter hub in the browser
+.\.venv\Scripts\vikasa.exe demo --biome-only   # just the 3D biome on autopilot
+```
+
+Or double-click **Vikasa Demo** on the desktop (`vikasa shortcut` installs it).
+
+![Demo mode presenter hub](images/demo-mode.png)
+
+The hub is a seven-chapter presenter view with a talk timer (<kbd>Space</kbd>),
+chapter keys (<kbd>←</kbd> <kbd>→</kbd> <kbd>1</kbd>–<kbd>7</kbd>), fullscreen
+(<kbd>F</kbd>), and one-click launches for every 3D scene:
+
+| # | Chapter | Time | What happens |
+|---|---|---|---|
+| 1 | The question | 30 s | Headline results: critical rate, about 4× rescue gain, the 6-year danger line |
+| 2 | The living biome | 90 s | **Launch the biome on autopilot** opens the 3D client with `--demo` |
+| 3 | Warming in 3D | 60 s | **Launch the warming biome** (Western Ghats climate with rising temperature) |
+| 4 | Species Risk Checker | 90 s | Prepared scenarios: frog in Hyderabad, a 6-year species, a tortoise in Delhi |
+| 5 | The evidence | 45 s | Survival curve and all eight pre-registered criteria, failures included |
+| 6 | Under the hood | 45 s | Architecture and live statistics (tests, lines of code, frame rate) |
+| 7 | Judges' questions | — | Prepared answers to the six most likely questions |
+
+### The 3D autopilot
+
+`vikasa godot --demo` (or the chapter 2 button) runs a narrated, looping four-minute
+tour: director camera, *dynasty* and *generation* lenses, nightfall, a storm, a food
+bloom and a fast-forward burst, each with an on-screen caption. **Any key or click
+hands control back**, restoring the director, lens, daylight and speed. The tour is
+headless-tested by `godot/tests/DemoPilotSmoke.gd`.
+
+The manual walkthrough below remains the detailed script.
+
 ## Prepare
 
 Install the package and Godot 4, then run from the repo root:

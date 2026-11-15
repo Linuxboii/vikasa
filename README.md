@@ -1,8 +1,165 @@
-# Vikasa — Living Biome
+<div align="center">
 
-[Climate rescue](#climate-rescue-can-evolution-outrun-warming) · [What's new in 2.0](#vikasa-20--the-living-biome-showcase) · [Showcase guide](docs/SHOWCASE.md) · [Visual evidence and graph-reading guide](#visual-evidence-and-how-to-read-the-graphs) · [Mathematics PDF](output/pdf/Vikasa_Mathematics_Guide.pdf) · [Desktop setup](#run-the-3d-living-biome)
+<img src="src/evolution_sim/assets/vikasa-biome.png" width="96" alt="Vikasa">
+
+# Vikasa — Living Biome & Climate Rescue
+
+**Watch evolution happen, then ask it a real question: which species can evolve fast enough to survive climate change?**
+
+![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)
+![Godot 4](https://img.shields.io/badge/Godot-4-478CBF?logo=godotengine&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-379-2ea44f)
+![Data](https://img.shields.io/badge/data-NASA%20POWER%20%C2%B7%20IPCC%20AR6-f0cd8a)
+![Deterministic](https://img.shields.io/badge/runs-100%25%20reproducible-7be0c2)
+![License](https://img.shields.io/badge/license-MIT-lightgrey)
+
+[Species Risk Checker](#-species-risk-checker) · [Demo mode](#-demo-mode) · [Quick start](#-quick-start-windows) · [Climate rescue](#climate-rescue-can-evolution-outrun-warming) · [Living Biome](#vikasa-20--the-living-biome-showcase) · [Evidence](#visual-evidence-and-how-to-read-the-graphs) · [Mathematics PDF](output/pdf/Vikasa_Mathematics_Guide.pdf) · [Desktop setup](#run-the-3d-living-biome)
 
 ![Golden hour over the floating Vikasa biome](docs/images/showcase-hero.jpg)
+
+</div>
+
+## Vikasa 2.2 at a glance
+
+Vikasa is a **deterministic, individual-based evolution simulator** with a cinematic 3D
+client. Every animal inherits a genome and a temperament and decides for itself what
+to do next. Populations forage, court, fight, raise young, starve, and evolve over
+generations. Version 2.1 added real climate science (NASA POWER temperature records
+and IPCC AR6 warming pathways). **Version 2.2 turns that science into a tool anyone can
+use, and makes the whole project presentable in one click.**
+
+| | |
+|---|---|
+| **The question** | Climate change is not only about how hot it gets, but whether life can adapt in time. Fast breeders can evolve; slow breeders fall behind. Where is the line? |
+| **The answer** | With heritable heat tolerance, a population survives warming up to **0.262 °C per generation**, about **4×** more than without inheritance. Under very high emissions (SSP5-8.5), species whose generations last longer than **~6 years** fall behind. |
+| **The tool** | The **Species Risk Checker**: pick a place, describe a species, choose a future, and get an instant estimate, a live simulation and a 3D replay. |
+| **The showcase** | **Demo mode**: a presenter hub with a talk timer and one-click launches, plus a narrated 3D autopilot. |
+
+## 🌍 Species Risk Checker
+
+> *"Give me any place and any species."*
+
+![Species Risk Checker: a six-year species in Hyderabad under SSP5-8.5](docs/images/risk-checker.png)
+
+```powershell
+.\.venv\Scripts\vikasa.exe risk                                   # opens the app in your browser
+.\.venv\Scripts\vikasa.exe risk check --place hyderabad --generation-years 6 --ssp SSP5-8.5
+```
+
+```text
+Species Risk Checker · Hyderabad · SSP5-8.5
+  Climate     mean 26.0 °C, seasons ±6.4 °C (NASA POWER 1991-2020)
+  Organism    generation 6 years, tolerance 9.6 °C (local)
+  Today       viable (peak hot season stress 0.55; breeding stops above 0.7)
+  Warming     0.247 °C per generation (94% of the critical rate)
+  Danger line generations longer than 6.4 years fall behind under SSP5-8.5
+  Survival    58% with evolution, 1% without
+  VERDICT     AT RISK
+```
+
+| Step | What you choose | What Vikasa uses |
+|---|---|---|
+| **1. Place** | 7 Indian cities + 3 study regions bundled; any latitude and longitude on Earth fetched live | NASA POWER monthly temperature, 1981–2025, with SHA-256 provenance |
+| **2. Species** | Generation time (3 months to 50 years; presets from insect to giant tortoise) and heat tolerance (specialist, local, generalist or °C) | Vikasa's thermal-performance and inheritance model |
+| **3. Future** | SSP1-2.6, SSP2-4.5, SSP3-7.0 or SSP5-8.5 | IPCC AR6 WG1 Table 4.5 warming medians |
+
+What you get back:
+
+- **Instant estimate.** A seasonal screen built from the model's own heat-stress rule
+  (it reproduces all five published baseline verdicts with no fitted parameters),
+  then the survival-versus-warming curve measured across 216 simulations. Survival
+  *with* and *without* evolution, the danger line, and every future side by side.
+- **Live check.** About a minute of direct individual-based simulation of that exact
+  place, organism and future, reported with Wilson confidence intervals.
+- **Watch it in 3D.** Opens the Living Biome with that place's real seasons and that
+  future's warming in fast-forward.
+- **Honest labels.** Inputs outside the measured conditions are flagged as
+  *indicative*, and the live check is shown as the authority when the two disagree.
+
+Method, validation table and API: **[docs/RISK_CHECKER.md](docs/RISK_CHECKER.md)**.
+
+## ▶ Demo mode
+
+```powershell
+.\.venv\Scripts\vikasa.exe demo                 # presenter hub
+.\.venv\Scripts\vikasa.exe demo --biome-only    # just the 3D biome on autopilot
+.\.venv\Scripts\vikasa.exe godot --demo         # any config, on autopilot
+```
+
+![Demo mode presenter hub](docs/images/demo-mode.png)
+
+A seven-chapter presenter hub that runs the whole showcase from one browser tab:
+
+| # | Chapter | Time | On screen |
+|---|---|---|---|
+| 1 | The question | 30 s | Headline results and the "say this" talk track |
+| 2 | The living biome | 90 s | One click opens the 3D biome on **autopilot** |
+| 3 | Warming in 3D | 60 s | Western Ghats seasons with rising temperature |
+| 4 | Species Risk Checker | 90 s | Prepared scenarios: frog in Hyderabad, a 6-year species, a tortoise in Delhi |
+| 5 | The evidence | 45 s | Survival curve and all eight pre-registered criteria, failures included |
+| 6 | Under the hood | 45 s | Architecture and **live** statistics: tests, lines of code, frame rate |
+| 7 | Judges' questions | — | Prepared answers to the six most likely questions |
+
+Keys: <kbd>←</kbd> <kbd>→</kbd> chapters · <kbd>Space</kbd> talk timer · <kbd>F</kbd> fullscreen · <kbd>1</kbd>–<kbd>7</kbd> jump.
+
+**The 3D autopilot** runs a narrated, looping four-minute tour: director camera,
+dynasty and generation lenses, nightfall, a storm, a food bloom and a fast-forward
+burst. **Any key or click hands control back** and restores your settings. It is
+headless-tested (`godot/tests/DemoPilotSmoke.gd`). Full script:
+[docs/DEMO_SCRIPT.md](docs/DEMO_SCRIPT.md).
+
+![Engineering chapter with live project statistics](docs/images/demo-engineering.png)
+
+## 🖥️ Desktop shortcuts
+
+<img src="docs/images/desktop-shortcuts.png" width="440" alt="Vikasa, Vikasa Demo and Vikasa Risk Checker shortcut icons">
+
+```powershell
+.\.venv\Scripts\vikasa.exe shortcut                 # installs or updates all three
+.\.venv\Scripts\vikasa.exe shortcut --only demo     # just one
+```
+
+| Shortcut | Opens |
+|---|---|
+| **Vikasa** | The 3D Living Biome (`config/showcase.json`, seed 2026) |
+| **Vikasa Demo** | The presenter Demo hub |
+| **Vikasa Risk Checker** | The Species Risk Checker |
+
+The shortcuts launch without a console window. Re-running the command replaces older
+shortcuts, so it also upgrades shortcuts made by earlier versions. Windows only;
+macOS and Linux use the commands directly.
+
+## ⚡ Quick start (Windows)
+
+```powershell
+winget install --id GodotEngine.GodotEngine --exact --scope user
+py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -e .
+.\.venv\Scripts\vikasa.exe shortcut      # desktop shortcuts
+.\.venv\Scripts\vikasa.exe demo          # start presenting
+```
+
+macOS and Linux instructions: [Run the 3D Living Biome](#run-the-3d-living-biome).
+
+## What's inside
+
+| Watch | Experiment | Climate science | Engineering |
+|---|---|---|---|
+| GPU-instanced 3D wildlife at a locked 60 FPS on integrated graphics | Weather, drought, wildfire, disease and food-bloom pressures | NASA POWER climate records for 10 places, any point on Earth fetchable | Python engine is authoritative; Godot renders over a loopback binary stream |
+| Director camera, day and night, weather, procedural soundscape | Seed-blocked controlled experiments with offline viewers | IPCC AR6 SSP1-2.6 to SSP5-8.5 pathways | Seeded and deterministic: same seed, same world |
+| Click any animal to see its action and the reason behind it | Headless runs, batches, stress tests and development studies | Critical-rate sweep, Sobol sensitivity, Gaussian-process surrogate | 379 automated tests, plus headless Godot smoke tests |
+| Lenses for coat, action, energy, dynasty, generation and temperament | Exact Price decomposition of every birth cohort | Species Risk Checker with live simulation checks | SHA-256 manifests on evidence packages; invariant checks every run |
+
+| Command | Purpose |
+|---|---|
+| `vikasa demo` | Presenter Demo hub (`--biome-only` for the 3D autopilot alone) |
+| `vikasa risk` · `vikasa risk check` · `vikasa risk places` | Species Risk Checker app, terminal verdicts, bundled places |
+| `vikasa godot [--demo]` | 3D Living Biome (Windows and macOS launch the bridge and client together) |
+| `vikasa serve` | Simulation bridge only (Linux two-terminal setup) |
+| `vikasa ui` | Pygame 2D laboratory |
+| `vikasa climate pipeline · fetch · assess · report` | Full evolutionary-rescue study |
+| `vikasa run · batch · study · contrast · stress · validate` | Headless science and auditing |
+| `vikasa shortcut` | Install or update the desktop shortcuts |
 
 ## Vikasa 2.0 — the Living Biome showcase
 
@@ -74,6 +231,9 @@ before the run, including the three that failed and why.
 The climate data is real; the organism is a generic model, not a calibrated real
 species.
 
+**Try it for your own place and species:** the [Species Risk Checker](#-species-risk-checker)
+turns these results into an interactive tool (`vikasa risk`).
+
 ## Research views
 
 ![Live generational development and birth-cohort evolutionary change](docs/images/research-evolution.png)
@@ -137,7 +297,7 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\vikasa.exe godot --config config\showcase.json --seed 2026
 ```
 
-The launcher detects a per-user WinGet Godot installation. To create or refresh a desktop shortcut for this checkout, run:
+The launcher detects a per-user WinGet Godot installation. To create or refresh the desktop shortcuts for this checkout (**Vikasa**, **Vikasa Demo** and **Vikasa Risk Checker**), run:
 
 ```powershell
 .\.venv\Scripts\vikasa.exe shortcut --config config\showcase.json --seed 2026
