@@ -164,7 +164,8 @@ class RiskApp:
         extra = []
         if self.custom_dir.is_dir():
             extra = [resolve_region(str(path)) for path in sorted(self.custom_dir.glob("*.json"))]
-        result = planner.triage(rows, ssp=str(body.get("ssp", "SSP5-8.5")), extra_places=extra)
+        result = planner.triage(rows, ssp=str(body.get("ssp", "SSP5-8.5")), extra_places=extra,
+                                allow_paths=False)
         return {"result": result, "html": planner.render_html(result),
                 "csv": planner.to_csv(result)}
 
@@ -243,6 +244,14 @@ def _handler(app: RiskApp, server_ref: dict[str, ThreadingHTTPServer]):
             self._send(200, path.read_bytes(), kind)
 
         def _body(self) -> dict[str, Any]:
+            # Only same-machine pages may post: a JSON content type forces a CORS
+            # preflight (which this server never approves) and a foreign Origin is refused.
+            kind = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
+            if kind != "application/json":
+                raise ValueError("requests must be application/json")
+            origin = self.headers.get("Origin")
+            if origin and urlparse(origin).hostname not in ("127.0.0.1", "localhost"):
+                raise ValueError("cross-origin requests are not accepted")
             length = int(self.headers.get("Content-Length", "0") or 0)
             if length > 400_000:
                 raise ValueError("request body too large")

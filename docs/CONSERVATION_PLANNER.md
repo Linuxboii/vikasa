@@ -113,7 +113,9 @@ read warmer than their town centre (the Ooty cell averages 23.4 °C).
 | `ssp` | no | Per-row pathway; otherwise the one chosen |
 | `notes` | no | Carried into the report |
 
-Up to 200 rows. Bad rows are reported and skipped, never silently dropped.
+Up to 200 rows. Bad rows are reported and skipped, never silently dropped. Region JSON
+paths are accepted on the command line only; the browser app takes bundled or fetched
+places, and the local server refuses non-JSON and cross-origin requests.
 
 `examples/watchlist-india.csv` holds 14 Indian species. **Their generation times and
 tolerances are illustrative orders of magnitude, not measured values**; replace them

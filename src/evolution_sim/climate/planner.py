@@ -99,8 +99,13 @@ def all_place_keys() -> list[str]:
     return [*CITY_REGIONS, *BUNDLED_REGIONS, *SURVEY_REGIONS]
 
 
-def find_place(spec: str, extra: Iterable[RegionClimate] = ()) -> RegionClimate:
-    """A bundled key, a place name (case-insensitive), or a region JSON path."""
+def find_place(spec: str, extra: Iterable[RegionClimate] = (), *,
+               allow_paths: bool = True) -> RegionClimate:
+    """A bundled key, a place name (case-insensitive), or a region JSON path.
+
+    ``allow_paths=False`` (used for watchlists arriving over HTTP) refuses file paths,
+    so a request can only name bundled places or places already fetched.
+    """
     text = str(spec).strip()
     lowered = text.lower()
     for region in extra:
@@ -113,6 +118,9 @@ def find_place(spec: str, extra: Iterable[RegionClimate] = ()) -> RegionClimate:
             short = name.split(" (")[0].lower()
             if lowered in (name.lower(), short):
                 return resolve_region(key)
+    if not allow_paths:
+        raise ValueError(f"Unknown place {text!r}: use a bundled place key or name, or "
+                         "fetch it first in the Species Risk Checker")
     return resolve_region(text)
 
 
@@ -455,7 +463,8 @@ def _tolerance(value: str) -> str | float:
 
 
 def triage(rows: list[dict[str, str]], *, ssp: str = "SSP5-8.5",
-           extra_places: Iterable[RegionClimate] = ()) -> dict[str, Any]:
+           extra_places: Iterable[RegionClimate] = (),
+           allow_paths: bool = True) -> dict[str, Any]:
     """Assess every watchlist row and rank them by conservation priority."""
     if ssp not in SSP_WARMING:
         raise ValueError(f"Unknown SSP {ssp!r}; use one of {', '.join(SSP_WARMING)}")
@@ -466,7 +475,8 @@ def triage(rows: list[dict[str, str]], *, ssp: str = "SSP5-8.5",
     for index, row in enumerate(rows, start=1):
         label = row.get("species") or f"Row {index}"
         try:
-            plan = plan_species(find_place(row.get("place", ""), extra),
+            plan = plan_species(find_place(row.get("place", ""), extra,
+                                           allow_paths=allow_paths),
                                 generation_years=float(row.get("generation_years") or "nan"),
                                 tolerance=_tolerance(row.get("tolerance", "")),
                                 ssp=row.get("ssp") or ssp, name=label, sites=sites,

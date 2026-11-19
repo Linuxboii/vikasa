@@ -180,6 +180,22 @@ def test_app_serves_the_planner(tmp_path) -> None:
         with pytest.raises(urllib.error.HTTPError) as error:
             urllib.request.urlopen(bad)
         assert error.value.code == 400
+        # A watchlist cannot name files on disk, and other origins cannot post.
+        probe = "species,place,generation_years\nX," + str(ROOT / "probe.json") + ",2\n"
+        request = urllib.request.Request(
+            base + "/api/plan", data=json.dumps({"csv": probe}).encode(),
+            headers={"Content-Type": "application/json"})
+        reply = json.loads(urllib.request.urlopen(request).read())
+        assert reply["result"]["species_count"] == 0
+        assert "Unknown place" in reply["result"]["errors"][0]["error"]
+        for headers in ({"Content-Type": "text/plain"},
+                        {"Content-Type": "application/json", "Origin": "http://evil.example"}):
+            forged = urllib.request.Request(base + "/api/plan",
+                                            data=json.dumps({"csv": example}).encode(),
+                                            headers=headers)
+            with pytest.raises(urllib.error.HTTPError) as error:
+                urllib.request.urlopen(forged)
+            assert error.value.code == 400
     finally:
         server.shutdown()
         server.server_close()
