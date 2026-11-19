@@ -14,8 +14,8 @@ ASSETS = Path(__file__).resolve().parent / "assets"
 
 # mode -> (default shortcut name, description, icon file)
 SHORTCUTS: dict[str, tuple[str, str, str]] = {
-    "app": ("Vikasa", "Open Vikasa: the 3D Living Biome, Species Risk Checker and Demo mode in "
-            "one place", "vikasa-biome.ico"),
+    "app": ("Vikasa", "Open Vikasa: the 3D Living Biome, Species Risk Checker, Conservation "
+            "Planner and Demo mode in one place", "vikasa-biome.ico"),
     "biome": ("Vikasa 3D", "Launch Vikasa Living Biome 3D", "vikasa-biome.ico"),
     "demo": ("Vikasa Demo", "Launch Vikasa Demo mode: presenter hub with the 3D Living Biome "
              "on autopilot", "vikasa-demo.ico"),
