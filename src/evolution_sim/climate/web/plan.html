@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vikasa · Conservation Planner</title>
+<style>
+:root{--bg:#061015;--glass:#0e222bd9;--edge:#7be0c22e;--edge2:#7be0c266;--ink:#eef4ef;--muted:#9db9b8;--dim:#6f8b88;
+  --accent:#f0cd8a;--teal:#7be0c2;--rose:#f1a07c;--red:#ff6b6b;--mono:ui-monospace,SFMono-Regular,Consolas,monospace}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Segoe UI",system-ui,sans-serif}
+body{background:radial-gradient(1200px 600px at 85% -10%,#1d4a4a55,transparent 60%),radial-gradient(900px 500px at -10% 110%,#4a3a1d44,transparent 60%),var(--bg);min-height:100vh}
+header{display:flex;align-items:center;gap:16px;padding:16px 28px;border-bottom:1px solid var(--edge);background:#06101588;backdrop-filter:blur(10px);position:sticky;top:0;z-index:5}
+.logo{width:38px;height:38px;border-radius:11px;background:conic-gradient(from 210deg,var(--teal),var(--accent),var(--rose),var(--teal));display:grid;place-items:center;font-weight:800;color:#06222a;font-size:19px;text-decoration:none}
+h1{font-size:19px;margin:0}.sub{color:var(--muted);font-size:13px}.spacer{flex:1}
+.btn{appearance:none;border:1px solid var(--edge2);background:#16303acc;color:var(--ink);border-radius:11px;padding:9px 15px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;text-decoration:none;display:inline-block}
+.btn:hover{border-color:var(--accent)}.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:linear-gradient(135deg,#2c7a6a,#1d5a63);border-color:#7be0c288}
+main{display:grid;grid-template-columns:minmax(340px,430px) 1fr;gap:22px;padding:22px 28px 40px;max-width:1600px;margin:0 auto}
+@media (max-width:1050px){main{grid-template-columns:1fr}}
+.card{background:var(--glass);border:1px solid var(--edge);border-radius:16px;padding:18px;box-shadow:0 10px 40px #0007}
+.stack>*+*{margin-top:16px}
+h2{font-size:15px;margin:0 0 8px}
+p.help{color:var(--muted);font-size:13.5px;margin:0 0 10px}
+textarea{width:100%;min-height:290px;background:#06141a;border:1px solid var(--edge2);color:var(--ink);border-radius:10px;padding:10px;font:12.5px/1.45 var(--mono);resize:vertical;white-space:pre;overflow:auto}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.chip{border:1px solid var(--edge);border-radius:999px;padding:6px 11px;cursor:pointer;font-size:13px;background:#0b1b23;user-select:none}
+.chip.on{border-color:var(--accent);background:#2b2a1c}
+table.cols{width:100%;border-collapse:collapse;font-size:12.5px}
+table.cols td{padding:4px 6px;border-bottom:1px solid var(--edge);vertical-align:top}
+table.cols td:first-child{font-family:var(--mono);color:var(--accent);white-space:nowrap}
+.status{color:var(--muted);font-size:13.5px;min-height:20px}
+.status.err{color:var(--red)}
+.frame{background:var(--glass);border:1px solid var(--edge);border-radius:16px;overflow:hidden;min-height:78vh;position:relative}
+iframe{border:0;width:100%;height:100%;min-height:78vh;display:block;background:#061015}
+.empty{position:absolute;inset:0;display:grid;place-items:center;text-align:center;color:var(--muted);padding:40px}
+.empty b{display:block;font-size:22px;color:var(--ink);margin-bottom:6px}
+.pillars{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:14px;text-align:left}
+.pillars div{background:#ffffff08;border:1px solid var(--edge);border-radius:12px;padding:10px 12px;font-size:13px}
+.pillars b{font-size:14px;margin:0;display:block}
+</style>
+</head>
+<body>
+<header>
+  <a class="logo" href="/" title="Vikasa home">V</a>
+  <div><h1>Conservation Planner</h1><div class="sub">Triage a species watchlist into a ranked, costed-in-time action plan</div></div>
+  <div class="spacer"></div>
+  <a class="btn" href="/risk">Species Risk Checker</a>
+  <a class="btn" href="/">Home</a>
+</header>
+<main>
+  <div class="stack">
+    <div class="card">
+      <h2>1 · Your watchlist</h2>
+      <p class="help">One species per row. Paste from a spreadsheet, upload a CSV, or start from the Indian example.</p>
+      <textarea id="csv" spellcheck="false" aria-label="Watchlist CSV"></textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="example">Load example</button>
+        <label class="btn" for="file">Upload CSV</label>
+        <input type="file" id="file" accept=".csv,text/csv" hidden>
+      </div>
+      <details style="margin-top:12px"><summary class="sub" style="cursor:pointer;color:var(--teal)">Columns</summary>
+        <table class="cols">
+          <tr><td>species</td><td>Any name.</td></tr>
+          <tr><td>place</td><td>Place key or name (Hyderabad, ooty, western-ghats…) or a place you fetched in the Risk Checker.</td></tr>
+          <tr><td>generation_years</td><td>Average parent age, 0.05–50 years.</td></tr>
+          <tr><td>tolerance</td><td><i>specialist</i>, <i>local</i>, <i>generalist</i>, or a breadth in °C. Default local.</td></tr>
+          <tr><td>habitat</td><td><i>coastal</i>, <i>montane</i>, <i>inland</i> or <i>any</i>: limits refuges and donor populations.</td></tr>
+          <tr><td>ssp</td><td>Optional per-row pathway; otherwise the one chosen below.</td></tr>
+          <tr><td>notes</td><td>Carried into the report.</td></tr>
+        </table>
+      </details>
+    </div>
+    <div class="card">
+      <h2>2 · Future</h2>
+      <div class="row" id="ssps"></div>
+      <p class="help" style="margin-top:10px">IPCC AR6 pathways. Every action plan also shows the outcome under all four.</p>
+    </div>
+    <div class="card">
+      <h2>3 · Plan</h2>
+      <div class="row">
+        <button class="btn primary" id="run">Build the plan</button>
+        <button class="btn" id="dlHtml" disabled>Report (.html)</button>
+        <button class="btn" id="dlCsv" disabled>Table (.csv)</button>
+        <button class="btn" id="dlJson" disabled>Data (.json)</button>
+      </div>
+      <div class="status" id="status" style="margin-top:10px"></div>
+    </div>
+  </div>
+  <div class="frame">
+    <div class="empty" id="empty"><div><b>From "at risk" to "what do we do?"</b>
+      Build the plan to rank every species and get an action list for each.
+      <div class="pillars">
+        <div><b>⏳ Timeline</b>The year breeding fails, with and without evolution, under every IPCC pathway.</div>
+        <div><b>🧬 Assisted gene flow</b>The heat-tolerance boost that keeps a population breeding to 2100, and where to source it.</div>
+        <div><b>🧭 Climate refuges</b>Surveyed sites that stay liveable to 2100, by habitat and distance.</div>
+        <div><b>📋 Triage</b>A 0–100 priority, a tier and an ordered action list, exportable for funders.</div>
+      </div></div></div>
+    <iframe id="report" title="Conservation plan report" hidden></iframe>
+  </div>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const SSPS=["SSP1-2.6","SSP2-4.5","SSP3-7.0","SSP5-8.5"];
+let ssp="SSP5-8.5", last=null;
+$("ssps").innerHTML=SSPS.map(s=>`<span class="chip${s===ssp?" on":""}" data-ssp="${s}">${s}</span>`).join("");
+$("ssps").onclick=e=>{const c=e.target.closest("[data-ssp]"); if(!c) return; ssp=c.dataset.ssp;
+  document.querySelectorAll("[data-ssp]").forEach(x=>x.classList.toggle("on",x===c)); if(last) run();};
+async function loadExample(){ const r=await fetch("/api/plan/example"); $("csv").value=await r.text(); }
+$("example").onclick=loadExample;
+$("file").onchange=()=>{const f=$("file").files[0]; if(!f) return; const reader=new FileReader();
+  reader.onload=()=>{$("csv").value=reader.result; run();}; reader.readAsText(f);};
+function setStatus(text, err){ $("status").textContent=text; $("status").classList.toggle("err",!!err); }
+async function run(){
+  $("run").disabled=true; setStatus("Assessing every species against every surveyed site…");
+  try{
+    const r=await fetch("/api/plan",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({csv:$("csv").value,ssp})});
+    const j=await r.json(); if(!r.ok) throw new Error(j.error||r.statusText);
+    last=j; const res=j.result, t=res.tiers;
+    $("report").srcdoc=j.html; $("report").hidden=false; $("empty").hidden=true;
+    ["dlHtml","dlCsv","dlJson"].forEach(id=>$(id).disabled=false);
+    setStatus(`${res.species_count} species · ${t.critical} critical, ${t.high} high, ${t.watch} watch, ${t.low} low`+
+      (res.errors.length?` · ${res.errors.length} row(s) skipped`:""));
+  }catch(e){ setStatus(e.message, true); }
+  finally{ $("run").disabled=false; }
+}
+$("run").onclick=run;
+function download(name, text, type){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([text],{type})); a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),2000); }
+$("dlHtml").onclick=()=>last&&download("conservation-plan.html",last.html,"text/html");
+$("dlCsv").onclick=()=>last&&download("conservation-plan.csv",last.csv,"text/csv");
+$("dlJson").onclick=()=>last&&download("conservation-plan.json",JSON.stringify(last.result,null,2),"application/json");
+loadExample().then(run);
+</script>
+</body>
+</html>

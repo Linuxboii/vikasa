@@ -11,6 +11,7 @@ import datetime as dt
 import json
 import mimetypes
 import re
+import socket
 import subprocess
 import sys
 import threading
@@ -36,7 +37,8 @@ from evolution_sim.climate.data import (
 WEB_DIR = Path(__file__).resolve().parent / "web"
 EVIDENCE_DIR = risk.ROOT / "docs" / "results" / "climate-rescue-2026-10-18"
 DEFAULT_PORT = 8787
-APP_PROTOCOL = 2  # bump when pages or routes change, so an older running copy is replaced
+APP_PROTOCOL = 3  # bump when pages or routes change, so an older running copy is replaced
+EXAMPLE_WATCHLIST = WEB_DIR / "watchlist-example.csv"
 PLACE_KEY = re.compile(r"^[a-z0-9][a-z0-9-]{0,39}$")
 
 LAUNCHES: dict[str, tuple[str, list[str]]] = {
@@ -154,6 +156,18 @@ class RiskApp:
                               seeds=int(body.get("seeds", 4)))
         return job.snapshot()
 
+    # ------------------------------------------------------------------ planner
+    def plan(self, body: dict[str, Any]) -> dict[str, Any]:
+        from evolution_sim.climate import planner
+
+        rows = planner.read_watchlist(str(body.get("csv", "")))
+        extra = []
+        if self.custom_dir.is_dir():
+            extra = [resolve_region(str(path)) for path in sorted(self.custom_dir.glob("*.json"))]
+        result = planner.triage(rows, ssp=str(body.get("ssp", "SSP5-8.5")), extra_places=extra)
+        return {"result": result, "html": planner.render_html(result),
+                "csv": planner.to_csv(result)}
+
     # ------------------------------------------------------------------ Godot
     def godot_status(self) -> dict[str, Any]:
         running = self.godot is not None and self.godot.poll() is None
@@ -230,7 +244,7 @@ def _handler(app: RiskApp, server_ref: dict[str, ThreadingHTTPServer]):
 
         def _body(self) -> dict[str, Any]:
             length = int(self.headers.get("Content-Length", "0") or 0)
-            if length > 100_000:
+            if length > 400_000:
                 raise ValueError("request body too large")
             raw = self.rfile.read(length) if length else b"{}"
             value = json.loads(raw or b"{}")
@@ -248,6 +262,10 @@ def _handler(app: RiskApp, server_ref: dict[str, ThreadingHTTPServer]):
                     self._file(WEB_DIR / "risk.html")
                 elif url.path == "/demo":
                     self._file(WEB_DIR / "demo.html")
+                elif url.path == "/plan":
+                    self._file(WEB_DIR / "plan.html")
+                elif url.path == "/api/plan/example":
+                    self._send(200, EXAMPLE_WATCHLIST.read_bytes(), "text/csv; charset=utf-8")
                 elif url.path == "/api/meta":
                     self._json(app.meta())
                 elif url.path == "/api/estimate":
@@ -282,6 +300,8 @@ def _handler(app: RiskApp, server_ref: dict[str, ThreadingHTTPServer]):
                 body = self._body()
                 if url.path == "/api/live":
                     self._json(app.start_live(body))
+                elif url.path == "/api/plan":
+                    self._json(app.plan(body))
                 elif url.path == "/api/watch":
                     self._json(app.watch(body))
                 elif url.path == "/api/launch":
@@ -303,9 +323,22 @@ def _handler(app: RiskApp, server_ref: dict[str, ThreadingHTTPServer]):
     return Handler
 
 
+class _ExclusiveServer(ThreadingHTTPServer):
+    """One Vikasa per port. On Windows, SO_REUSEADDR lets a second process bind a port
+    that is already serving, so an older copy would never be detected or replaced."""
+
+    allow_reuse_address = sys.platform != "win32"
+
+    def server_bind(self) -> None:
+        exclusive = getattr(socket, "SO_EXCLUSIVEADDRUSE", None)
+        if exclusive is not None:
+            self.socket.setsockopt(socket.SOL_SOCKET, exclusive, 1)
+        super().server_bind()
+
+
 def make_server(app: RiskApp, port: int = DEFAULT_PORT) -> ThreadingHTTPServer:
     holder: dict[str, ThreadingHTTPServer] = {}
-    server = ThreadingHTTPServer(("127.0.0.1", port), _handler(app, holder))
+    server = _ExclusiveServer(("127.0.0.1", port), _handler(app, holder))
     holder["server"] = server
     return server
 

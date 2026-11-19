@@ -113,6 +113,32 @@ def build_parser() -> argparse.ArgumentParser:
     check.add_argument("--json", action="store_true", help="Print machine-readable JSON")
     risk_commands.add_parser("places", help="List the bundled places")
 
+    plan = commands.add_parser(
+        "plan", help="Conservation Planner: triage a species watchlist into an action plan")
+    plan.add_argument("--port", type=int, default=8787)
+    plan.add_argument("--no-browser", action="store_true")
+    plan_commands = plan.add_subparsers(dest="plan_command")
+    plan_triage = plan_commands.add_parser(
+        "triage", help="Rank a watchlist CSV and write JSON, CSV and an HTML report")
+    plan_triage.add_argument("watchlist", type=Path,
+                             help="CSV with species, place, generation_years "
+                                  "[, tolerance, habitat, ssp, notes]")
+    plan_triage.add_argument("--ssp", default="SSP5-8.5")
+    plan_triage.add_argument("--output", type=Path, default=Path("exports/plan"))
+    plan_triage.add_argument("--open", action="store_true", help="Open the HTML report")
+    plan_one = plan_commands.add_parser("species", help="Rescue plan for one species")
+    plan_one.add_argument("--name", default="")
+    plan_one.add_argument("--place", default="hyderabad",
+                          help="Place key, place name, or a region JSON")
+    plan_one.add_argument("--generation-years", type=float, default=1.0)
+    plan_one.add_argument("--tolerance", default="local",
+                          help="specialist, local, generalist, or a breadth in °C")
+    plan_one.add_argument("--habitat", default="any",
+                          choices=("any", "coastal", "montane", "inland"),
+                          help="Only consider refuges and donors in this habitat")
+    plan_one.add_argument("--ssp", default="SSP5-8.5")
+    plan_one.add_argument("--json", action="store_true", help="Print machine-readable JSON")
+
     bridge = commands.add_parser("serve", help="Run the local simulation bridge for Godot")
     bridge.add_argument("--config", type=Path, default=Path("config/showcase.json"))
     bridge.add_argument("--seed", type=int, default=2026)
@@ -160,6 +186,47 @@ def _risk(args: argparse.Namespace) -> int:
         print(f"  LIVE CHECK  {direct['survived']}/{direct['n']} populations survived to "
               f"{live['result']['plan']['simulated_end_year']:.0f} -> "
               f"{live['result']['verdict'].upper()} ({live['elapsed_seconds']:.0f} s)")
+    return 0
+
+
+def _plan(args: argparse.Namespace) -> int:
+    from evolution_sim.climate import planner
+
+    if args.plan_command is None:
+        from evolution_sim.climate.risk_app import serve
+
+        return serve(page="/plan", port=args.port, open_browser=not args.no_browser)
+    if args.plan_command == "species":
+        try:
+            tolerance: str | float = float(args.tolerance)
+        except ValueError:
+            tolerance = args.tolerance
+        result = planner.plan_species(args.place, generation_years=args.generation_years,
+                                      tolerance=tolerance, ssp=args.ssp, name=args.name,
+                                      habitat=args.habitat)
+        print(json.dumps(result, indent=2, allow_nan=False) if args.json
+              else planner.describe(result))
+        return 0
+    rows = planner.read_watchlist(args.watchlist.read_text(encoding="utf-8"))
+    result = planner.triage(rows, ssp=args.ssp)
+    paths = planner.write_outputs(result, args.output)
+    tiers = result["tiers"]
+    print(f"Conservation plan · {result['species_count']} species · {result['ssp']}")
+    print(f"  critical {tiers['critical']}  high {tiers['high']}  watch {tiers['watch']}  "
+          f"low {tiers['low']}  ·  earliest breeding failure "
+          f"{result['earliest_failure'] or 'none by 2100'}")
+    for plan in result["plans"]:
+        first = plan["actions"][0]["title"] if plan["actions"] else ""
+        print(f"  {plan['rank']:>2}. {plan['tier'].upper():<8} {plan['priority']:>3}  "
+              f"{plan['species'][:30]:<30} {plan['place']['name'][:18]:<18} {first}")
+    for error in result["errors"]:
+        print(f"  skipped row {error['row']} ({error['species']}): {error['error']}")
+    for kind, path in paths.items():
+        print(f"  {kind:<5}{path}")
+    if args.open:
+        import webbrowser
+
+        webbrowser.open(paths["html"].resolve().as_uri())
     return 0
 
 
@@ -292,6 +359,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             return serve(page="/demo", port=args.port, open_browser=not args.no_browser)
         if args.command == "risk":
             return _risk(args)
+        if args.command == "plan":
+            return _plan(args)
         if args.command == "serve":
             if not 1 <= args.port <= 65_535:
                 raise ValueError("port must be between 1 and 65535")

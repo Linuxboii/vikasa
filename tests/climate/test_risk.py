@@ -26,12 +26,23 @@ def _load_tool(name: str):
     return module
 
 
+def _rounded(value):
+    """Floats to 12 significant digits: numpy builds differ in the last bit."""
+    if isinstance(value, float):
+        return float(f"{value:.12g}")
+    if isinstance(value, dict):
+        return {key: _rounded(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_rounded(item) for item in value]
+    return value
+
+
 def test_bundled_city_files_match_their_build_script() -> None:
     for record in _load_tool("build_city_regions").build_records():
         on_disk = json.loads(
             (ROOT / "src/evolution_sim/climate/data" / f"{record['key']}.json").read_text(
                 encoding="utf-8"))
-        assert on_disk == json.loads(json.dumps(record))
+        assert _rounded(on_disk) == _rounded(json.loads(json.dumps(record)))
         region = resolve_region(record["key"])
         assert region.annual_mean_c == pytest.approx(sum(region.monthly_c) / 12)
         assert len(region.series) == 45
