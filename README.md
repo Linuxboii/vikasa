@@ -4,35 +4,38 @@
 
 # Vikasa — Living Biome & Climate Rescue
 
-**Watch evolution happen, then ask it a real question: which species can evolve fast enough to survive climate change?**
+**Watch evolution happen, then ask it a real question: which species can evolve fast enough to survive climate change, and what do we do about the ones that can't?**
 
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-3776AB?logo=python&logoColor=white)
 ![Godot 4](https://img.shields.io/badge/Godot-4-478CBF?logo=godotengine&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-379-2ea44f)
+![Tests](https://img.shields.io/badge/tests-554-2ea44f)
 ![Data](https://img.shields.io/badge/data-NASA%20POWER%20%C2%B7%20IPCC%20AR6-f0cd8a)
 ![Deterministic](https://img.shields.io/badge/runs-100%25%20reproducible-7be0c2)
 ![License](https://img.shields.io/badge/license-MIT-lightgrey)
 
-[One app](#-one-app-one-shortcut) · [Species Risk Checker](#-species-risk-checker) · [Demo mode](#-demo-mode) · [Quick start](#-quick-start-windows) · [Climate rescue](#climate-rescue-can-evolution-outrun-warming) · [Living Biome](#vikasa-20--the-living-biome-showcase) · [Evidence](#visual-evidence-and-how-to-read-the-graphs) · [Mathematics PDF](output/pdf/Vikasa_Mathematics_Guide.pdf) · [Desktop setup](#run-the-3d-living-biome)
+[One app](#-one-app-one-shortcut) · [Species Risk Checker](#-species-risk-checker) · [Conservation Planner](#-conservation-planner) · [Demo mode](#-demo-mode) · [Quick start](#-quick-start-windows) · [Climate rescue](#climate-rescue-can-evolution-outrun-warming) · [Living Biome](#vikasa-20--the-living-biome-showcase) · [Evidence](#visual-evidence-and-how-to-read-the-graphs) · [Mathematics PDF](output/pdf/Vikasa_Mathematics_Guide.pdf) · [Desktop setup](#run-the-3d-living-biome)
 
 ![Golden hour over the floating Vikasa biome](docs/images/showcase-hero.jpg)
 
 </div>
 
-## Vikasa 2.2 at a glance
+## Vikasa 2.3 at a glance
 
 Vikasa is a **deterministic, individual-based evolution simulator** with a cinematic 3D
 client. Every animal inherits a genome and a temperament and decides for itself what
 to do next. Populations forage, court, fight, raise young, starve, and evolve over
 generations. Version 2.1 added real climate science (NASA POWER temperature records
 and IPCC AR6 warming pathways). **Version 2.2 turns that science into a tool anyone can
-use, and makes the whole project presentable in one click.**
+use, and makes the whole project presentable in one click. Version 2.3 closes the loop
+from diagnosis to action: the Conservation Planner triages a whole species watchlist
+into a ranked rescue plan.**
 
 | | |
 |---|---|
 | **The question** | Climate change is not only about how hot it gets, but whether life can adapt in time. Fast breeders can evolve; slow breeders fall behind. Where is the line? |
 | **The answer** | With heritable heat tolerance, a population survives warming up to **0.262 °C per generation**, about **4×** more than without inheritance. Under very high emissions (SSP5-8.5), species whose generations last longer than **~6 years** fall behind. |
 | **The tool** | The **Species Risk Checker**: pick a place, describe a species, choose a future, and get an instant estimate, a live simulation and a 3D replay. |
+| **The plan** | The **Conservation Planner**: give it a watchlist and get, for every species, the year breeding fails, the heat-tolerance boost that would save it, climate refuges to move it to, and a priority-ranked action list with a report for funders. |
 | **The showcase** | **Demo mode**: a presenter hub with a talk timer and one-click launches, plus a narrated 3D autopilot. |
 
 ## 🌍 Species Risk Checker
@@ -59,7 +62,7 @@ Species Risk Checker · Hyderabad · SSP5-8.5
 
 | Step | What you choose | What Vikasa uses |
 |---|---|---|
-| **1. Place** | 7 Indian cities + 3 study regions bundled; any latitude and longitude on Earth fetched live | NASA POWER monthly temperature, 1981–2025, with SHA-256 provenance |
+| **1. Place** | 7 Indian cities, 3 study regions and 14 survey sites bundled; any latitude and longitude on Earth fetched live | NASA POWER monthly temperature, 1981–2025, with SHA-256 provenance |
 | **2. Species** | Generation time (3 months to 50 years; presets from insect to giant tortoise) and heat tolerance (specialist, local, generalist or °C) | Vikasa's thermal-performance and inheritance model |
 | **3. Future** | SSP1-2.6, SSP2-4.5, SSP3-7.0 or SSP5-8.5 | IPCC AR6 WG1 Table 4.5 warming medians |
 
@@ -77,6 +80,59 @@ What you get back:
   *indicative*, and the live check is shown as the authority when the two disagree.
 
 Method, validation table and API: **[docs/RISK_CHECKER.md](docs/RISK_CHECKER.md)**.
+
+## 🧭 Conservation Planner
+
+> *"We have fourteen threatened species and money for three. Which ones, and what do we do?"*
+
+![Conservation Planner app with the Indian example watchlist](docs/images/conservation-planner.png)
+
+```powershell
+.\.venv\Scripts\vikasa.exe plan                                              # browser app
+.\.venv\Scripts\vikasa.exe plan triage examples\watchlist-india.csv --open   # JSON + CSV + HTML report
+.\.venv\Scripts\vikasa.exe plan species --name "Olive ridley" --place Chennai --generation-years 20 --habitat coastal
+```
+
+```text
+Conservation plan · Olive ridley · Chennai · SSP5-8.5
+  Priority    HIGH (69/100), verdict likely lost
+  Breeding    fails 2077 with evolution, 2054 without
+  Pathways    SSP1-2.6: beyond 2100  SSP2-4.5: beyond 2100  SSP3-7.0: beyond 2100  SSP5-8.5: 2077
+  Gene flow   +0.66 °C heat tolerance needed
+  Refuges     Kochi (559 km), Sundarbans (1344 km)
+  ACTIONS
+   1. Assisted gene flow: +0.66 °C heat tolerance
+   2. Assisted migration: Kochi
+   3. Protect microrefugia and corridors
+```
+
+The Risk Checker diagnoses one species. Conservation teams (forest departments, NGOs,
+zoo breeding programmes, grant writers) work from a **watchlist**. Paste or upload a
+CSV (`species, place, generation_years`, optionally `tolerance`, `habitat`, `ssp`,
+`notes`) and the planner returns, for every species:
+
+| Output | What it tells you |
+|---|---|
+| ⏳ **Breeding-failure year** | When hot-season stress first passes the breeding limit, **with and without evolution**, and how many years evolution buys |
+| 🌐 **Pathway table** | The same answer under all four IPCC pathways: what emission cuts are worth to this species |
+| 🧬 **Assisted gene flow** | The smallest heat-tolerance boost (°C) that keeps it breeding to 2100, and warmer surveyed populations that could supply it |
+| 🧭 **Climate refuges** | Sites in the same habitat (coastal, montane, inland) that stay liveable 2030–2100, with distances, for assisted migration |
+| 📋 **Triage** | A 0–100 priority, a tier (Critical, High, Watch, Low) and an ordered action list |
+
+It searches **24 real NASA POWER sites** across India's thermal gradient, from Kochi to
+Leh (14 new survey sites with SHA-256 provenance), plus any place you fetch in the
+Risk Checker. Output is a **self-contained HTML report** (no scripts, no network,
+prints cleanly) with sparklines, a migration-route map and an action card per species,
+plus CSV and JSON.
+
+![Conservation plan report: priority list, migration routes and action plans](docs/images/conservation-report.png)
+
+When the measured survival curve and the place-specific timeline disagree (common for
+wide-tolerance, long-lived species), the planner says so and puts **"Confirm with the
+live simulation"** first instead of hiding it. The example watchlist's generation
+times are illustrative; replace them with your survey data.
+[Example report](docs/results/conservation-plan-india/report.html) ·
+Method, model and limits: **[docs/CONSERVATION_PLANNER.md](docs/CONSERVATION_PLANNER.md)**.
 
 ## ▶ Demo mode
 
@@ -129,6 +185,7 @@ which launches every feature with one click:
 | 🌿 **Living Biome**: the 3D world | 🌍 **Species Risk Checker** |
 | 🎬 **Autopilot tour**: narrated and hands-free | ▶️ **Demo mode**: presenter hub |
 | 🌡️ **Warming biome**: real seasons, rising heat | 📊 **The evidence**: the full report |
+| | 🧭 **Conservation Planner**: watchlist → rescue plan |
 
 The home screen shows whether a 3D window is open, can close it, and has a **Quit**
 button that shuts everything down. The shortcut opens without a console window, and
@@ -152,16 +209,18 @@ macOS and Linux instructions: [Run the 3D Living Biome](#run-the-3d-living-biome
 
 | Watch | Experiment | Climate science | Engineering |
 |---|---|---|---|
-| GPU-instanced 3D wildlife at a locked 60 FPS on integrated graphics | Weather, drought, wildfire, disease and food-bloom pressures | NASA POWER climate records for 10 places, any point on Earth fetchable | Python engine is authoritative; Godot renders over a loopback binary stream |
+| GPU-instanced 3D wildlife at a locked 60 FPS on integrated graphics | Weather, drought, wildfire, disease and food-bloom pressures | NASA POWER climate records for 24 places, any point on Earth fetchable | Python engine is authoritative; Godot renders over a loopback binary stream |
 | Director camera, day and night, weather, procedural soundscape | Seed-blocked controlled experiments with offline viewers | IPCC AR6 SSP1-2.6 to SSP5-8.5 pathways | Seeded and deterministic: same seed, same world |
-| Click any animal to see its action and the reason behind it | Headless runs, batches, stress tests and development studies | Critical-rate sweep, Sobol sensitivity, Gaussian-process surrogate | 379 automated tests, plus headless Godot smoke tests |
+| Click any animal to see its action and the reason behind it | Headless runs, batches, stress tests and development studies | Critical-rate sweep, Sobol sensitivity, Gaussian-process surrogate | 554 automated tests, plus headless Godot smoke tests |
 | Lenses for coat, action, energy, dynasty, generation and temperament | Exact Price decomposition of every birth cohort | Species Risk Checker with live simulation checks | SHA-256 manifests on evidence packages; invariant checks every run |
+| | | Conservation Planner: failure years, gene-flow sizing, refuge search, triage reports | One Vikasa per port, older running copies replaced automatically |
 
 | Command | Purpose |
 |---|---|
 | `vikasa app` | The Vikasa home screen: every feature in one place |
 | `vikasa demo` | Presenter Demo hub (`--biome-only` for the 3D autopilot alone) |
 | `vikasa risk` · `vikasa risk check` · `vikasa risk places` | Species Risk Checker app, terminal verdicts, bundled places |
+| `vikasa plan` · `vikasa plan triage` · `vikasa plan species` | Conservation Planner app, watchlist reports, one-species rescue plan |
 | `vikasa godot [--demo]` | 3D Living Biome (Windows and macOS launch the bridge and client together) |
 | `vikasa serve` | Simulation bridge only (Linux two-terminal setup) |
 | `vikasa ui` | Pygame 2D laboratory |
