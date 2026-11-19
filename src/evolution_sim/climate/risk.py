@@ -38,6 +38,7 @@ from evolution_sim.climate.data import (
     CITY_REGIONS,
     DATA_DIR,
     SSP_WARMING,
+    SURVEY_REGIONS,
     RegionClimate,
     resolve_region,
     ssp_anomaly_c,
@@ -80,14 +81,15 @@ def load_reference() -> dict[str, Any]:
 def places() -> list[dict[str, Any]]:
     """Every place the checker can assess without a network connection."""
     rows = []
-    for key in (*CITY_REGIONS, *BUNDLED_REGIONS):
+    for key in (*CITY_REGIONS, *BUNDLED_REGIONS, *SURVEY_REGIONS):
         region = resolve_region(key)
         rows.append({"key": key, "name": region.name, "latitude": region.latitude,
                      "longitude": region.longitude, "annual_mean_c": region.annual_mean_c,
                      "seasonal_amplitude_c": region.seasonal_amplitude_c,
                      "trend_c_per_decade": region.trend_c_per_decade,
                      "monthly_c": list(region.monthly_c),
-                     "kind": "city" if key in CITY_REGIONS else "study region"})
+                     "kind": ("city" if key in CITY_REGIONS else "survey site"
+                              if key in SURVEY_REGIONS else "study region")})
     return rows
 
 

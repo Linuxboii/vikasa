@@ -38,6 +38,27 @@ CITY_REGIONS: dict[str, tuple[str, float, float]] = {
     "shimla": ("Shimla", 31.104, 77.173),
 }
 
+# Survey sites for the Conservation Planner (tools/build_survey_regions.py): full
+# monthly NASA POWER series spanning India's thermal gradient, from tropical coast
+# to Himalayan valleys, so the planner can search for climate refuges and donor
+# populations. Grid-cell (~50 km) climate, not station records.
+SURVEY_REGIONS: dict[str, tuple[str, float, float]] = {
+    "ooty": ("Ooty (Nilgiris)", 11.41, 76.70),
+    "munnar": ("Munnar (Idukki)", 10.09, 77.06),
+    "kochi": ("Kochi", 9.93, 76.27),
+    "pune": ("Pune", 18.52, 73.86),
+    "nagpur": ("Nagpur", 21.15, 79.09),
+    "bhopal": ("Bhopal", 23.26, 77.41),
+    "ahmedabad": ("Ahmedabad", 23.02, 72.57),
+    "lucknow": ("Lucknow", 26.85, 80.95),
+    "guwahati": ("Guwahati", 26.14, 91.74),
+    "shillong": ("Shillong", 25.58, 91.89),
+    "darjeeling": ("Darjeeling", 27.04, 88.26),
+    "dehradun": ("Dehradun", 30.32, 78.03),
+    "srinagar": ("Srinagar", 34.08, 74.80),
+    "leh": ("Leh (Ladakh)", 34.15, 77.58),
+}
+
 # IPCC AR6 WG1 Chapter 4, Table 4.5: global surface air temperature change for
 # 2081-2100 relative to 1995-2014, °C: (median, very likely low, very likely high).
 SSP_WARMING: dict[str, tuple[float, float, float]] = {
@@ -162,7 +183,7 @@ def load_region(path: str | Path) -> RegionClimate:
 
 
 def resolve_region(spec: str) -> RegionClimate:
-    if spec in BUNDLED_REGIONS or spec in CITY_REGIONS:
+    if spec in BUNDLED_REGIONS or spec in CITY_REGIONS or spec in SURVEY_REGIONS:
         return load_region(DATA_DIR / f"{spec}.json")
     path = Path(spec)
     if path.suffix == ".json" and path.is_file():
