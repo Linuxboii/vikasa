@@ -1,0 +1,229 @@
+%===========================================================
+\chapter{Command-Line Reference}
+%===========================================================
+All commands accept \code{--help}. Defaults shown are those in the parser.
+
+\begin{longtable}{p{5.2cm}p{9.8cm}}
+\caption{\code{vikasa} sub-commands and options}\\
+\toprule
+Command & Options and behaviour \\
+\midrule
+\endfirsthead
+\toprule
+Command & Options and behaviour \\
+\midrule
+\endhead
+\code{app} & Home screen. \code{--port 8787}, \code{--no-browser}. \\
+\code{demo} & Presenter hub. \code{--biome-only} (3D autopilot only), \code{--godot-path}, \code{--port}, \code{--no-browser}. \\
+\code{risk} & Risk Checker app. \code{--port}, \code{--no-browser}. \\
+\code{risk check} & Terminal verdict. \code{--place hyderabad}, \code{--generation-years 1.0}, \code{--tolerance local}, \code{--ssp SSP5-8.5}, \code{--live}, \code{--seeds 4}, \code{--json}. \\
+\code{risk places} & List bundled places. \\
+\code{plan} & Planner app. \code{--port}, \code{--no-browser}. \\
+\code{plan triage WATCHLIST} & \code{--ssp SSP5-8.5}, \code{--output exports/plan}, \code{--open}. \\
+\code{plan species} & \code{--name}, \code{--place}, \code{--generation-years}, \code{--tolerance}, \code{--habitat any}, \code{--ssp}, \code{--json}. \\
+\code{godot} & 3D client with bridge. \code{--config config/showcase.json}, \code{--seed 2026}, \code{--godot-path}, \code{--demo}. \\
+\code{serve} & Bridge only. \code{--config}, \code{--seed 2026}, \code{--port 8765}. \\
+\code{ui} & Pygame lab. \code{--config config/default.json}, \code{--seed 2026}. \\
+\code{validate} & \code{--config} (required). \\
+\code{run} & \code{--scenario}, \code{--output} (required), \code{--ticks}, \code{--seed}. \\
+\code{batch} & \code{--scenario}, \code{--output}, \code{--replicates 3}, \code{--ticks}. \\
+\code{study} & \code{--config}, \code{--seeds 2026 7 41}, \code{--ticks 12000}, \code{--sample-interval 500}, \code{--output}. \\
+\code{contrast} & \code{--protocol}, \code{--output} (new directory). \\
+\code{stress} & \code{--config}, \code{--ticks 100000}, \code{--seed 2026}. \\
+\code{shortcut} & \code{--desktop}, \code{--name Vikasa}, \code{--only app|biome|demo|risk}, \code{--config}, \code{--seed}. \\
+\code{climate pipeline} & \code{--profile quick|full}, \code{--root}; resumable. \\
+\code{climate fetch} & \code{--lat}, \code{--lon}, \code{--name}, \code{--key}, \code{--output}. \\
+\code{climate assess} & \code{--root}, \code{--region}, \code{--generation-years}, \code{--breadth}, repeated \code{--ssp}. \\
+\code{climate report} & \code{--root}; writes the offline HTML report and manifest. \\
+\bottomrule
+\end{longtable}
+
+%===========================================================
+\chapter{Reproducing the Evidence}
+%===========================================================
+Every committed result can be regenerated. Use a fresh output directory each
+time; keep reports with their source and configuration versions.
+
+\begin{lstlisting}
+# Climate rescue (full profile, resumable)
+vikasa climate pipeline --profile full --root exports\climate\full
+
+# Showcase development study and extinction control
+python -m evolution_sim.cli study --config config/showcase.json --seeds 2026 7 41 --ticks 12000 --output exports/development-study.json
+python -m evolution_sim.cli study --config config/extinction-control.json --seeds 2026 7 41 --ticks 12000 --output exports/extinction-control-study.json
+
+# Spatial ecology, 6,000 ticks
+python -m evolution_sim.cli study --config config/spatial-biome.json --seeds 2026 7 41 --ticks 6000 --sample-interval 500 --output exports/spatial-biome-study-6000.json
+
+# Weather laboratory preview and the larger prospective protocol
+python -m evolution_sim.cli contrast --protocol experiments/weather-contrast-preview.json --output exports/weather-preview
+python -m evolution_sim.cli contrast --protocol experiments/weather-contrast.json --output exports/weather-study
+
+# Trait geometry snapshot
+vikasa run --scenario experiments\baseline.json --output exports\trait-snapshot --seed 2026 --ticks 800
+
+# Spatial-index benchmark with digest equality
+python tools\benchmark_spatial.py --config config\spatial-biome.json --baseline 5874e01 --seeds 2026 7 41 --warmup 150 --ticks 300 --output exports\spatial-performance-new.json
+
+# Conservation plan for the example watchlist
+vikasa plan triage examples\watchlist-india.csv --open
+
+# 3D performance probe (bridge on port 8766)
+vikasa serve --config config\showcase.json --seed 2026 --port 8766
+& $env:VIKASA_GODOT_BINARY --path godot --script res://tests/PerfProbe.gd -- --port 8766 --seconds 15 --tier 2
+\end{lstlisting}
+
+\begin{table}[htbp]
+\centering
+\caption{Committed evidence packages (\code{docs/results/})}
+\begin{tabularx}{\textwidth}{lL}
+\toprule
+Package & Contents \\
+\midrule
+\code{climate-rescue-2026-10-18/} & Calibration, sweep summary, Sobol, assessments, validation, figures, offline report, manifest. \\
+\code{conservation-plan-india/} & \code{report.html}, \code{plan.csv}, \code{plan.json}. \\
+\code{development-study-2026-10-08.json} & Showcase 12{,}000-tick study, three seeds. \\
+\code{extinction-control-study-2026-10-08.json} & Preserved extinction-prone configuration. \\
+\code{spatial-biome-study-6000-2026-10-08.json} & Spatial profile, 6{,}000 ticks. \\
+\code{weather-laboratory-2026-10-08/} & \code{report.json}, viewer, manifest. \\
+\code{spatial-performance-2026-10-08.json} & Benchmark with checkpoint digests. \\
+\code{diploid-preview-2026-10-08/} & Unreleased chromosome preview: config, summary, trait space. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+%===========================================================
+\chapter{Limitations and Roadmap}
+%===========================================================
+
+\section{Model limitations}
+\begin{itemize}[leftmargin=*]
+\item Ticks have no calibrated real-time meaning; space is two-dimensional even when
+rendered in 3D.
+\item No food web, sex differentiation, calibrated genetic drift, explicit disease
+transmission, hydrology, learned language or validated real-species parameters.
+\item Combat, starvation, inheritance, environment and culture are intentionally
+simplified rules; plausible animation does not validate them.
+\item Daylight, sound, terrain relief, trees, water and weather particles are
+scenery: the model has seasons but no day/night, and none of these visuals affect
+movement, perception or survival.
+\item Climate: the organism is generic; no plasticity, behavioural
+thermoregulation, migration or food-web effects; populations of tens of animals;
+regional warming is the global AR6 median times a factor, not a downscaled
+projection; reanalysis cells smooth mountains and coasts; the direct regional
+assessment caps warming at 40 generations.
+\item Decision tools: the instant estimate is anchored to one reference organism;
+the live check uses 4 seeds and has wide intervals; example generation times are
+illustrative; real translocation and gene flow need species-specific ecology,
+disease screening, genetic compatibility checks and permits; rainfall, habitat loss
+and species interactions are not modelled.
+\end{itemize}
+
+\section{Research status}
+\begin{longtable}{p{3.2cm}p{5.6cm}p{6.2cm}}
+\caption{Research dimensions: target and current state}\\
+\toprule
+Dimension & Required end state & Current evidence and gap \\
+\midrule
+\endfirsthead
+Sustained development & Long-horizon replicated runs with turnover and transparent extinction risk & 6{,}000-tick regression and three 12{,}000-tick probes persist; larger predeclared seed sets and sensitivity analysis needed. \\
+Mechanistic ecology & Spatial biomass, water/nutrients, local exposure, refuges, explicit disease & Optional plant/water field and audited interventions; nutrients, local hazards and contagion needed. \\
+Quantitative genetics & Inspectable inheritance, covariance, trade-offs, plasticity, drift vs selection & Six traits, exact Price decomposition, PCA exports, diploid preview; multilocus release, causal tests and plasticity needed. \\
+Behavioural development & Energy-budget lifecycle, learning, defensible social transmission & Fixed utility behaviour and care; learning needed. \\
+Visualisation & Lineage exploration, life stages, heatmaps, comparisons & Generation and Price graphs, ecology map; deeper exploration needed. \\
+Experiment laboratory & Replicates, ablations, sensitivity, uncertainty, portable packages & Seed-blocked protocols, paired uncertainty, packages; mechanism-isolating ablations and larger prospective studies needed. \\
+Communication & Equations, assumptions, units, verified screenshots, reproducible results & This document, the IEEE paper and the Markdown references. \\
+\bottomrule
+\end{longtable}
+
+\section{Roadmap}
+\begin{enumerate}[leftmargin=*]
+\item Calibrate the organism against real species' thermal-performance and
+life-history data.
+\item Add phenotypic plasticity and behavioural thermoregulation, then re-measure $k_c$.
+\item Dispersal on heterogeneous landscapes linking the spatial ecology to climate.
+\item Downscaled regional projections in place of global medians.
+\item Execute the eight-seed weather protocol and larger predeclared climate sweeps.
+\item Mechanism-isolating ablations (inheritance, sterility, injury, metabolic cost).
+\item Release the diploid architecture after long-horizon validation.
+\item Live checkpoint integration in the bridge so field studies survive upgrades.
+\end{enumerate}
+
+%===========================================================
+\chapter*{Appendix A: Glossary}
+\addcontentsline{toc}{chapter}{Appendix A: Glossary}
+%===========================================================
+\begin{longtable}{p{3.8cm}p{11.2cm}}
+\toprule
+Term & Meaning \\
+\midrule
+\endfirsthead
+Tick & One discrete engine step; no fixed real-time meaning. \\
+Founder & An animal present at tick 0 (generation 0). \\
+Generation depth & One plus the deepest parent's depth. \\
+Generation interval $G$ & Ticks per generation, measured as $1/$slope of mean living depth. \\
+Drive & A normalised pressure in $[0,1]$ (survival, foraging, mating, care, danger, territory). \\
+Utility & A bounded action score from drive affinities, rewards and costs. \\
+Hysteresis & Keeping the current action while it stays within a margin of the best. \\
+Alpha & A retained marker of contest victory; not a permanent rank. \\
+Health pressure & Summed weather-driven exposure pressure that causes injury. \\
+Thermal optimum $\theta$ & Temperature at which an animal performs best. \\
+Tolerance breadth $\omega$ & Cold-side width of the thermal-performance curve. \\
+Thermal stress $\varsigma$ & One minus performance; 0.3 injury onset, 0.7 breeding limit. \\
+Critical rate $k_c$ & Warming per generation at which survival probability is 0.5. \\
+Rescue gain & Heritable minus control critical rate. \\
+Adaptation lag & Warming minus evolved shift of the mean optimum. \\
+Rescue signature & A dip below 50\% of pre-warming size followed by recovery to $\ge80\%$. \\
+Critical generation time & $k_c$ divided by warming per year. \\
+SSP & Shared socio-economic pathway (IPCC AR6 emission scenario). \\
+Price decomposition & Exact split of trait change into selection and transmission terms. \\
+Participation ratio & $1/\sum f_k^2$: effective number of variance directions. \\
+Wilson interval & Score interval for a binomial proportion. \\
+Seed block & Matched replicate unit for paired treatment--control comparison. \\
+Sobol index & Variance share of an output attributable to an input ($S_1$) or including interactions ($S_T$). \\
+Surrogate & Gaussian-process emulator of simulation outcomes. \\
+Refuge & Site whose stress stays below the failure line every year 2030--2100. \\
+Assisted gene flow & Introducing heat-tolerant individuals to shift the mean optimum. \\
+\bottomrule
+\end{longtable}
+
+%===========================================================
+\chapter*{Appendix B: Repository Layout}
+\addcontentsline{toc}{chapter}{Appendix B: Repository Layout}
+%===========================================================
+\begin{lstlisting}
+vikasa/
+  pyproject.toml          package metadata, dependencies, pytest config
+  main.py                 convenience entry point
+  config/                 world configurations (showcase, spatial, climate...)
+  experiments/            scenarios and contrast protocols
+  examples/               watchlist-india.csv
+  src/evolution_sim/
+    config.py cli.py bridge.py shortcut.py
+    model/                genome, genetics, temperament, entities, lineage, spatial
+    simulation/           engine, behavior, environment, culture, snapshots
+    analytics/            metrics, trait_space
+    experiments/          runner, scenarios, contrast, charts, dashboard
+    io/                   checkpoints, export
+    climate/              data, forcing, thermal, protocol, analysis, sensitivity,
+                          surrogate, assess, figures, report, risk, risk_app,
+                          planner, cli, data/*.json (24 sites + reference), web/
+    ui/                   Pygame application
+    assets/               icons
+  godot/                  project.godot, Main.tscn, scenes/, scripts/, shaders/, tests/
+  tests/                  pytest suite (554 tests)
+  tools/                  benchmark_spatial, build_city_regions,
+                          build_survey_regions, build_icons
+  docs/                   Markdown guides, images/, results/,
+                          paper/ (IEEE paper), manual/ (this document)
+  output/pdf/             historical Mathematics Guide (commit 0140311)
+\end{lstlisting}
+
+\section*{Related documents}
+\begin{itemize}[leftmargin=*]
+\item \code{docs/paper/Vikasa\_IEEE\_Paper.pdf}: the eight-page IEEE-format research paper.
+\item \code{docs/MATHEMATICS.md}, \code{SCIENTIFIC\_MODEL.md}, \code{ARCHITECTURE.md}: current model references.
+\item \code{docs/CLIMATE\_RESCUE.md}, \code{RISK\_CHECKER.md}, \code{CONSERVATION\_PLANNER.md}: climate module guides.
+\item \code{docs/SPATIAL\_ECOLOGY.md}, \code{CONTROLLED\_EXPERIMENTS.md}, \code{TRAIT\_GEOMETRY.md}, \code{PERFORMANCE.md}, \code{SHOWCASE.md}, \code{RESEARCH\_STATUS.md}.
+\item \code{output/pdf/Vikasa\_Mathematics\_Guide.pdf}: historical mathematics PDF documenting commit \code{0140311}; its older death rules do not describe today's showcase.
+\end{itemize}

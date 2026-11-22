@@ -1,0 +1,284 @@
+%===========================================================
+\chapter{System Architecture}
+%===========================================================
+
+\section{Layered design}
+Vikasa separates simulation outcomes from their presentation. The
+\code{SimulationEngine} owns all persistent state and advances fixed,
+deterministic ticks. The Pygame laboratory, the headless experiment runner, the
+Godot Living Biome and the browser applications are \emph{clients}: they read
+immutable snapshots or send explicit commands, and none of them decide creature
+outcomes. Rendering can lag or disconnect without changing the simulation.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw, rounded corners=3pt, align=center, font=\small, minimum height=0.95cm, inner sep=4pt},
+  arr/.style={-{Stealth[length=2mm]}, thick}]
+\node[box, fill=blue!8, minimum width=3.2cm] (cfg) {Validated JSON config\\+ integer seed};
+\node[box, fill=orange!12, below=0.5cm of cfg, minimum width=3.2cm] (data) {NASA POWER T2M\\IPCC AR6 SSP medians};
+\node[box, fill=green!12, right=1.0cm of cfg, yshift=-0.75cm, minimum width=5.2cm, minimum height=2.6cm] (eng) {\textbf{SimulationEngine}\\[2pt]EnvironmentState $\cdot$ ClimateForcing\\BehaviorController $\cdot$ HabitatField\\CultureLedger $\cdot$ LineageStore\\MetricsRecorder $\cdot$ PCG64 RNG};
+\node[box, fill=gray!10, below left=1.0cm and -1.4cm of eng, minimum width=2.6cm] (cli) {Headless CLI\\run/batch/study\\contrast/stress};
+\node[box, fill=gray!10, below=1.0cm of eng, minimum width=2.4cm] (bridge) {Loopback bridge\\\code{:8765}};
+\node[box, fill=gray!10, below right=1.0cm and -1.4cm of eng, minimum width=2.4cm] (pg) {Pygame lab};
+\node[box, fill=purple!10, below=0.8cm of bridge, minimum width=2.6cm] (godot) {Godot 4\\Living Biome};
+\node[box, fill=yellow!15, below=0.8cm of cli, minimum width=2.6cm] (out) {Exports, checkpoints\\evidence packages};
+\node[box, fill=yellow!15, below=0.8cm of pg, minimum width=2.8cm] (web) {App server \code{:8787}\\Risk $\cdot$ Planner $\cdot$ Demo};
+\draw[arr] (cfg) -- (eng.west |- cfg);
+\draw[arr] (data) -- (eng.west |- data);
+\draw[arr] (eng) -- (cli);
+\draw[arr] (eng) -- (bridge);
+\draw[arr] (eng) -- (pg);
+\draw[arr] (bridge) -- node[right,font=\scriptsize]{float32 stream + JSON} (godot);
+\draw[arr] (cli) -- (out);
+\draw[arr] (out) -- (web);
+\draw[arr] (web) -- node[above,font=\scriptsize]{launch} (godot);
+\end{tikzpicture}
+\caption{Runtime architecture. Arrows show data flow; only the engine mutates the world.}
+\end{figure}
+
+\section{Module map}
+\begin{longtable}{p{4.6cm}p{10.4cm}}
+\caption{Python package \code{evolution\_sim}: modules and responsibilities}\\
+\toprule
+Module & Responsibility \\
+\midrule
+\endfirsthead
+\toprule
+Module & Responsibility \\
+\midrule
+\endhead
+\code{config.py} & Typed, frozen, validated configuration dataclasses with defaults; strict key checking and integer/number validation; diploid architecture validation. \\
+\code{model/genome.py} & Immutable six-trait \code{Genome}, optional phased haplotypes, founder sampling, clamping. \\
+\code{model/genetics.py} & Arithmetic and uniform crossover, Gaussian mutation, polygenic expression and gamete formation with recombination. \\
+\code{model/temperament.py} & Aggression, resilience and sociability and their inheritance. \\
+\code{model/entities.py} & \code{Creature} and \code{Resource} state. \\
+\code{model/lineage.py} & Parentage, birth ticks, generation depth (iterative, cycle detecting, cached). \\
+\code{model/spatial.py}, \code{math2d.py} & Spatial hash for neighbour queries; 2D vector helpers and boundary handling. \\
+\code{simulation/behavior.py} & Local perception contract, six drives, eight action utilities, arbitration, reason strings and targets. \\
+\code{simulation/engine.py} & Tick order, movement and energy, home ranges, care, fights, food contention, reproduction, death, culture and snapshots. \\
+\code{simulation/environment.py} & Seasons, scheduled events (drought, abundance, heat, cold, storm, flood, wildfire, disease, redistribute) and the optional spatial \code{HabitatField}. \\
+\code{simulation/culture.py} & Cue-based traditions, contact spread and rituals. \\
+\code{simulation/snapshots.py} & Immutable views for clients. \\
+\code{analytics/metrics.py} & Sampled history, diversity, birth-cohort Price decomposition, invariant audits. \\
+\code{analytics/trait\_space.py} & Export-time covariance, correlation, PCA and effective dimension. \\
+\code{experiments/} & Scenario merging, single and batch runs, development studies, seed-blocked \code{contrast} laboratory, charts and the offline dashboard. \\
+\code{io/checkpoints.py}, \code{io/export.py} & Versioned atomic checkpoints with migration; CSV/JSON/PNG exports with hash manifests. \\
+\code{climate/} & Data fetching (\code{data.py}), forcing, thermal model, rescue protocol, analysis, sensitivity, surrogate, assessment, figures, report, risk checker, planner, web apps and CLI. \\
+\code{bridge.py} & Loopback HTTP bridge: binary frame stream, slim explanation document, sequenced event feed, command handling, Godot launcher. \\
+\code{cli.py} & The \code{vikasa} command and its sub-commands. \\
+\code{shortcut.py} & Windows desktop shortcut creation. \\
+\code{ui/} & Pygame application, layout, renderer, charts, widgets, theme and run customisation. \\
+\bottomrule
+\end{longtable}
+
+\section{The tick}
+Every tick executes the same ordered sequence (Algorithm~\ref{alg:tick-doc}).
+Per-tick counters (births, deaths, combat events, recent events, fight wins) are
+reset first, so each tick's outcomes are reported exactly once.
+
+\begin{algorithm}[htbp]
+\caption{\code{SimulationEngine.\_step\_once}}
+\label{alg:tick-doc}
+\begin{algorithmic}[1]
+\State reset per-tick counters and event lists
+\State \Call{environment.update}{tick} \Comment{season, climate $^{\circ}$C, events}
+\If{spatial habitat enabled} \State \Call{habitat.step}{environment} \EndIf
+\State erode existing food by $\min(0.4,\text{resource\_decay})$; drop patches $<1$ energy
+\State regenerate food (spawn accumulator, seasonal and event multipliers)
+\State build resource index; perceive, decide (staggered), move and pay energy
+\If{$\text{tick} \bmod 4 = 0$} \State resolve contests \EndIf
+\State resolve feeding contention (squared distance, then stable ID)
+\State resolve paired reproduction (Price observer records the cohort)
+\State resolve deaths (starvation, injury, senescence, age ceiling, exposure)
+\State $\text{tick}\gets\text{tick}+1$
+\State culture update; satisfaction update
+\If{$\text{tick} \bmod \text{sample\_interval} = 0$} record metrics \EndIf
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Adaptive cognition schedule}
+Behaviour decisions are the most expensive per-animal step. When the population
+exceeds \code{ADAPTIVE\_DECISION\_POPULATION} $=40$, each animal re-decides only
+when $(\text{tick}+\text{id}) \bmod 6 = 0$ (\code{ADAPTIVE\_DECISION\_INTERVAL}
+$=6$); between decisions it continues its current action. Movement, hunger,
+consumption, births and deaths still advance every tick. Contest opportunities are
+evaluated every four ticks (\code{COMBAT\_EVALUATION\_INTERVAL} $=4$). These
+schedules are deterministic and apply identically to GUI and headless runs.
+
+\section{Determinism contract}
+A run is reproducible when the configuration, seed, scheduled events, tick count,
+software version and numerical platform are equal. The engine guarantees this by:
+\begin{itemize}[leftmargin=*]
+\item one NumPy PCG64 generator for every stochastic outcome;
+\item iteration over creatures and resources in sorted stable-ID order;
+\item explicit tie-breaking (squared distance, then ID) for contested food;
+\item a fractional food-spawn accumulator stored in checkpoints;
+\item observers (Price, PCA, metrics, bootstrap) that never consume engine RNG;
+\item wall-clock rendering that never feeds back into outcomes. Only explicitly
+issued world-tool commands change the world, and they are logged as interventions.
+\end{itemize}
+
+\section{Concurrency model}
+The bridge runs the engine in a background thread under a lock. Commands are
+serialised under the same lock and publish their result immediately. Readers
+receive the last published frame and document without waiting for the simulation
+lock, which keeps presentation responsive at high requested tick rates. If the
+host cannot achieve the requested rate, excess catch-up work is dropped instead of
+accumulating, and the HUD reports the measured rate alongside the requested one.
+
+%===========================================================
+\chapter{Configuration Reference}
+%===========================================================
+
+Configurations are JSON files parsed into frozen dataclasses. Unknown keys,
+missing required keys, booleans in place of numbers and fractional values in
+integer fields are rejected with a \code{ConfigError} that names the exact path.
+
+\section{Root keys}
+\begin{table}[htbp]
+\centering
+\caption{Root configuration keys}
+\begin{tabularx}{\textwidth}{llL}
+\toprule
+Key & Type & Meaning \\
+\midrule
+\code{world} & object & \code{width}, \code{height} (units) and \code{boundary} (\code{collision} or \code{wrap}). \\
+\code{genome} & object & Trait bounds, mutation probability and sigma, crossover type, optional diploid architecture. \\
+\code{energy} & object & \code{initial}, \code{basal\_cost}, \code{movement\_cost}, \code{maximum}. \\
+\code{reproduction} & object & \code{minimum\_age}, \code{cooldown}, \code{mate\_radius}, \code{offspring\_energy}, \code{population\_cap}. \\
+\code{resources} & object & \code{initial\_count}, \code{spawn\_rate}, \code{maximum\_count}, \code{energy\_value}. \\
+\code{metrics} & object & \code{sample\_interval}, \code{diversity\_sample}. \\
+\code{initial\_population} & int & Number of founders. \\
+\code{maximum\_age} & int & Hard age ceiling in ticks. \\
+\code{wander\_change\_probability} & float & Per-tick chance to change wander heading. \\
+\code{behavior} & object & Optional; see Table~\ref{tab:behavior}. \\
+\code{demography} & object & Optional; \code{fixed} or \code{gompertz} mortality. \\
+\code{ecology} & object & Optional spatial plant/water field. \\
+\code{climate} & object & Optional observed-temperature forcing and thermal tolerance. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Showcase values}
+\begin{table}[htbp]
+\centering
+\caption{\code{config/showcase.json} (default 3D world)}
+\begin{tabularx}{\textwidth}{lLl}
+\toprule
+Section & Parameter & Value \\
+\midrule
+world & width $\times$ height, boundary & $720\times480$, collision \\
+genome & size / speed & [2.5, 8.0] / [0.5, 4.0] \\
+ & perception / metabolism & [25, 150] / [0.65, 1.5] \\
+ & reproduction threshold / fertility & [70, 150] / [0.15, 0.55] \\
+ & mutation probability, sigma, crossover & 0.1, 0.075, arithmetic \\
+energy & initial, basal, movement, maximum & 125, 0.09, 0.026, 230 \\
+reproduction & min. age, cooldown, mate radius & 90, 100, 90 \\
+ & offspring energy, population cap & 60, 180 \\
+resources & initial, spawn rate, max, energy & 180, 0.9, 400, 30 \\
+metrics & sample interval, diversity sample & 8, 48 \\
+root & founders, maximum age, wander & 64, 12000, 0.03 \\
+demography & mode, $\mu_0$, $a_0$, $b$ & gompertz, 0.00002, 1800, 0.002 \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Behaviour, demography, ecology and climate sections}
+\begin{table}[htbp]
+\centering
+\caption{\code{behavior} defaults and validation}
+\label{tab:behavior}
+\begin{tabularx}{\textwidth}{llL}
+\toprule
+Key & Default & Meaning and range \\
+\midrule
+\code{hysteresis\_margin} & 0.08 & Keep the current action if within this utility of the best; $[0,1]$. \\
+\code{softmax\_temperature} & 0.08 & Near-tie softmax temperature $\tau$; $[0.001,1]$. \\
+\code{dependent\_age\_ticks} & 240 & Age below which offspring are dependents. \\
+\code{care\_radius} & 24 & Maximum parent--offspring distance for care. \\
+\code{care\_energy\_rate} & 0.25 & Energy transferred per care tick (parent reserve protected). \\
+\code{danger\_preempt\_threshold} & 0.75 & Danger at/above this forces flight; $[0,1]$. \\
+\code{territory\_migration\_margin} & 0.15 & Outside-food advantage needed to shift a home range. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\begin{table}[htbp]
+\centering
+\caption{\code{demography}, \code{ecology} and \code{climate} defaults}
+\begin{tabularx}{\textwidth}{llL}
+\toprule
+Key & Default & Meaning \\
+\midrule
+\code{demography.mode} & fixed & \code{fixed} age ceiling or \code{gompertz} hazard. \\
+\code{background\_hazard} & 0.00002 & Baseline hazard $\mu_0$ per tick. \\
+\code{senescence\_age}, \code{\_rate} & 1800, 0.002 & Onset $a_0$ and exponential rate $b$. \\
+\midrule
+\code{ecology.enabled} & false & Enables the plant/water field. \\
+\code{columns}, \code{rows} & 24, 16 & Grid size, each $\le 64$. \\
+\code{capacity}, \code{initial\_fraction} & 100, 0.65 & Plant capacity $K$ per cell, initial fill. \\
+\code{growth\_rate} & 0.006 & Logistic rate $r$. \\
+\code{rainfall\_rate}, \code{evaporation\_rate} & 0.004, 0.002 & Bucket inflow and loss. \\
+\code{water\_diffusion}, \code{biomass\_diffusion} & 0.06, 0.008 & Transport coefficients $d\le 1/4$. \\
+\code{water\_half\_saturation} & 0.25 & Moisture response $h$. \\
+\code{transpiration\_rate} & 0.03 & Water used per unit growth. \\
+\midrule
+\code{climate.enabled} & false & Enables observed forcing. \\
+\code{ticks\_per\_year} & 384 & Climate year length in ticks ($\ge4$). \\
+\code{monthly\_c} & 12 $\times$ 25.0 & Monthly climatology, each in $[-60,60]$\,$^{\circ}$C. \\
+\code{anomaly\_c} & [] & Warming knots $[\text{year},\Delta]$. \\
+\code{tolerance\_breadth\_c} & 4.0 & Cold-side breadth $\omega$. \\
+\code{warm\_side\_ratio} & 0.6 & Warm-side width multiplier. \\
+\code{stress\_metabolic\_gain} & 1.5 & Basal cost $\times(1+1.5\varsigma)$. \\
+\code{stress\_injury\_rate} & 0.02 & Injury per tick above $\varsigma=0.3$. \\
+\code{fertility\_stress\_limit} & 0.7 & No breeding above this stress. \\
+\code{inheritance} & heritable & \code{heritable} or \code{none} (control). \\
+\code{founder\_mean\_c}, \code{founder\_sd\_c} & auto, 1.0 & Founder optimum distribution. \\
+\code{segregation\_sd\_c}, \code{mutation\_sd\_c} & 0.4, 0.1 & Offspring noise terms. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The ecology validator enforces the explicit-diffusion stability limit: both
+diffusion coefficients must not exceed $1/4$. The diploid architecture validator
+requires six effect rows of equal length (2--64 loci), dominance in $[-1,1]$,
+recombination in $[0,0.5]$ for each of the $L-1$ intervals, founder frequencies in
+$[0,1]$ and an allele mutation probability in $[0,1]$.
+
+\section{Bundled configurations and scenarios}
+\begin{table}[htbp]
+\centering
+\caption{Configuration and scenario files}
+\begin{tabularx}{\textwidth}{lL}
+\toprule
+File & Purpose \\
+\midrule
+\code{config/default.json} & Baseline laboratory world for the Pygame UI. \\
+\code{config/showcase.json} & Sustained 3D showcase (64 founders, cap 180, Gompertz). \\
+\code{config/extinction-control.json} & Preserved extinction-prone earlier showcase for comparison. \\
+\code{config/spatial-biome.json} & Research profile with the plant/water field. \\
+\code{config/diploid-biome.json} & Opt-in chromosome preview (unreleased). \\
+\code{config/climate-rescue.json} & $480\times320$ rescue world used by the climate sweep. \\
+\code{config/climate-demo.json} & Warming demo for the 3D client with live $^{\circ}$C readout. \\
+\code{experiments/*.json} & Scenarios: baseline, scarcity, mutation\_high/low, environmental\_shift, diploid-biome, weather-contrast(-preview). \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+A scenario file names a base configuration and deep-merges overrides into it, and
+may schedule environmental events, a default seed and a horizon. The bundled
+\code{experiments/scarcity.json}:
+\begin{lstlisting}
+{ "name": "scarcity",
+  "description": "A sustained drought exposes energy and sensing trade-offs.",
+  "config": "../config/default.json",
+  "seed": 2202, "ticks": 7000, "overrides": {},
+  "events": [ {"kind": "drought", "start_tick": 1800, "duration": 4200,
+               "intensity": 0.22, "label": "Sustained drought"} ] }
+\end{lstlisting}
+Contrast protocols (Chapter~\ref{ch:experiments}) extend this with a control arm,
+seed list, sampling interval, bootstrap seed and sample count, and a list of
+\code{arms}, each with its own overrides and events. The weather preview, for
+example, declares seeds 2026, 7 and 41, 800 ticks, sampling every 20 ticks,
+bootstrap seed 271828 and 4{,}096 bootstrap samples on the spatial-biome base.

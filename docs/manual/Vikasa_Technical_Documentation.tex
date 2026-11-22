@@ -1,0 +1,129 @@
+\documentclass[10pt,a4paper,oneside]{report}
+\usepackage[margin=2.4cm]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,calc,shapes.geometric}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+
+\graphicspath{{../images/}{../results/climate-rescue-2026-10-18/figures/}{../images/trait-snapshot/}{../images/diploid-preview/}}
+
+\definecolor{vk}{HTML}{1F6F5C}
+\definecolor{vkl}{HTML}{E8F3EF}
+\definecolor{codebg}{HTML}{F5F6F7}
+\hypersetup{colorlinks=true,linkcolor=vk,urlcolor=vk,citecolor=vk}
+
+\lstset{basicstyle=\ttfamily\small,backgroundcolor=\color{codebg},frame=single,
+  rulecolor=\color{gray!40},breaklines=true,columns=fullflexible,keepspaces=true,
+  xleftmargin=4pt,xrightmargin=4pt,aboveskip=6pt,belowskip=6pt}
+
+\titleformat{\chapter}[display]{\normalfont\bfseries\color{vk}\raggedright}{\large Chapter \thechapter}{4pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{-10pt}{18pt}
+\titleformat{\section}{\normalfont\Large\bfseries\color{vk}}{\thesection}{0.8em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\color{gray}Vikasa Technical Documentation}
+\fancyhead[R]{\small\color{gray}\nouppercase{\leftmark}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.3pt}
+\fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\thepage}\renewcommand{\headrulewidth}{0pt}}
+
+\setlength{\parskip}{4pt}
+\setlength{\parindent}{0pt}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+\newcommand{\code}[1]{\texttt{\small #1}}
+\newcommand{\note}[1]{\begin{center}\fcolorbox{vk}{vkl}{\parbox{0.92\linewidth}{\small #1}}\end{center}}
+
+% Chapters flow on from the previous one instead of always starting a new page.
+\usepackage{etoolbox}
+\usepackage{needspace}
+\makeatletter
+\patchcmd{\chapter}{\if@openright\cleardoublepage\else\clearpage\fi}{\par\needspace{0.3\textheight}\vspace{18pt}}{}{}
+\patchcmd{\chapter}{\global\@topnum\z@}{}{}{}
+\makeatother
+\titlespacing*{\chapter}{0pt}{0pt}{12pt}
+\renewcommand{\floatpagefraction}{0.75}
+\renewcommand{\topfraction}{0.85}
+\renewcommand{\textfraction}{0.12}
+\sloppy
+\setlength{\emergencystretch}{3em}
+
+\begin{document}
+
+\begin{titlepage}
+\centering
+\vspace*{1.2cm}
+\includegraphics[width=2.6cm]{../../src/evolution_sim/assets/vikasa-biome.png}\par
+\vspace{0.8cm}
+{\Huge\bfseries\color{vk} Vikasa\par}
+\vspace{0.3cm}
+{\LARGE Living Biome \& Climate Rescue\par}
+\vspace{0.6cm}
+{\Large Complete Technical Documentation\par}
+\vspace{0.4cm}
+{\large Version 2.3\par}
+\vspace{1cm}
+\includegraphics[width=0.92\textwidth]{showcase-hero.jpg}\par
+\vspace{1cm}
+{\large A deterministic, individual-based evolution simulator with a cinematic 3D
+client, real climate data, a Species Risk Checker and a Conservation Planner\par}
+\vfill
+{\large Sushanth Kasturi\par}
+{\small Repository: \url{https://github.com/Linuxboii/vikasa}\quad$\cdot$\quad MIT licence\par}
+\end{titlepage}
+
+\pagenumbering{roman}
+\chapter*{About this document}
+\addcontentsline{toc}{chapter}{About this document}
+This document is the complete technical reference for Vikasa 2.3. It is written
+for four audiences at once: \emph{users} who want to install and run the software,
+\emph{scientists} who need to know exactly what the model computes before
+trusting any number it produces, \emph{engineers} who will maintain or extend the
+code base, and \emph{decision makers} who want to understand what the Species Risk
+Checker and the Conservation Planner can and cannot tell them.
+
+Every equation, coefficient and default in this document was taken from the
+executable source code (\code{src/evolution\_sim/}) and the evidence packages
+committed under \code{docs/results/}. Where the project's own Markdown guides
+contain further detail, the relevant file is named so the reader can follow it.
+Measured numbers always carry their provenance: configuration, seeds, horizon and,
+where applicable, uncertainty intervals.
+
+\note{\textbf{Scientific scope.} Vikasa is an explanatory artificial-life model.
+The climate forcing (NASA POWER temperature records and IPCC AR6 pathways) is
+observed data, but the organism is a generic model, not a calibrated real species.
+Ticks have no fixed conversion to seconds, days or years. Results are properties
+of this model unless explicitly validated otherwise.}
+
+\textbf{Conventions.} Monospaced text denotes code, file paths and commands.
+Windows commands are given in PowerShell form (\code{.\textbackslash.venv\textbackslash Scripts\textbackslash vikasa.exe});
+on macOS and Linux replace the prefix with \code{.venv/bin/}. The function
+$\mathrm{clip}(x)=\min(1,\max(0,x))$ is used throughout. ``Tick'' means one
+discrete engine step.
+
+\tableofcontents
+\clearpage
+\pagenumbering{arabic}
+
+\input{ch-overview}
+\input{ch-architecture}
+\input{ch-model}
+\input{ch-analysis}
+\input{ch-climate}
+\input{ch-engineering}
+\input{ch-reference}
+
+\end{document}
