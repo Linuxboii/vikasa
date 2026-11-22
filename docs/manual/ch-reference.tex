@@ -23,7 +23,6 @@ Command & Options and behaviour \\
 \code{plan species} & \code{--name}, \code{--place}, \code{--generation-years}, \code{--tolerance}, \code{--habitat any}, \code{--ssp}, \code{--json}. \\
 \code{godot} & 3D client with bridge. \code{--config config/showcase.json}, \code{--seed 2026}, \code{--godot-path}, \code{--demo}. \\
 \code{serve} & Bridge only. \code{--config}, \code{--seed 2026}, \code{--port 8765}. \\
-\code{ui} & Pygame lab. \code{--config config/default.json}, \code{--seed 2026}. \\
 \code{validate} & \code{--config} (required). \\
 \code{run} & \code{--scenario}, \code{--output} (required), \code{--ticks}, \code{--seed}. \\
 \code{batch} & \code{--scenario}, \code{--output}, \code{--replicates 3}, \code{--ticks}. \\
@@ -207,8 +206,8 @@ vikasa/
     io/                   checkpoints, export
     climate/              data, forcing, thermal, protocol, analysis, sensitivity,
                           surrogate, assess, figures, report, risk, risk_app,
-                          planner, cli, data/*.json (24 sites + reference), web/
-    ui/                   Pygame application
+                          planner, cli, data/*.json (24 sites + reference),
+                          web/ (home, risk, plan, demo pages + vikasa.css)
     assets/               icons
   godot/                  project.godot, Main.tscn, scenes/, scripts/, shaders/, tests/
   tests/                  pytest suite (554 tests)

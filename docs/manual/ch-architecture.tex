@@ -5,7 +5,7 @@
 \section{Layered design}
 Vikasa separates simulation outcomes from their presentation. The
 \code{SimulationEngine} owns all persistent state and advances fixed,
-deterministic ticks. The Pygame laboratory, the headless experiment runner, the
+deterministic ticks. The headless experiment runner, the
 Godot Living Biome and the browser applications are \emph{clients}: they read
 immutable snapshots or send explicit commands, and none of them decide creature
 outcomes. Rendering can lag or disconnect without changing the simulation.
@@ -20,15 +20,14 @@ outcomes. Rendering can lag or disconnect without changing the simulation.
 \node[box, fill=green!12, right=1.0cm of cfg, yshift=-0.75cm, minimum width=5.2cm, minimum height=2.6cm] (eng) {\textbf{SimulationEngine}\\[2pt]EnvironmentState $\cdot$ ClimateForcing\\BehaviorController $\cdot$ HabitatField\\CultureLedger $\cdot$ LineageStore\\MetricsRecorder $\cdot$ PCG64 RNG};
 \node[box, fill=gray!10, below left=1.0cm and -1.4cm of eng, minimum width=2.6cm] (cli) {Headless CLI\\run/batch/study\\contrast/stress};
 \node[box, fill=gray!10, below=1.0cm of eng, minimum width=2.4cm] (bridge) {Loopback bridge\\\code{:8765}};
-\node[box, fill=gray!10, below right=1.0cm and -1.4cm of eng, minimum width=2.4cm] (pg) {Pygame lab};
+\node[box, fill=yellow!15, below right=1.0cm and -1.4cm of eng, minimum width=2.8cm] (web) {App server \code{:8787}\\Home $\cdot$ Risk $\cdot$ Planner\\Demo};
 \node[box, fill=purple!10, below=0.8cm of bridge, minimum width=2.6cm] (godot) {Godot 4\\Living Biome};
 \node[box, fill=yellow!15, below=0.8cm of cli, minimum width=2.6cm] (out) {Exports, checkpoints\\evidence packages};
-\node[box, fill=yellow!15, below=0.8cm of pg, minimum width=2.8cm] (web) {App server \code{:8787}\\Risk $\cdot$ Planner $\cdot$ Demo};
 \draw[arr] (cfg) -- (eng.west |- cfg);
 \draw[arr] (data) -- (eng.west |- data);
 \draw[arr] (eng) -- (cli);
 \draw[arr] (eng) -- (bridge);
-\draw[arr] (eng) -- (pg);
+\draw[arr] (eng) -- (web);
 \draw[arr] (bridge) -- node[right,font=\scriptsize]{float32 stream + JSON} (godot);
 \draw[arr] (cli) -- (out);
 \draw[arr] (out) -- (web);
@@ -68,7 +67,7 @@ Module & Responsibility \\
 \code{bridge.py} & Loopback HTTP bridge: binary frame stream, slim explanation document, sequenced event feed, command handling, Godot launcher. \\
 \code{cli.py} & The \code{vikasa} command and its sub-commands. \\
 \code{shortcut.py} & Windows desktop shortcut creation. \\
-\code{ui/} & Pygame application, layout, renderer, charts, widgets, theme and run customisation. \\
+\code{climate/web/} & Home screen, Risk Checker, Planner and Demo pages sharing one stylesheet (\code{vikasa.css}). \\
 \bottomrule
 \end{longtable}
 
@@ -254,7 +253,7 @@ $[0,1]$ and an allele mutation probability in $[0,1]$.
 \toprule
 File & Purpose \\
 \midrule
-\code{config/default.json} & Baseline laboratory world for the Pygame UI. \\
+\code{config/default.json} & Baseline world used by the headless scenarios. \\
 \code{config/showcase.json} & Sustained 3D showcase (64 founders, cap 180, Gompertz). \\
 \code{config/extinction-control.json} & Preserved extinction-prone earlier showcase for comparison. \\
 \code{config/spatial-biome.json} & Research profile with the plant/water field. \\

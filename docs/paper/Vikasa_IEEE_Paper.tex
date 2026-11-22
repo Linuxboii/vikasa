@@ -11,7 +11,7 @@
 \usepackage{algpseudocode}
 \usepackage{cite}
 \usepackage[hidelinks]{hyperref}
-\graphicspath{{../results/climate-rescue-2026-10-18/figures/}{../images/}}
+\graphicspath{{../results/climate-rescue-2026-10-18/figures/}{../manual/figures/}}
 
 \def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
     T\kern-.1667em\lower.7ex\hbox{\sc e}\kern-.125em X}}
@@ -135,8 +135,8 @@ management outputs in one auditable pipeline.
 \label{sec:arch}
 Vikasa separates simulation from presentation (Fig.~\ref{fig:arch}). A Python
 \texttt{SimulationEngine} owns all persistent state and advances fixed discrete
-\emph{ticks}. Clients---a headless experiment runner, a Pygame 2D laboratory, the
-Godot~4 \emph{Living Biome} and three browser applications---only observe the engine
+\emph{ticks}. Clients---a headless experiment runner, the Godot~4
+\emph{Living Biome} and three browser applications---only observe the engine
 or issue explicit commands; none decide outcomes. Rendering may lag or disconnect
 without altering the simulation.
 
@@ -150,7 +150,7 @@ without altering the simulation.
 \node[box, fill=orange!12, above=0.35cm of cfg, minimum width=2.1cm] (data) {NASA POWER T2M\\IPCC AR6 SSPs};
 \node[box, fill=gray!10, below=0.45cm of eng, xshift=-1.55cm, minimum width=1.6cm] (head) {Headless runner\\study/contrast};
 \node[box, fill=gray!10, below=0.45cm of eng, xshift=0.35cm, minimum width=1.5cm] (bridge) {Loopback\\bridge};
-\node[box, fill=gray!10, below=0.45cm of eng, xshift=2.05cm, minimum width=1.3cm] (pg) {Pygame\\lab};
+\node[box, fill=gray!10, below=0.45cm of eng, xshift=2.05cm, minimum width=1.3cm] (pg) {App server\\:8787};
 \node[box, fill=purple!10, below=0.45cm of bridge, minimum width=1.6cm] (godot) {Godot 4\\Living Biome};
 \node[box, fill=gray!10, left=0.3cm of godot, minimum width=1.7cm] (ana) {Analytics $\cdot$\\checkpoints};
 \node[box, fill=yellow!15, right=0.3cm of godot, minimum width=1.7cm] (tools) {Risk Checker\\Planner $\cdot$ Demo};
@@ -218,7 +218,7 @@ from about 2{,}300 to about 20 for the 3D world.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\columnwidth]{showcase-hero.jpg}
+\includegraphics[width=\columnwidth]{3d-hero.jpg}
 \caption{The Godot~4 Living Biome client rendering a seeded engine state. Every
 animal, birth, death and clash comes from the Python engine; terrain, daylight and
 water are presentation only.}

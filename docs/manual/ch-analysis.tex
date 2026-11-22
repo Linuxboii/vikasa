@@ -48,9 +48,14 @@ cohorts; checkpoints and \code{evolution.json} keep 512.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.92\textwidth]{research-evolution.png}
-\caption{Evolution tab: generational development, signed birth-cohort Price
-decomposition for size, and population renewal (founder and young fractions).}
+\begin{minipage}[c]{0.3\textwidth}\centering
+\includegraphics[height=0.31\textheight]{obs-evolution-panel.jpg}
+\end{minipage}\hfill
+\begin{minipage}[c]{0.66\textwidth}
+\caption{Observatory Evolution tab in the current client (showcase, seed 2026, live
+bridge): generational development, signed birth-cohort Price decomposition for
+size, population renewal, and the death-cause tally.}
+\end{minipage}
 \end{figure}
 
 \section{Trait geometry}
@@ -73,9 +78,9 @@ basis, so coordinates from different snapshots must not be connected.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.95\textwidth]{trait-geometry.png}
-\caption{Trait geometry, showcase seed 2026 at tick 800 (157 animals, deepest
-generation 5): individuals on PC1/PC2 coloured by generation, trait correlations,
+\includegraphics[width=0.8\textwidth]{trait_space.png}
+\caption{Trait geometry regenerated with the current code: baseline scenario,
+seed 2026, tick 800 (135 animals, deepest generation 2). Individuals on PC1/PC2 coloured by generation, trait correlations,
 and the variance spectrum.}
 \end{figure}
 
@@ -100,7 +105,9 @@ and the variance spectrum.}
 \includegraphics[width=\linewidth]{distributions.png}\\[-2pt]
 {\small (d) Final trait distributions}
 \end{minipage}
-\caption{Exported figures for one showcase snapshot (seed 2026, tick 800).}
+\caption{Exported figures regenerated with the current code
+(\code{vikasa run --scenario experiments/baseline.json --seed 2026 --ticks 800}:
+135 living, 35 births, 0 deaths).}
 \end{figure}
 
 \begin{itemize}[leftmargin=*]
@@ -248,7 +255,7 @@ checkouts cannot invalidate byte hashes.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.9\textwidth]{controlled-experiments.jpg}
+\includegraphics[width=0.72\textwidth]{web-contrast.png}
 \caption{Offline weather-laboratory viewer: condition means with between-seed
 quartile ribbons, intervention markers and paired effects.}
 \end{figure}

@@ -54,7 +54,7 @@ the same seed.
 \toprule
 Version & Main additions \\
 \midrule
-1.0--1.1 & Deterministic engine, six-gene genome, Pygame laboratory, headless CLI, checkpoints, first Godot client with Observatory charts and wildlife behaviour (drives, utilities, home ranges, care, fights, culture). \\
+1.0--1.1 & Deterministic engine, six-gene genome, an early 2D laboratory (since retired), headless CLI, checkpoints, first Godot client with Observatory charts and wildlife behaviour (drives, utilities, home ranges, care, fights, culture). \\
 Research upgrade & Gompertz mortality, generational development tracking, exact birth-cohort Price decomposition, trait geometry (PCA) exports, optional spatial plant/water ecology, controlled seed-blocked experiment laboratory, opt-in diploid preview. \\
 2.0 & \emph{Living Biome}: GPU-instanced 3D wildlife at a locked 60 FPS on integrated graphics, binary push stream, director camera, lenses, day/night, visible weather, procedural soundscape, adaptive quality. \\
 2.1 & Climate rescue: NASA POWER data, IPCC AR6 pathways, heritable thermal optimum, critical-rate sweep, Sobol sensitivity, Gaussian-process surrogate, offline report. \\
@@ -180,7 +180,7 @@ must print the path to \code{.venv\textbackslash Scripts\textbackslash pythonw.e
 \section{The home screen}
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.85\textwidth]{vikasa-home.png}
+\includegraphics[width=0.66\textwidth]{web-home.png}
 \caption{The Vikasa home screen launches every feature with one click.}
 \end{figure}
 The home screen is served by the local application server on port 8787. It shows
@@ -227,28 +227,30 @@ disease, a food-growth bloom, or click to scatter ten audited food patches.
 \begin{figure}[htbp]
 \centering
 \begin{minipage}{0.49\textwidth}\centering
-\includegraphics[width=\linewidth]{showcase-director.jpg}\\[-2pt]
+\includegraphics[width=\linewidth]{3d-director.jpg}\\[-2pt]
 {\small (a) Director's cut}
 \end{minipage}\hfill
 \begin{minipage}{0.49\textwidth}\centering
-\includegraphics[width=\linewidth]{showcase-night.jpg}\\[-2pt]
-{\small (b) Night with eyeshine and fireflies}
+\includegraphics[width=\linewidth]{3d-night.jpg}\\[-2pt]
+{\small (b) Night daylight mode}
 \end{minipage}\\[6pt]
 \begin{minipage}{0.49\textwidth}\centering
-\includegraphics[width=\linewidth]{showcase-storm.jpg}\\[-2pt]
-{\small (c) Visible storm}
+\includegraphics[width=\linewidth]{3d-dynasty.jpg}\\[-2pt]
+{\small (c) Dynasty lens with radar}
 \end{minipage}\hfill
 \begin{minipage}{0.49\textwidth}\centering
-\includegraphics[width=\linewidth]{showcase-lens-dynasty.jpg}\\[-2pt]
-{\small (d) Dynasty lens with radar}
+\includegraphics[width=\linewidth]{3d-legends.jpg}\\[-2pt]
+{\small (d) Hall of legends}
 \end{minipage}
-\caption{Living Biome presentation modes. All captures are real seeded bridge states.}
+\caption{Living Biome presentation modes, captured from the current client against a
+live bridge (showcase configuration, seed 2026).}
 \end{figure}
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.95\textwidth]{showcase-interface.jpg}
-\caption{Full interface: inspector, event feed, radar minimap and Observatory.}
+\includegraphics[width=0.8\textwidth]{3d-interface.jpg}
+\caption{Full interface: top bar with population sparkline, season and tick rate;
+Observatory (left); live event feed (right); radar minimap; and the control bar.}
 \end{figure}
 
 Clicking a creature opens its profile: current action and reason, energy, hunger,
@@ -260,14 +262,14 @@ young appear (Fig.~\ref{fig:closeup}).
 \begin{figure}[htbp]
 \centering
 \begin{minipage}{0.49\textwidth}\centering
-\includegraphics[width=\linewidth]{showcase-closeup.jpg}\\[-2pt]
-{\small (a) Selection with kin threads}
+\includegraphics[width=\linewidth]{3d-closeup.jpg}\\[-2pt]
+{\small (a) Followed animal with inspector}
 \end{minipage}\hfill
 \begin{minipage}{0.49\textwidth}\centering
-\includegraphics[width=\linewidth]{showcase-legends.jpg}\\[-2pt]
-{\small (b) Hall of legends}
+\includegraphics[width=\linewidth]{3d-help.jpg}\\[-2pt]
+{\small (b) Field guide (F1) and performance overlay (F3)}
 \end{minipage}
-\caption{Inspecting individuals.}
+\caption{Inspecting individuals and the built-in help.}
 \label{fig:closeup}
 \end{figure}
 
@@ -323,23 +325,8 @@ loop: director camera, dynasty and generation lenses, nightfall, a storm, a food
 bloom and a fast-forward burst. Any key or click hands control back and restores
 the user's settings. It is headless-tested by \code{godot/tests/DemoPilotSmoke.gd}.
 
-\section{The Pygame laboratory}
-\code{vikasa ui} opens the 2D laboratory with a launch configurator, presets,
-organism selection, trait and lineage inspection, trails, perception overlays and
-charts. Keys: Enter launches, Space pauses, 1--5 choose 1, 2, 4, 8 or 16 ticks per
-rendered frame, R restarts with the same seed, C opens setup, P toggles perception,
-T toggles trails, Ctrl+S saves a checkpoint, Ctrl+O loads it, E exports, and ? or
-Escape opens help. Speed changes ticks per frame, never the equations.
-
 \begin{figure}[htbp]
 \centering
-\begin{minipage}{0.49\textwidth}\centering
-\includegraphics[width=\linewidth]{laboratory.png}\\[-2pt]
-{\small (a) Laboratory view}
-\end{minipage}\hfill
-\begin{minipage}{0.49\textwidth}\centering
-\includegraphics[width=\linewidth]{setup.png}\\[-2pt]
-{\small (b) Launch configurator}
-\end{minipage}
-\caption{The Pygame 2D laboratory.}
+\includegraphics[width=0.7\textwidth]{web-demo.png}
+\caption{Demo mode, chapter 1: headline results and the ``say this'' talk track.}
 \end{figure}

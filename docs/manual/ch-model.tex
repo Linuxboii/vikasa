@@ -84,7 +84,7 @@ association and individual dosages.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.92\textwidth]{chromosomes.png}
+\includegraphics[width=0.78\textwidth]{chromosomes.png}
 \caption{Diploid preview (seed 2026, tick 1{,}200): allele frequencies,
 heterozygosity against the $2p(1-p)$ reference, linked-locus $r^2$ and individual
 dosages. One development run; not long-horizon validation.}
@@ -146,15 +146,15 @@ eligible, survival is below 0.55 and injury below 0.65; otherwise
 
 \begin{figure}[htbp]
 \centering
-\begin{minipage}{0.49\textwidth}\centering
-\includegraphics[width=\linewidth]{wildlife-instincts.png}\\[-2pt]
-{\small (a) Instincts panel}
+\begin{minipage}[c]{0.3\textwidth}\centering
+\includegraphics[height=0.31\textheight]{inspector-panel.jpg}
 \end{minipage}\hfill
-\begin{minipage}{0.49\textwidth}\centering
-\includegraphics[width=\linewidth]{wildlife-action-choices.png}\\[-2pt]
-{\small (b) Action choices panel}
+\begin{minipage}[c]{0.66\textwidth}
+\caption{Current creature inspector: action and reason (``Following food scent to
+replenish energy''), reserves, injury, age and dependants, with expandable
+Instincts (the six drives), Action choices (utilities), Genome, Encounters and
+Lineage sections.}
 \end{minipage}
-\caption{The inspector exposes the six drives and the leading action utilities.}
 \end{figure}
 
 \section{Action utilities}
@@ -437,9 +437,13 @@ resets the population with the same seed.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.6\textwidth]{presentation-storm.png}
-\caption{An explicitly applied storm in an older showcase: exposure shading,
-falling population and cause-of-death totals.}
+\begin{minipage}[c]{0.3\textwidth}\centering
+\includegraphics[height=0.31\textheight]{obs-tools-panel.jpg}
+\end{minipage}\hfill
+\begin{minipage}[c]{0.66\textwidth}
+\caption{World tools panel in the current client: choose a pressure, its intensity
+and duration, then apply it; a food bloom scatters audited patches.}
+\end{minipage}
 \end{figure}
 
 %===========================================================
@@ -487,9 +491,15 @@ water per cell; the earlier 0.003 setting lost 0.15936 per cycle.
 
 \begin{figure}[htbp]
 \centering
-\includegraphics[width=0.9\textwidth]{spatial-ecology.png}
-\caption{Ecology tab: plant/water fractions, finite plant reserves, cumulative
-growth/harvest/loss, and the interactive cell map (real seed-2026 run).}
+\begin{minipage}[c]{0.3\textwidth}\centering
+\includegraphics[height=0.31\textheight]{obs-ecology-panel.jpg}
+\end{minipage}\hfill
+\begin{minipage}[c]{0.66\textwidth}
+\caption{Ecology tab in the current client (\code{config/spatial-biome.json}, seed
+2026, live bridge): plant and water fractions, the finite plant-energy reservoir,
+the cumulative plant budget, and the hoverable habitat field (green plant
+reserves, blue soil water).}
+\end{minipage}
 \end{figure}
 
 \begin{table}[htbp]
